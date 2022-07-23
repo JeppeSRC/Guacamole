@@ -39,6 +39,7 @@ project "Gucamole"
     kind "ConsoleApp"
     language "C++"
     location "build/"
+    cppdialect "C++17"
 
     files {
         "src/**.cpp"
@@ -47,7 +48,9 @@ project "Gucamole"
     includedirs {
         "src/",
         "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.glm}"
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.glfw}",
+        "%{IncludeDir.entt}"
     }
 
     libdirs {
