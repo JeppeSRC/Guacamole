@@ -5,6 +5,13 @@
         }
     ],
     "settings": {
-        "makefile.extensionOutputFolder": "./.vscode"
+        "makefile.extensionOutputFolder": "./.vscode",
+        "C_Cpp.default.includePath": [
+            "${default}",
+            "${VULKAN_SDK}/include",
+            "libs/glm/",
+            "libs/entt/single_include",
+            "libs/glfw/include"
+        ]
     }
 }
