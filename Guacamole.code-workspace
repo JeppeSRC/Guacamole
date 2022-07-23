@@ -11,7 +11,8 @@
             "${VULKAN_SDK}/include",
             "libs/glm/",
             "libs/entt/single_include",
-            "libs/glfw/include"
+            "libs/glfw/include",
+            "src"
         ]
     }
 }
