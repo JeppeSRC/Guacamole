@@ -35,11 +35,32 @@ group "deps"
 include "libs/glfw"
 group ""
 
-project "Gucamole"
+project "Guacamole"
     kind "ConsoleApp"
     language "C++"
     location "build/"
     cppdialect "C++17"
+
+    dependson "GLFW"
+
+    pchheader "Guacamole.h"
+    pchsource "src/Guacamole.cpp"
+
+    filter "system:linux" 
+    
+        defines {
+            "GM_LINUX",
+            "VK_USE_PLATFORM_XLIB_KHR"
+        }
+    
+    filter "system:windows"
+        
+        defines {
+            "GM_WINDOWS",
+            "VK_USE_PLATFORM_WIN32_KHR"
+        }
+    
+    filter {}
 
     files {
         "src/**.cpp"

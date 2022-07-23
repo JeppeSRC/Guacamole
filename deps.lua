@@ -17,4 +17,4 @@ filter "system:linux"
 
 Lib["Vulkan"] = "vulkan"
 
-filter ""
+filter {}
