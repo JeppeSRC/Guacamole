@@ -41,10 +41,10 @@ SOFTWARE.
                                                         __builtin_trap(); }
 
 
-#define GM_INFO(message...) spdlog::info(message)
-#define GM_WARNING(message...) spdlog::warning(message)
-#define GM_DEBUG(message...) spdlog::debug(message)
-#define GM_CRITICAL(message...) spdlog::critical(message)
+#define GM_LOG_INFO(message...) spdlog::info(message)
+#define GM_LOG_WARNING(message...) spdlog::warn(message)
+#define GM_LOG_DEBUG(message...) spdlog::debug(message)
+#define GM_LOG_CRITICAL(message...) spdlog::critical(message)
 
 namespace Guacamole {
 
