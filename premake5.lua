@@ -27,7 +27,7 @@ workspace "Guacamole"
 
         optimize "On"
 
-    filter ""
+    filter {}
 
 include "deps.lua"
 
