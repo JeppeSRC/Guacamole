@@ -33,6 +33,25 @@ include "deps.lua"
 
 group "deps"
 include "libs/glfw"
+
+project "spdlog"
+        kind "StaticLib"
+        language "C++"
+        location "build/"
+        cppdialect "c++17"
+
+        defines {
+            "SPDLOG_COMPILED_LIB"
+        }
+
+        includedirs {
+            "libs/spdlog/include"
+        }
+
+        files {
+            "libs/spdlog/src/**.cpp"
+        }
+
 group ""
 
 project "Guacamole"
@@ -42,9 +61,14 @@ project "Guacamole"
     cppdialect "C++17"
 
     dependson "GLFW"
+    dependson "spdlog"
 
     pchheader "Guacamole.h"
     pchsource "src/Guacamole.cpp"
+
+    defines {
+        "SPDLOG_COMPILED_LIB"
+    }
 
     filter "system:linux" 
     
@@ -85,6 +109,7 @@ project "Guacamole"
     }
 
     links {
+        "spdlog",
         "GLFW",
         "%{Lib.Vulkan}"
     }
