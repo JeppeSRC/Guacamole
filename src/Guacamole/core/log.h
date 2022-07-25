@@ -46,8 +46,13 @@ SOFTWARE.
 #define GM_LOG_DEBUG(message...) spdlog::debug(message)
 #define GM_LOG_CRITICAL(message...) spdlog::critical(message)
 
-namespace Guacamole {
+#ifdef GM_DEBUG
+#define VK(call) GMCheckVkCall(call, __FILE__, #call, __FUNCTION__, __LINE__)
+#else
+#define VK(call) call
+#endif
 
+namespace Guacamole {
 
 
 }

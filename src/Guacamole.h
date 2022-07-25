@@ -30,4 +30,7 @@ SOFTWARE.
 #include <memory.h>
 
 #include <Guacamole/core/log.h>
+#include <vulkan/vulkan.h>
+
+VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
 
