@@ -52,14 +52,19 @@ project "Guacamole"
             "GM_LINUX",
             "VK_USE_PLATFORM_XLIB_KHR"
         }
-    
+
+        links {
+            "dl",
+            "pthread"
+        }
+
     filter "system:windows"
         
         defines {
             "GM_WINDOWS",
             "VK_USE_PLATFORM_WIN32_KHR"
         }
-    
+            
     filter {}
 
     files {
