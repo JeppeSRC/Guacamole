@@ -7,3 +7,6 @@
 [submodule "entt"]
 	path = libs/entt
 	url = https://github.com/skypjack/entt
+[submodule "spdlog"]
+	path = libs/spdlog
+	url = https://github.com/gabime/spdlog

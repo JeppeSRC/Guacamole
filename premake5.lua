@@ -76,7 +76,8 @@ project "Guacamole"
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.glfw}",
-        "%{IncludeDir.entt}"
+        "%{IncludeDir.entt}",
+        "%{IncludeDir.spdlog}"
     }
 
     libdirs {
@@ -87,3 +88,5 @@ project "Guacamole"
         "GLFW",
         "%{Lib.Vulkan}"
     }
+
+    

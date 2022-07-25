@@ -12,6 +12,7 @@
             "libs/glm/",
             "libs/entt/single_include",
             "libs/glfw/include",
+            "libs/spdlog/include",
             "src"
         ]
     }
