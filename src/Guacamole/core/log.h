@@ -22,12 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
+#pragma once
 
-#include <stddef.h>
-#include <string>
-#include <vector>
-#include <memory.h>
+#include <spdlog/spdlog.h>
 
-#include <Guacamole/core/log.h>
 
+#if defined(GM_WINDOWS)
+#define FUNCSIG __FUNCSIG__
+#else
+#define FUNCSIG __PRETTY_FUNCTION__ //For now we just assume it's defined on non msvc compilers
+#endif
+
+#define GM_ASSERT(cond) if (!(cond)) { spdlog::critical("Assertion Failed:\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __builtin_trap(); }
+
+
+#define GM_INFO(message...) spdlog::info(message)
+#define GM_WARNING(message...) spdlog::warning(message)
+#define GM_DEBUG(message...) spdlog::debug(message)
+#define GM_CRITICAL(message...) spdlog::critical(message)
+
+namespace Guacamole {
+
+
+
+}
