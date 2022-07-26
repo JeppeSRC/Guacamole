@@ -30,30 +30,46 @@ namespace Guacamole {
 
 class PhysicalDevice {
 public:
-    static std::vector<PhysicalDevice*> physicalDevices;
+    static std::vector<PhysicalDevice*> PhysicalDevices;
 
     static void EnumeratePhysicalDevices(VkInstance instance);
     // ATM this will select the first device with presentation support
     static PhysicalDevice* SelectDevice();
+
 public:
     PhysicalDevice(VkPhysicalDevice device);
     ~PhysicalDevice();
 
-    inline VkPhysicalDevice GetDevice() const { return device; }            
-    inline VkPhysicalDeviceProperties GetProperties() const { return properties.properties; }
+    inline VkPhysicalDevice GetHandle() const { return DeviceHandle; }            
+    inline VkPhysicalDeviceProperties GetProperties() const { return Properties.properties; }
 
-    uint32_t GetPresentationQueueIndex() const;
-    bool GetQueuePresentationSupport(uint32_t queue) const;
+    uint32_t GetQueueIndex(VkQueueFlags queues) const;
+    bool GetDevicePresentationSupport() const;
+    bool GetQueuePresentationSupport(uint32_t queueIndex) const;
+    bool IsExtensionSupported(const char* extension) const;
 
-    void PrintDeviceInfo() const;
+    void PrintDeviceInfo(bool withExtensions) const;
 
 private:
-    VkPhysicalDevice device;
-    VkPhysicalDeviceProperties2 properties;
-    std::vector<VkQueueFamilyProperties> queueProperties;
+    VkPhysicalDevice DeviceHandle;
+    VkPhysicalDeviceProperties2 Properties;
+    std::vector<VkQueueFamilyProperties> QueueProperties;
+    std::vector<VkExtensionProperties> Extensions;
 
-    uint32_t id;
-    static uint32_t deviceCount;
+    uint32_t ID;
+    static uint32_t DeviceCount;
+};
+
+class Device {
+public:
+    Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features);
+    ~Device();
+
+    inline VkDevice GetHandle() const { return DeviceHandle; }
+
+private:
+    VkDevice DeviceHandle;
+
 };
 
 }

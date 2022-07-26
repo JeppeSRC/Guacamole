@@ -25,39 +25,19 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-
-#include "device.h"
-
+#include "Window.h"
 
 namespace Guacamole {
 
-class Context {
+class Swapchain {
 public:
-    static void Init();
+    static void Init(Window* window);
     static void Shutdown();
 
-    static VkInstance GetInstance() { return Instance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return SelectedPhysDevice->GetHandle(); }
-    static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
 private:
+    static VkSwapchainKHR SwapchainHandle;
+    static VkSurfaceKHR SurfaceHandle;
 
-    struct InstanceLayer {
-        VkLayerProperties Prop;
-        std::vector<VkExtensionProperties> Extensions;
-    };
-
-    static std::vector<InstanceLayer> InstanceLayers;
-
-    static VkInstance Instance;
-    static PhysicalDevice* SelectedPhysDevice;
-    static Device* LogicalDevice;
-
-    static void EnumerateLayersAndExtensions();
-    static bool IsLayerSupported(const char* layerName);
-    static bool IsExtensionSupported(const char* extentionName);
-    static uint32_t IsLayerExtensionSupported(const char* layerName, const char* extensionName);
-    
 };
-
 
 }

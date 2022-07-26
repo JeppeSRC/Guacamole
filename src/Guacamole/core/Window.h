@@ -25,39 +25,33 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-
-#include "device.h"
-
+#include <GLFW/glfw3.h>
 
 namespace Guacamole {
 
-class Context {
-public:
-    static void Init();
-    static void Shutdown();
+struct WindowSpec {
+    uint32_t Width;
+    uint32_t Height;
+    uint32_t Refreshrate;
 
-    static VkInstance GetInstance() { return Instance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return SelectedPhysDevice->GetHandle(); }
-    static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
-private:
+    bool Windowed;
 
-    struct InstanceLayer {
-        VkLayerProperties Prop;
-        std::vector<VkExtensionProperties> Extensions;
-    };
-
-    static std::vector<InstanceLayer> InstanceLayers;
-
-    static VkInstance Instance;
-    static PhysicalDevice* SelectedPhysDevice;
-    static Device* LogicalDevice;
-
-    static void EnumerateLayersAndExtensions();
-    static bool IsLayerSupported(const char* layerName);
-    static bool IsExtensionSupported(const char* extentionName);
-    static uint32_t IsLayerExtensionSupported(const char* layerName, const char* extensionName);
-    
+    std::string Title;
 };
 
+class Window {
+private:
+    WindowSpec Spec;
+
+    GLFWwindow* WindowHandle;
+    GLFWmonitor** Monitors;
+
+public:
+    Window(WindowSpec spec);
+
+    inline GLFWwindow* GetHandle() const { return WindowHandle; }
+    inline const WindowSpec& GetSpec() const { return Spec; }
+
+};
 
 }

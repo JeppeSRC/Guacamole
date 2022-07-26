@@ -28,11 +28,11 @@ SOFTWARE.
 
 namespace Guacamole {
 
-std::vector<Context::InstanceLayer> Context::instanceLayers;
+std::vector<Context::InstanceLayer> Context::InstanceLayers;
 
-VkInstance Context::instance;
-
-
+VkInstance Context::Instance;
+PhysicalDevice* Context::SelectedPhysDevice;
+Device* Context::LogicalDevice;
 
 void Context::Init() {
 
@@ -81,19 +81,30 @@ void Context::Init() {
     instanceInfo.enabledExtensionCount = count;
     instanceInfo.ppEnabledExtensionNames = ext;
 
-    VK(vkCreateInstance(&instanceInfo, nullptr, &instance));
+    VK(vkCreateInstance(&instanceInfo, nullptr, &Instance));
 
-    PhysicalDevice::EnumeratePhysicalDevices(instance);
+    PhysicalDevice::EnumeratePhysicalDevices(Instance);
 
-    for (PhysicalDevice* dev : PhysicalDevice::physicalDevices)
-        dev->PrintDeviceInfo();
+    for (PhysicalDevice* dev : PhysicalDevice::PhysicalDevices)
+        dev->PrintDeviceInfo(true);
 
-    PhysicalDevice* dev = PhysicalDevice::SelectDevice();
 
+    SelectedPhysDevice = PhysicalDevice::SelectDevice();
+
+    VkPhysicalDeviceFeatures features;
+    memset(&features, 0, sizeof(VkPhysicalDeviceFeatures));
+
+    features.fillModeNonSolid = true;
+    features.wideLines = true;
+    features.samplerAnisotropy = true;
+
+    LogicalDevice = new Device(SelectedPhysDevice, features);
 }
 
+
 void Context::Shutdown() {
-    vkDestroyInstance(instance, nullptr);
+    delete LogicalDevice;
+    vkDestroyInstance(Instance, nullptr);
 }
 
 void Context::EnumerateLayersAndExtensions() {
@@ -112,13 +123,13 @@ void Context::EnumerateLayersAndExtensions() {
 
         InstanceLayer layer;
 
-        layer.prop = prop;
+        layer.Prop = prop;
 
         uint32_t extnum = 0;
 
         VK(vkEnumerateInstanceExtensionProperties(prop.layerName, &extnum, nullptr));
-        layer.extensions.resize(extnum);
-        VK(vkEnumerateInstanceExtensionProperties(prop.layerName, &extnum, layer.extensions.data()));
+        layer.Extensions.resize(extnum);
+        VK(vkEnumerateInstanceExtensionProperties(prop.layerName, &extnum, layer.Extensions.data()));
 
         if (i == 0) {
             const char str[] = "DEFAULT_LAYER";
@@ -129,11 +140,11 @@ void Context::EnumerateLayersAndExtensions() {
 
         GM_LOG_DEBUG("\t{0} ({1}):", prop.layerName, extnum);
 
-        for (VkExtensionProperties ext : layer.extensions) {
+        for (VkExtensionProperties ext : layer.Extensions) {
             GM_LOG_DEBUG("\t\t{0}", ext.extensionName);
         }
 
-        instanceLayers.push_back(std::move(layer));
+        InstanceLayers.push_back(std::move(layer));
     }
 
     delete props;
@@ -153,7 +164,7 @@ uint32_t Context::IsLayerExtensionSupported(const char* layerName, const char* e
     if (layerName == nullptr) {
         size_t extLength = strlen(extensionName);
 
-        for (VkExtensionProperties ext : instanceLayers[0].extensions) {
+        for (VkExtensionProperties ext : InstanceLayers[0].Extensions) {
             if (memcmp(extensionName, ext.extensionName, extLength) == 0) {
                 return 1;
             }
@@ -164,13 +175,13 @@ uint32_t Context::IsLayerExtensionSupported(const char* layerName, const char* e
 
     size_t nameLength = strlen(layerName);
 
-    for (InstanceLayer layer : instanceLayers) {
-        if (memcmp(layerName, layer.prop.layerName, nameLength) == 0) {
+    for (InstanceLayer layer : InstanceLayers) {
+        if (memcmp(layerName, layer.Prop.layerName, nameLength) == 0) {
             if (extensionName == nullptr) return 1;
 
             size_t extLength = strlen(extensionName);
 
-            for (VkExtensionProperties ext : layer.extensions) {
+            for (VkExtensionProperties ext : layer.Extensions) {
                 if (memcmp(extensionName, ext.extensionName, extLength) == 0) {
                     return 2;
                 } 

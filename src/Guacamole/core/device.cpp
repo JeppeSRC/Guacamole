@@ -30,8 +30,8 @@ SOFTWARE.
 
 namespace Guacamole {
 
-std::vector<PhysicalDevice*> PhysicalDevice::physicalDevices;
-uint32_t PhysicalDevice::deviceCount = 0;
+std::vector<PhysicalDevice*> PhysicalDevice::PhysicalDevices;
+uint32_t PhysicalDevice::DeviceCount = 0;
 
 void PhysicalDevice::EnumeratePhysicalDevices(VkInstance instance) {
     GM_ASSERT(instance != nullptr)
@@ -43,17 +43,15 @@ void PhysicalDevice::EnumeratePhysicalDevices(VkInstance instance) {
     VK(vkEnumeratePhysicalDevices(instance, &num, devices));
 
     for (uint32_t i = 0; i < num; i++) {
-        physicalDevices.push_back(new PhysicalDevice(devices[i]));
+        PhysicalDevices.push_back(new PhysicalDevice(devices[i]));
     }
 
     delete devices;
 }
 
 PhysicalDevice* PhysicalDevice::SelectDevice() {
-    for (PhysicalDevice* dev : physicalDevices) {
-        uint32_t index = dev->GetPresentationQueueIndex();
-
-        if (index != ~0) return dev;
+    for (PhysicalDevice* dev : PhysicalDevices) {
+        if (dev->GetDevicePresentationSupport()) return dev;
     }
 
     GM_LOG_CRITICAL("No Physical device with presentation support exist");
@@ -61,52 +59,144 @@ PhysicalDevice* PhysicalDevice::SelectDevice() {
     return nullptr;
 }
     
-PhysicalDevice::PhysicalDevice(VkPhysicalDevice device) : device(device) {
-    properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    vkGetPhysicalDeviceProperties(device, &properties.properties);
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice device) : DeviceHandle(device) {
+    Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    Properties.pNext = nullptr;
+    vkGetPhysicalDeviceProperties(device, &Properties.properties);
 
-    uint32_t major = VK_API_VERSION_MAJOR(properties.properties.apiVersion);
-    uint32_t minor = VK_API_VERSION_MINOR(properties.properties.apiVersion);
+    uint32_t major = VK_API_VERSION_MAJOR(Properties.properties.apiVersion);
+    uint32_t minor = VK_API_VERSION_MINOR(Properties.properties.apiVersion);
 
     if (major >= 1 && minor >= 1) {
-        vkGetPhysicalDeviceProperties2(device, &properties);
+        vkGetPhysicalDeviceProperties2(device, &Properties);
     }
 
     uint32_t queueCount = 0;
 
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, nullptr);
-    queueProperties.resize(queueCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, queueProperties.data());
+    QueueProperties.resize(queueCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, QueueProperties.data());
 
-    id = deviceCount++;
+    ID = DeviceCount++;
+
+
+    uint32_t extensionCount = 0;
+
+    vkEnumerateDeviceExtensionProperties(DeviceHandle, nullptr, &extensionCount, nullptr);
+    Extensions.resize(extensionCount);
+    vkEnumerateDeviceExtensionProperties(DeviceHandle, nullptr, &extensionCount, Extensions.data());
+
+
 }
 
 PhysicalDevice::~PhysicalDevice() {
 }
 
-uint32_t PhysicalDevice::GetPresentationQueueIndex() const {
-    for (uint32_t i = 0; i < queueProperties.size(); i++) {
-        const VkQueueFamilyProperties& q = queueProperties[i];
-
-        if (q.queueFlags & VK_QUEUE_GRAPHICS_BIT && q.queueCount > 0) {
-            if (GetQueuePresentationSupport(i)) return i;
-        }
+uint32_t PhysicalDevice::GetQueueIndex(VkQueueFlags queues) const {
+    for (uint32_t i = 0; i < QueueProperties.size(); i++) {
+        const VkQueueFamilyProperties& q = QueueProperties[i];
+        
+        if (q.queueFlags & queues) return i;
     }
 
     return ~0;
 }
 
-bool PhysicalDevice::GetQueuePresentationSupport(uint32_t queue) const {
-    return glfwGetPhysicalDevicePresentationSupport(Context::GetInstance(), device, queue) == GLFW_TRUE;
+bool PhysicalDevice::GetDevicePresentationSupport() const {
+    uint32_t index = GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+
+    if (index == ~0) return false;
+
+    return GetQueuePresentationSupport(index);
 }
 
-void PhysicalDevice::PrintDeviceInfo() const {
+bool PhysicalDevice::GetQueuePresentationSupport(uint32_t queueIndex) const {
+    return glfwGetPhysicalDevicePresentationSupport(Context::GetInstance(), DeviceHandle, queueIndex) == GLFW_TRUE;
+}
+
+bool PhysicalDevice::IsExtensionSupported(const char* extension) const {
+    GM_ASSERT(extension != nullptr)
+
+    for (VkExtensionProperties prop : Extensions) {
+        if (memcmp(prop.extensionName, extension, strlen(extension)) == 0) return true;
+    }
+
+    return false;
+} 
+
+void PhysicalDevice::PrintDeviceInfo(bool withExtensions) const {
     GM_LOG_DEBUG("Physical Device ({4}): {5} {0} {1}.{2}.{3}", 
-    properties.properties.deviceName, 
-    VK_API_VERSION_MAJOR(properties.properties.apiVersion), 
-    VK_API_VERSION_MINOR(properties.properties.apiVersion),
-    VK_API_VERSION_PATCH(properties.properties.apiVersion),
-    id, Util::vkEnumToString(properties.properties.deviceType));
+    Properties.properties.deviceName, 
+    VK_API_VERSION_MAJOR(Properties.properties.apiVersion), 
+    VK_API_VERSION_MINOR(Properties.properties.apiVersion),
+    VK_API_VERSION_PATCH(Properties.properties.apiVersion),
+    ID, Util::vkEnumToString(Properties.properties.deviceType));
+
+
+    if (withExtensions) {
+        GM_LOG_DEBUG("Extensions ({0}):", Extensions.size());
+
+        for (VkExtensionProperties ext : Extensions) {
+            GM_LOG_DEBUG("\t{0}", ext.extensionName);
+        }
+    }
+}
+
+Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features) {
+    GM_ASSERT(physicalDevice != nullptr)
+
+    std::vector<VkDeviceQueueCreateInfo> queues;
+
+    float defaultPriority = 0.0f;
+    uint32_t gQueueIndex = physicalDevice->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+    //uint32_t cQueueIndex = physicalDevice->GetQueueIndex(VK_QUEUE_COMPUTE_BIT);
+    uint32_t tQueueIndex = physicalDevice->GetQueueIndex(VK_QUEUE_TRANSFER_BIT);
+
+    VkDeviceQueueCreateInfo queue;
+
+    queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue.pNext = nullptr;
+    queue.flags = 0;
+    queue.queueCount = 1;
+    queue.queueFamilyIndex = gQueueIndex;
+    queue.pQueuePriorities = &defaultPriority;
+
+    queues.push_back(queue);
+
+    if (tQueueIndex != gQueueIndex) {
+        queue.queueFamilyIndex = tQueueIndex;
+        queues.push_back(queue);
+    }
+
+    const char* extensions[] = {
+        "VK_KHR_swapchain"
+    };
+
+    if (!physicalDevice->IsExtensionSupported(extensions[0])) {
+        GM_LOG_CRITICAL("\"{0}\" does not support {1}:", physicalDevice->GetProperties().deviceName, extensions[0]);
+    }
+
+    VkDeviceCreateInfo info;
+
+    info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    info.pNext = nullptr;
+    info.flags = 0;
+    info.queueCreateInfoCount = queues.size();
+    info.pQueueCreateInfos = queues.data();
+    info.enabledExtensionCount = sizeof(extensions) / 8;
+    info.ppEnabledExtensionNames = extensions;
+    info.pEnabledFeatures = &features;
+    info.ppEnabledLayerNames = 0;
+    info.enabledLayerCount = 0;
+
+    VK(vkCreateDevice(physicalDevice->GetHandle(), &info, nullptr, &DeviceHandle));
+
+    GM_LOG_DEBUG("LogicalDevice created on \"{0}\"", physicalDevice->GetProperties().deviceName);
+
+}
+
+Device::~Device() {
+    vkDestroyDevice(DeviceHandle, nullptr);
 }
 
 }

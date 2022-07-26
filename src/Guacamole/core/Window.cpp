@@ -22,42 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
-#include <Guacamole.h>
-
-#include "device.h"
-
+#include "Window.h"
 
 namespace Guacamole {
 
-class Context {
-public:
-    static void Init();
-    static void Shutdown();
+Window::Window(WindowSpec spec) : Spec(spec) {
+    int32_t count = 0;
+    Monitors = glfwGetMonitors(&count);
 
-    static VkInstance GetInstance() { return Instance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return SelectedPhysDevice->GetHandle(); }
-    static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
-private:
-
-    struct InstanceLayer {
-        VkLayerProperties Prop;
-        std::vector<VkExtensionProperties> Extensions;
-    };
-
-    static std::vector<InstanceLayer> InstanceLayers;
-
-    static VkInstance Instance;
-    static PhysicalDevice* SelectedPhysDevice;
-    static Device* LogicalDevice;
-
-    static void EnumerateLayersAndExtensions();
-    static bool IsLayerSupported(const char* layerName);
-    static bool IsExtensionSupported(const char* extentionName);
-    static uint32_t IsLayerExtensionSupported(const char* layerName, const char* extensionName);
-    
-};
-
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    WindowHandle = glfwCreateWindow(Spec.Width, Spec.Height, Spec.Title.c_str(), nullptr, nullptr);
+}
 
 }
