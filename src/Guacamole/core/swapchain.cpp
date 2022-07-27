@@ -30,6 +30,8 @@ namespace Guacamole {
 VkSwapchainCreateInfoKHR Swapchain::sInfo;
 VkSwapchainKHR Swapchain::SwapchainHandle;
 VkSurfaceKHR Swapchain::SurfaceHandle;
+VkQueue Swapchain::GraphicsQueue;
+std::vector<VkImage> Swapchain::SwapchainImages;
 
 void Swapchain::Init(Window* window) {
 
@@ -67,6 +69,15 @@ void Swapchain::Init(Window* window) {
 
     VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &sInfo, nullptr, &SwapchainHandle));
 
+    uint32_t imageCount = 0;
+
+    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, nullptr));
+    SwapchainImages.resize(imageCount);
+    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, SwapchainImages.data()));
+
+    Device* dev = Context::GetDevice();
+
+    VK(vkGetDeviceQueue(dev->GetHandle(), dev->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &GraphicsQueue));
 
 }
 

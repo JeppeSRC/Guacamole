@@ -40,6 +40,10 @@ private:
     static VkSwapchainKHR SwapchainHandle;
     static VkSurfaceKHR SurfaceHandle;
 
+    static VkQueue GraphicsQueue;
+
+    static std::vector<VkImage> SwapchainImages;
+
 };
 
 }
