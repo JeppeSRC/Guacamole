@@ -48,6 +48,7 @@ private:
 
 public:
     Window(WindowSpec spec);
+    ~Window();
 
     inline GLFWwindow* GetHandle() const { return WindowHandle; }
     inline const WindowSpec& GetSpec() const { return Spec; }

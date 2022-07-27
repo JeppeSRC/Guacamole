@@ -32,6 +32,9 @@ Window::Window(WindowSpec spec) : Spec(spec) {
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     WindowHandle = glfwCreateWindow(Spec.Width, Spec.Height, Spec.Title.c_str(), nullptr, nullptr);
+
+Window::~Window() {
+    glfwDestroyWindow(WindowHandle);
 }
 
 }
