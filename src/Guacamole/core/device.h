@@ -66,8 +66,11 @@ public:
     ~Device();
 
     inline VkDevice GetHandle() const { return DeviceHandle; }
+    inline PhysicalDevice* GetParent() const { return Parent; }
 
 private:
+    PhysicalDevice* Parent;
+
     VkDevice DeviceHandle;
 
 };

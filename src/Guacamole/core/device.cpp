@@ -142,7 +142,7 @@ void PhysicalDevice::PrintDeviceInfo(bool withExtensions) const {
     }
 }
 
-Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features) {
+Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features) : Parent(physicalDevice) {
     GM_ASSERT(physicalDevice != nullptr)
 
     std::vector<VkDeviceQueueCreateInfo> queues;
