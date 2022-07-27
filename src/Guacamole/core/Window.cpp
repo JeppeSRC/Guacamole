@@ -33,6 +33,16 @@ Window::Window(WindowSpec spec) : Spec(spec) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     WindowHandle = glfwCreateWindow(Spec.Width, Spec.Height, Spec.Title.c_str(), nullptr, nullptr);
 
+    GM_ASSERT(WindowHandle);
+
+    if (WindowHandle == nullptr) {
+        GM_LOG_CRITICAL("Failed to create window");
+        return;
+    }
+
+    GM_LOG_DEBUG("Window \"{0}\" created: {1}x{2}", spec.Title.c_str(), spec.Width, spec.Height);
+}
+
 Window::~Window() {
     glfwDestroyWindow(WindowHandle);
 }
