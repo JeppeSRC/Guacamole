@@ -52,6 +52,7 @@ public:
 
     inline GLFWwindow* GetHandle() const { return WindowHandle; }
     inline const WindowSpec& GetSpec() const { return Spec; }
+    inline bool ShouldClose() const { return glfwWindowShouldClose(WindowHandle); }
 
 };
 

@@ -40,12 +40,14 @@ int main() {
     spec.Height = 720;
     spec.Windowed = true;
     spec.Title = "Dope TItle";
-
+    
     Guacamole::Window window(spec);
 
     Swapchain::Init(&window);
 
-    while (true);
+    while (!window.ShouldClose()) {
+        glfwPollEvents();
+    }
 
     Swapchain::Shutdown();
 
