@@ -27,6 +27,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
+VkSwapchainCreateInfoKHR Swapchain::sInfo;
 VkSwapchainKHR Swapchain::SwapchainHandle;
 VkSurfaceKHR Swapchain::SurfaceHandle;
 
@@ -34,13 +35,11 @@ void Swapchain::Init(Window* window) {
 
     VK(glfwCreateWindowSurface(Context::GetInstance(), window->GetHandle(), nullptr, &SurfaceHandle));
 
-    VkSwapchainCreateInfoKHR info;
-
-    info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    info.pNext = nullptr;
-    info.flags = 0;
-    info.surface = SurfaceHandle;
-    info.minImageCount = 2;
+    sInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    sInfo.pNext = nullptr;
+    sInfo.flags = 0;
+    sInfo.surface = SurfaceHandle;
+    sInfo.minImageCount = 2;
     
     uint32_t formatCount = 0;
 
@@ -48,25 +47,26 @@ void Swapchain::Init(Window* window) {
     VkSurfaceFormatKHR* surfaceFormats = new VkSurfaceFormatKHR[formatCount];
     VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), SurfaceHandle, &formatCount, surfaceFormats));
 
-    info.imageFormat = surfaceFormats[1].format;
-    info.imageColorSpace = surfaceFormats[1].colorSpace;
+    sInfo.imageFormat = surfaceFormats[1].format;
+    sInfo.imageColorSpace = surfaceFormats[1].colorSpace;
 
     delete surfaceFormats;
 
-    info.imageExtent.width = window->GetSpec().Width;
-    info.imageExtent.height = window->GetSpec().Height;
-    info.imageArrayLayers = 1;
-    info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    info.queueFamilyIndexCount = 0;
-    info.pQueueFamilyIndices = nullptr;
-    info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    info.clipped = VK_FALSE;
-    info.oldSwapchain = nullptr;
+    sInfo.imageExtent.width = window->GetSpec().Width;
+    sInfo.imageExtent.height = window->GetSpec().Height;
+    sInfo.imageArrayLayers = 1;
+    sInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    sInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    sInfo.queueFamilyIndexCount = 0;
+    sInfo.pQueueFamilyIndices = nullptr;
+    sInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    sInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    sInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    sInfo.clipped = VK_FALSE;
+    sInfo.oldSwapchain = nullptr;
 
-    VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &info, nullptr, &SwapchainHandle));
+    VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &sInfo, nullptr, &SwapchainHandle));
+
 
 }
 

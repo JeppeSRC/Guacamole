@@ -35,6 +35,8 @@ public:
     static void Shutdown();
 
 private:
+    static VkSwapchainCreateInfoKHR sInfo;
+
     static VkSwapchainKHR SwapchainHandle;
     static VkSurfaceKHR SurfaceHandle;
 
