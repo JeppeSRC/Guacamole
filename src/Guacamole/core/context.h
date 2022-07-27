@@ -38,7 +38,9 @@ public:
 
     static VkInstance GetInstance() { return Instance; }
     static VkPhysicalDevice GetPhysicalDeviceHandle() { return SelectedPhysDevice->GetHandle(); }
+    static PhysicalDevice* GetPhysicalDevice() { return SelectedPhysDevice; }
     static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
+    static Device* GetDevice() { return LogicalDevice; }
 private:
 
     struct InstanceLayer {
