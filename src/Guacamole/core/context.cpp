@@ -33,6 +33,8 @@ std::vector<Context::InstanceLayer> Context::InstanceLayers;
 VkInstance Context::Instance;
 PhysicalDevice* Context::SelectedPhysDevice;
 Device* Context::LogicalDevice;
+VkCommandPool Context::CommandPool;
+VkCommandBuffer Context::AuxCmdBuffer;
 
 void Context::Init() {
 
@@ -99,10 +101,30 @@ void Context::Init() {
     features.samplerAnisotropy = true;
 
     LogicalDevice = new Device(SelectedPhysDevice, features);
+
+    VkCommandPoolCreateInfo poolInfo;
+
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.pNext = nullptr;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = LogicalDevice->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+
+    VK(vkCreateCommandPool(LogicalDevice->GetHandle(), &poolInfo, nullptr, &CommandPool));
+
+    VkCommandBufferAllocateInfo allocInfo;
+
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.pNext = nullptr;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = CommandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VK(vkAllocateCommandBuffers(LogicalDevice->GetHandle(), &allocInfo, &AuxCmdBuffer));
 }
 
 
 void Context::Shutdown() {
+    vkDestroyCommandPool(LogicalDevice->GetHandle(), CommandPool, nullptr);
     delete LogicalDevice;
     vkDestroyInstance(Instance, nullptr);
 }

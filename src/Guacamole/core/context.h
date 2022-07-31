@@ -41,6 +41,7 @@ public:
     static PhysicalDevice* GetPhysicalDevice() { return SelectedPhysDevice; }
     static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
     static Device* GetDevice() { return LogicalDevice; }
+    static VkCommandBuffer GetAuxCmdBuffer() { return AuxCmdBuffer; }
 private:
 
     struct InstanceLayer {
@@ -53,6 +54,9 @@ private:
     static VkInstance Instance;
     static PhysicalDevice* SelectedPhysDevice;
     static Device* LogicalDevice;
+
+    static VkCommandPool CommandPool;
+    static VkCommandBuffer AuxCmdBuffer;
 
     static void EnumerateLayersAndExtensions();
     static bool IsLayerSupported(const char* layerName);
