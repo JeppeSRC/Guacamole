@@ -44,6 +44,8 @@ private:
 
     static std::vector<VkImage> SwapchainImages;
 
+    static void TransitionSwapchainImages();
+
 };
 
 }

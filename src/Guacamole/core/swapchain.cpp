@@ -69,16 +69,15 @@ void Swapchain::Init(Window* window) {
 
     VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &sInfo, nullptr, &SwapchainHandle));
 
+    vkGetDeviceQueue(Context::GetDevice()->GetHandle(), Context::GetDevice()->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &GraphicsQueue);
+
     uint32_t imageCount = 0;
 
     VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, nullptr));
     SwapchainImages.resize(imageCount);
     VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, SwapchainImages.data()));
 
-    Device* dev = Context::GetDevice();
-
-    VK(vkGetDeviceQueue(dev->GetHandle(), dev->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &GraphicsQueue));
-
+    TransitionSwapchainImages();
 }
 
 void Swapchain::Shutdown() {
@@ -86,6 +85,64 @@ void Swapchain::Shutdown() {
     vkDestroySurfaceKHR(Context::GetInstance(), SurfaceHandle, nullptr);
 }
 
+void Swapchain::TransitionSwapchainImages() {
+    GM_ASSERT(SwapchainImages.size())
 
+    VkCommandBufferBeginInfo bInfo;
+
+    bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bInfo.pNext = nullptr;
+    bInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    bInfo.pInheritanceInfo = nullptr;
+
+    VkCommandBuffer cmdBuffer = Context::GetAuxCmdBuffer();
+
+    VK(vkBeginCommandBuffer(cmdBuffer, &bInfo));
+
+    VkImageMemoryBarrier barrier[8];
+
+    barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier[0].pNext = nullptr;
+    barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier[0].newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier[0].srcAccessMask = 0;
+    barrier[0].dstAccessMask = 0;
+    barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier[0].subresourceRange.layerCount = 1;
+    barrier[0].subresourceRange.baseArrayLayer = 0;
+    barrier[0].subresourceRange.baseMipLevel = 0;
+    barrier[0].subresourceRange.levelCount = 1;
+    barrier[0].image = SwapchainImages[0];
+    
+
+    for (uint64_t i = 1; i < SwapchainImages.size(); i++) {
+        memcpy(&barrier[i], barrier, sizeof(VkImageMemoryBarrier));
+        barrier[i].image = SwapchainImages[i];
+    }
+
+    vkCmdPipelineBarrier(cmdBuffer, 
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 
+        0, nullptr, 0, nullptr, SwapchainImages.size(), barrier);
+
+
+    VK(vkEndCommandBuffer(cmdBuffer));
+
+    VkSubmitInfo subInfo;
+
+    subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    subInfo.pNext = nullptr;
+    subInfo.commandBufferCount = 1;
+    subInfo.pCommandBuffers = &cmdBuffer;
+    subInfo.signalSemaphoreCount = 0;
+    subInfo.pSignalSemaphores = nullptr;
+    subInfo.pWaitDstStageMask = nullptr;
+    subInfo.waitSemaphoreCount = 0;
+    subInfo.pWaitDstStageMask = nullptr;
+
+    VK(vkQueueSubmit(GraphicsQueue, 1, &subInfo, VK_NULL_HANDLE));
+    VK(vkQueueWaitIdle(GraphicsQueue));
+}
 
 }
