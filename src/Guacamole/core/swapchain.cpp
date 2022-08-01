@@ -81,6 +81,7 @@ void Swapchain::Init(Window* window) {
     VkImageViewCreateInfo iwInfo;
 
     iwInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    iwInfo.pNext = nullptr;
     iwInfo.flags = 0;
     //iwInfo.image
     iwInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
