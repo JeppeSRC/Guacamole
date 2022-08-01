@@ -34,6 +34,8 @@ public:
     static void Init(Window* window);
     static void Shutdown();
 
+    static VkFormat GetFormat() { return sInfo.imageFormat; }
+    static VkExtent2D GetExtent() { return sInfo.imageExtent; }
 private:
     static VkSwapchainCreateInfoKHR sInfo;
 
