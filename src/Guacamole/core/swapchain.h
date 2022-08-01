@@ -36,6 +36,9 @@ public:
 
     static VkFormat GetFormat() { return sInfo.imageFormat; }
     static VkExtent2D GetExtent() { return sInfo.imageExtent; }
+
+    static std::vector<VkImageView> GetImageViews() { return SwapchainImageViews; }
+
 private:
     static VkSwapchainCreateInfoKHR sInfo;
 
@@ -45,9 +48,7 @@ private:
     static VkQueue GraphicsQueue;
 
     static std::vector<VkImage> SwapchainImages;
-
-    static void TransitionSwapchainImages();
-
+    static std::vector<VkImageView> SwapchainImageViews;
 };
 
 }

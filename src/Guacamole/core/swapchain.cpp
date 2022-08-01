@@ -32,6 +32,7 @@ VkSwapchainKHR Swapchain::SwapchainHandle;
 VkSurfaceKHR Swapchain::SurfaceHandle;
 VkQueue Swapchain::GraphicsQueue;
 std::vector<VkImage> Swapchain::SwapchainImages;
+std::vector<VkImageView> Swapchain::SwapchainImageViews;
 
 void Swapchain::Init(Window* window) {
 
@@ -76,73 +77,43 @@ void Swapchain::Init(Window* window) {
     VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, nullptr));
     SwapchainImages.resize(imageCount);
     VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, SwapchainImages.data()));
+    
+    VkImageViewCreateInfo iwInfo;
 
-    TransitionSwapchainImages();
+    iwInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    iwInfo.flags = 0;
+    //iwInfo.image
+    iwInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    iwInfo.format = sInfo.imageFormat;
+    iwInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    iwInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    iwInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    iwInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    iwInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    iwInfo.subresourceRange.baseArrayLayer = 0;
+    iwInfo.subresourceRange.baseMipLevel = 0;
+    iwInfo.subresourceRange.layerCount = 1;
+    iwInfo.subresourceRange.levelCount = 1;
+    
+    for (VkImage image : SwapchainImages) {
+        iwInfo.image = image;
+
+        VkImageView view;
+
+        VK(vkCreateImageView(Context::GetDeviceHandle(), &iwInfo, nullptr, &view));
+
+        SwapchainImageViews.push_back(view);
+    }
+
 }
 
 void Swapchain::Shutdown() {
-    vkDestroySwapchainKHR(Context::GetDeviceHandle(), SwapchainHandle, nullptr);
-    vkDestroySurfaceKHR(Context::GetInstance(), SurfaceHandle, nullptr);
-}
-
-void Swapchain::TransitionSwapchainImages() {
-    GM_ASSERT(SwapchainImages.size())
-
-    VkCommandBufferBeginInfo bInfo;
-
-    bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    bInfo.pNext = nullptr;
-    bInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    bInfo.pInheritanceInfo = nullptr;
-
-    VkCommandBuffer cmdBuffer = Context::GetAuxCmdBuffer();
-
-    VK(vkBeginCommandBuffer(cmdBuffer, &bInfo));
-
-    VkImageMemoryBarrier barrier[8];
-
-    barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier[0].pNext = nullptr;
-    barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier[0].newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier[0].srcAccessMask = 0;
-    barrier[0].dstAccessMask = 0;
-    barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier[0].subresourceRange.layerCount = 1;
-    barrier[0].subresourceRange.baseArrayLayer = 0;
-    barrier[0].subresourceRange.baseMipLevel = 0;
-    barrier[0].subresourceRange.levelCount = 1;
-    barrier[0].image = SwapchainImages[0];
-    
-
-    for (uint64_t i = 1; i < SwapchainImages.size(); i++) {
-        memcpy(&barrier[i], barrier, sizeof(VkImageMemoryBarrier));
-        barrier[i].image = SwapchainImages[i];
+    for (VkImageView view : SwapchainImageViews) {
+        vkDestroyImageView(Context::GetDeviceHandle(), view, nullptr);
     }
 
-    vkCmdPipelineBarrier(cmdBuffer, 
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 
-        0, nullptr, 0, nullptr, SwapchainImages.size(), barrier);
-
-
-    VK(vkEndCommandBuffer(cmdBuffer));
-
-    VkSubmitInfo subInfo;
-
-    subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    subInfo.pNext = nullptr;
-    subInfo.commandBufferCount = 1;
-    subInfo.pCommandBuffers = &cmdBuffer;
-    subInfo.signalSemaphoreCount = 0;
-    subInfo.pSignalSemaphores = nullptr;
-    subInfo.pWaitDstStageMask = nullptr;
-    subInfo.waitSemaphoreCount = 0;
-    subInfo.pWaitDstStageMask = nullptr;
-
-    VK(vkQueueSubmit(GraphicsQueue, 1, &subInfo, VK_NULL_HANDLE));
-    VK(vkQueueWaitIdle(GraphicsQueue));
+    vkDestroySwapchainKHR(Context::GetDeviceHandle(), SwapchainHandle, nullptr);
+    vkDestroySurfaceKHR(Context::GetInstance(), SurfaceHandle, nullptr);
 }
 
 }
