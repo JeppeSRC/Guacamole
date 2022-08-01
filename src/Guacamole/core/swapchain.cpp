@@ -63,7 +63,7 @@ void Swapchain::Init(Window* window) {
     sInfo.pQueueFamilyIndices = nullptr;
     sInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     sInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    sInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    sInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     sInfo.clipped = VK_FALSE;
     sInfo.oldSwapchain = nullptr;
 
