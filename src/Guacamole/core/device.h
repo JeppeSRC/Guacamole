@@ -42,6 +42,7 @@ public:
 
     inline VkPhysicalDevice GetHandle() const { return DeviceHandle; }            
     inline VkPhysicalDeviceProperties GetProperties() const { return Properties.properties; }
+    inline VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return MemoryProperties; }
 
     uint32_t GetQueueIndex(VkQueueFlags queues) const;
     bool GetDevicePresentationSupport() const;
@@ -53,6 +54,7 @@ public:
 private:
     VkPhysicalDevice DeviceHandle;
     VkPhysicalDeviceProperties2 Properties;
+    VkPhysicalDeviceMemoryProperties MemoryProperties;
     std::vector<VkQueueFamilyProperties> QueueProperties;
     std::vector<VkExtensionProperties> Extensions;
 
