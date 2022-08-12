@@ -1,6 +1,6 @@
 
 VULKAN_SDK = os.getenv("VULKAN_SDK")
-LD_LIBRARY_PATH = os.getenv("LD_LIBRARY_PATH")
+LD_LIBRARY_PATH = "%{VULKAN_SDK}/Lib"
 
 IncludeDir = {}
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/include"
@@ -16,6 +16,6 @@ Lib = {}
 
 filter "system:linux"
 
-Lib["Vulkan"] = "vulkan"
+Lib["Vulkan"] = "vulkan-1"
 
 filter {}
