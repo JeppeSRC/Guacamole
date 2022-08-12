@@ -86,7 +86,7 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice device) : DeviceHandle(device) {
     Extensions.resize(extensionCount);
     vkEnumerateDeviceExtensionProperties(DeviceHandle, nullptr, &extensionCount, Extensions.data());
 
-
+    vkGetPhysicalDeviceMemoryProperties(DeviceHandle, &MemoryProperties);
 }
 
 PhysicalDevice::~PhysicalDevice() {
