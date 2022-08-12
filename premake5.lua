@@ -92,7 +92,8 @@ project "Guacamole"
     filter {}
 
     files {
-        "src/**.cpp"
+        "src/**.cpp",
+        "src/**.h"
     }
 
     includedirs {
