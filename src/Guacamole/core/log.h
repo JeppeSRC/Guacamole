@@ -33,6 +33,9 @@ SOFTWARE.
 #define FUNCSIG __PRETTY_FUNCTION__ //For now we just assume it's defined on non msvc compilers
 #endif
 
+
+#if defined(GM_LINUX)
+
 #define GM_ASSERT(cond) if (!(cond)) { spdlog::critical("Assertion Failed:\n" \
                                                         "\tCondition: {0}\n" \
                                                         "\tFile: {1}\n"\
@@ -40,11 +43,24 @@ SOFTWARE.
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
                                                         __builtin_trap(); }
 
-
 #define GM_LOG_INFO(message...) spdlog::info(message)
 #define GM_LOG_WARNING(message...) spdlog::warn(message)
 #define GM_LOG_DEBUG(message...) spdlog::debug(message)
 #define GM_LOG_CRITICAL(message...) spdlog::critical(message)
+#elif defined(GM_WINDOWS)
+
+#define GM_ASSERT(cond) if (!(cond)) { spdlog::critical("Assertion Failed:\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __debugbreak(); }
+
+#define GM_LOG_INFO(message,...) spdlog::info(message, __VA_ARGS__)
+#define GM_LOG_WARNING(message,...) spdlog::warn(message, __VA_ARGS__)
+#define GM_LOG_DEBUG(message,...) spdlog::debug(message, __VA_ARGS__)
+#define GM_LOG_CRITICAL(message,...) spdlog::critical(message, __VA_ARGS__)
+#endif
 
 #ifdef GM_DEBUG
 #define VK(call) GMCheckVkCall(call, __FILE__, #call, __FUNCTION__, __LINE__)
