@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <Guacamole/core/context.h>
 #include <Guacamole/core/swapchain.h>
+#include <Guacamole/core/renderpass.h>
 
 using namespace Guacamole;
 
@@ -45,8 +46,14 @@ int main() {
 
     Swapchain::Init(&window);
 
-    while (!window.ShouldClose()) {
-        glfwPollEvents();
+    {
+
+        BasicRenderpass pass;
+
+        while (!window.ShouldClose()) {
+            glfwPollEvents();
+        }
+
     }
 
     Swapchain::Shutdown();
