@@ -78,6 +78,7 @@ project "Guacamole"
         }
 
         links {
+            "vulkan",
             "dl",
             "pthread"
         }
@@ -88,7 +89,11 @@ project "Guacamole"
             "GM_WINDOWS",
             "VK_USE_PLATFORM_WIN32_KHR"
         }
-            
+        
+        links {
+            "vulkan-1"
+        }
+        
     filter {}
 
     files {
@@ -111,8 +116,7 @@ project "Guacamole"
 
     links {
         "spdlog",
-        "GLFW",
-        "%{Lib.Vulkan}"
+        "GLFW"
     }
 
     
