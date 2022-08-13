@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include "buffer.h"
 #include "context.h"
+#include "swapchain.h"
 
 namespace Guacamole {
 
@@ -123,11 +124,46 @@ void Buffer::WriteData(void* data, uint64_t size, uint64_t offset) {
 
     memcpy((unsigned char*)mem + offset, data, size);
 
-    StageCopy();
+    StageCopy(true);
 }
 
-void Buffer::StageCopy() {
-    // TODO
+void Buffer::StageCopy(bool immediate) {
+    if (immediate) {
+        CommandBuffer* cmd = Context::GetAuxCmdBuffer();
+
+        cmd->Begin();
+
+        VkBufferCopy copy;
+
+        copy.srcOffset = 0;
+        copy.dstOffset = 0;
+        copy.size = BufferSize;
+
+        vkCmdCopyBuffer(cmd->GetHandle(), MappedBufferHandle, BufferHandle, 1, &copy);
+
+        cmd->End();
+
+        VkSubmitInfo sInfo;
+
+        VkCommandBuffer Handle = cmd->GetHandle();
+
+        sInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        sInfo.pNext = nullptr;
+        sInfo.waitSemaphoreCount = 0;
+        sInfo.pWaitSemaphores = nullptr;
+        sInfo.pWaitDstStageMask = nullptr;
+        sInfo.commandBufferCount = 1;
+        sInfo.pCommandBuffers = &Handle;
+        sInfo.signalSemaphoreCount = 0;
+        sInfo.pSignalSemaphores = nullptr;
+
+        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
+        VK(vkQueueSubmit(Swapchain::GetGraphicsQueue(), 1, &sInfo, VK_NULL_HANDLE));
+        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
+
+    } else {
+        // TOOD
+    }
 }
 
 uint32_t Buffer::GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, uint32_t type, VkMemoryPropertyFlags flags) {

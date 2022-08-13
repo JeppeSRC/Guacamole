@@ -22,34 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
 
 #include <Guacamole.h>
-#include "Window.h"
+#include "commandbuffer.h"
 
 namespace Guacamole {
 
-class Swapchain {
-public:
-    static void Init(Window* window);
-    static void Shutdown();
+CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : CommandBufferHandle(Handle) {
 
-    static VkFormat GetFormat() { return sInfo.imageFormat; }
-    static VkExtent2D GetExtent() { return sInfo.imageExtent; }
-    static VkQueue GetGraphicsQueue() { return GraphicsQueue; }
+}
 
-    static std::vector<VkImageView> GetImageViews() { return SwapchainImageViews; }
+void CommandBuffer::Begin() {
+    VkCommandBufferBeginInfo bInfo;
 
-private:
-    static VkSwapchainCreateInfoKHR sInfo;
+    bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bInfo.pNext = nullptr;
+    bInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    bInfo.pInheritanceInfo = nullptr;
 
-    static VkSwapchainKHR SwapchainHandle;
-    static VkSurfaceKHR SurfaceHandle;
+    VK(vkBeginCommandBuffer(CommandBufferHandle, &bInfo));
+}
 
-    static VkQueue GraphicsQueue;
+void CommandBuffer::End() {
+    VK(vkEndCommandBuffer(CommandBufferHandle));
+}
 
-    static std::vector<VkImage> SwapchainImages;
-    static std::vector<VkImageView> SwapchainImageViews;
-};
+CommandBuffer::~CommandBuffer() {
+
+}
 
 }

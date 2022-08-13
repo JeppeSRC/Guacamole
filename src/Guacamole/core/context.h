@@ -27,6 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "device.h"
+#include "commandbuffer.h"
 
 
 namespace Guacamole {
@@ -41,7 +42,7 @@ public:
     static PhysicalDevice* GetPhysicalDevice() { return SelectedPhysDevice; }
     static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
     static Device* GetDevice() { return LogicalDevice; }
-    static VkCommandBuffer GetAuxCmdBuffer() { return AuxCmdBuffer; }
+    static CommandBuffer* GetAuxCmdBuffer() { return AuxCmdBuffer; }
 private:
 
     struct InstanceLayer {
@@ -56,7 +57,7 @@ private:
     static Device* LogicalDevice;
 
     static VkCommandPool CommandPool;
-    static VkCommandBuffer AuxCmdBuffer;
+    static CommandBuffer* AuxCmdBuffer;
 
     static void EnumerateLayersAndExtensions();
     static bool IsLayerSupported(const char* layerName);

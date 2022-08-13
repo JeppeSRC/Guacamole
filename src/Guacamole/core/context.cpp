@@ -35,7 +35,7 @@ VkInstance Context::Instance;
 PhysicalDevice* Context::SelectedPhysDevice;
 Device* Context::LogicalDevice;
 VkCommandPool Context::CommandPool;
-VkCommandBuffer Context::AuxCmdBuffer;
+CommandBuffer* Context::AuxCmdBuffer;
 
 void Context::Init() {
 
@@ -120,7 +120,11 @@ void Context::Init() {
     allocInfo.commandPool = CommandPool;
     allocInfo.commandBufferCount = 1;
 
-    VK(vkAllocateCommandBuffers(LogicalDevice->GetHandle(), &allocInfo, &AuxCmdBuffer));
+    VkCommandBuffer CmdHandle;
+
+    VK(vkAllocateCommandBuffers(LogicalDevice->GetHandle(), &allocInfo, &CmdHandle));
+
+    AuxCmdBuffer = new CommandBuffer(CmdHandle);
 }
 
 

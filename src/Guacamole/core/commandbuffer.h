@@ -25,31 +25,22 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include "Window.h"
 
 namespace Guacamole {
 
-class Swapchain {
+class CommandBuffer {
 public:
-    static void Init(Window* window);
-    static void Shutdown();
+    CommandBuffer(VkCommandBuffer Handle);
+    ~CommandBuffer();
 
-    static VkFormat GetFormat() { return sInfo.imageFormat; }
-    static VkExtent2D GetExtent() { return sInfo.imageExtent; }
-    static VkQueue GetGraphicsQueue() { return GraphicsQueue; }
+    void Begin();
+    void End();
 
-    static std::vector<VkImageView> GetImageViews() { return SwapchainImageViews; }
-
+    inline VkCommandBuffer GetHandle() const { return CommandBufferHandle; }
 private:
-    static VkSwapchainCreateInfoKHR sInfo;
+    VkCommandBuffer CommandBufferHandle;
 
-    static VkSwapchainKHR SwapchainHandle;
-    static VkSurfaceKHR SurfaceHandle;
 
-    static VkQueue GraphicsQueue;
-
-    static std::vector<VkImage> SwapchainImages;
-    static std::vector<VkImageView> SwapchainImageViews;
 };
 
 }
