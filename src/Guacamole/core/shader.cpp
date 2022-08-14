@@ -23,8 +23,55 @@ SOFTWARE.
 */
 
 #include <Guacamole.h>
-#include "texture.h"
+#include <Guacamole/util/util.h>
+#include "shader.h"
+#include "context.h"
 
 namespace Guacamole {
+
+Shader::Shader(const std::string& file, bool src) : ModuleHandle(VK_NULL_HANDLE) {
+    uint64_t size;
+    void* data = Util::ReadFile(file, size);
+
+    if (data == nullptr) {
+        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", file.c_str());
+        return;
+    }
+
+    VkShaderModuleCreateInfo mInfo;
+
+    mInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    mInfo.pNext = nullptr;
+    mInfo.flags = 0;
+
+    if (src) {
+        //TODO
+    } else {
+        if (size & 0x03) {
+            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", file.c_str());
+
+            uint64_t newSize = (size & ~0x03) + 4;
+            uint8_t* newData = new uint8_t[newSize];
+
+            memcpy(newData, data, size);
+
+            delete[] data;
+
+            data = newData;
+            size = newSize;
+        }
+
+        mInfo.codeSize = size;
+        mInfo.pCode = (uint32_t*)data;
+    }
+
+    VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &ModuleHandle));
+
+    delete[] data;
+}
+
+Shader::~Shader() {
+    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
+}
 
 }

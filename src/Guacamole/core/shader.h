@@ -24,10 +24,19 @@ SOFTWARE.
 
 #pragma once
 
+#include <Guacamole.h>
+
 namespace Guacamole {
 
 class Shader {
+public:
+    Shader(const std::string& file, bool src);
+    ~Shader();
 
+    inline VkShaderModule GetHandle() const { return ModuleHandle; }
+
+private:
+    VkShaderModule ModuleHandle;
 };
 
 }

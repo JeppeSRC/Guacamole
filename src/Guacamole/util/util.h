@@ -25,10 +25,12 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
+#include <filesystem>
 
 namespace Guacamole { namespace Util {
 
 const char* vkEnumToString(VkPhysicalDeviceType type);
+void* ReadFile(const std::filesystem::path& file, uint64_t& fileSize);
 
 }
 }

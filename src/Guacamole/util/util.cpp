@@ -24,7 +24,10 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <fstream>
+
 #include "util.h"
+
 
 #define MAKE_CASE(name) case name: return #name
 
@@ -40,6 +43,30 @@ const char* vkEnumToString(VkPhysicalDeviceType type) {
     }
 
     return "(null)";
+}
+
+
+void* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
+    if (!std::filesystem::exists(file)) {
+        GM_LOG_CRITICAL("File \"{0}\" doesn't exist!", file.string().c_str());
+        return nullptr;
+    }
+
+    fileSize = std::filesystem::file_size(file);
+
+    if (fileSize == 0) {
+        return nullptr;
+    }
+
+    uint8_t* data = new uint8_t[fileSize];
+
+    std::fstream stream;
+
+    stream.open(file, std::ios::in);
+    stream >> data;
+    stream.close();
+
+    return (void*)data;
 }
 
 }

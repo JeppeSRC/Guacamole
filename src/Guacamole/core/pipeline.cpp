@@ -42,7 +42,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
     ssInfo[0].pNext = nullptr;
     ssInfo[0].flags = 0;
     ssInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    ssInfo[0].module = 0;//TODO: actual shader
+    ssInfo[0].module = info.VertexShader->GetHandle();
     ssInfo[0].pName = "main";
     ssInfo[0].pSpecializationInfo = nullptr;
 
@@ -50,7 +50,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
     ssInfo[1].pNext = nullptr;
     ssInfo[1].flags = 0;
     ssInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    ssInfo[1].module = 0;//TODO: actual shader
+    ssInfo[1].module = info.FragmentShader->GetHandle();
     ssInfo[1].pName = "main";
     ssInfo[1].pSpecializationInfo = nullptr;
   
