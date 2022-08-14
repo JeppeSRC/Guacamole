@@ -27,8 +27,16 @@ SOFTWARE.
 #include <Guacamole/core/context.h>
 #include <Guacamole/core/swapchain.h>
 #include <Guacamole/core/renderpass.h>
+#include <Guacamole/core/pipeline.h>
+#include <Guacamole/core/descriptor.h>
+#include <glm/glm.hpp>
 
 using namespace Guacamole;
+
+struct Vertex {
+    glm::vec3 Position;
+    glm::vec2 TexCoord;
+};
 
 int main() {
     
@@ -47,8 +55,22 @@ int main() {
     Swapchain::Init(&window);
 
     {
-
         BasicRenderpass pass;
+
+        DescriptorPool pool(10);
+        DescriptorSetLayout descriptorLayout;
+        PipelineLayout pipelineLayout(&descriptorLayout);
+
+        GraphicsPipelineInfo gInfo;
+
+        gInfo.Width = spec.Width;
+        gInfo.Height = spec.Height;
+        gInfo.VertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
+        gInfo.VertexInputAttributes.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
+        gInfo.VertexInputAttributes.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2)});
+        gInfo.PipelineLayout = &pipelineLayout;
+        gInfo.Renderpass = &pass;
+        
 
         while (!window.ShouldClose()) {
             glfwPollEvents();

@@ -31,10 +31,10 @@ namespace Guacamole {
 
 
 Pipeline::~Pipeline() {
-    vkDestroyPipeline(Context::GetDeviceHandle(), Handle, nullptr);
+    vkDestroyPipeline(Context::GetDeviceHandle(), PipelineHandle, nullptr);
 }
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
+GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info) {
 
     VkPipelineShaderStageCreateInfo ssInfo[2];
 
@@ -54,6 +54,16 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
     ssInfo[1].pName = "main";
     ssInfo[1].pSpecializationInfo = nullptr;
   
+    VkPipelineVertexInputStateCreateInfo viInfo;
+
+    viInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    viInfo.pNext = nullptr;
+    viInfo.flags = 0;
+    viInfo.vertexBindingDescriptionCount = (uint32_t)info.VertexInputBindings.size();
+    viInfo.pVertexBindingDescriptions = info.VertexInputBindings.data();
+    viInfo.vertexAttributeDescriptionCount = (uint32_t)info.VertexInputAttributes.size();
+    viInfo.pVertexAttributeDescriptions = info.VertexInputAttributes.data();
+
     VkPipelineInputAssemblyStateCreateInfo iasInfo;
 
     iasInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -167,7 +177,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
     pInfo.flags = 0;
     pInfo.stageCount = 2;
     pInfo.pStages = ssInfo;
-    pInfo.pVertexInputState = &info.VertexInput; //TODO:
+    pInfo.pVertexInputState = &viInfo;
     pInfo.pInputAssemblyState = &iasInfo;
     pInfo.pTessellationState = nullptr;
     pInfo.pViewportState = &vsInfo;
@@ -176,13 +186,13 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) {
     pInfo.pDepthStencilState = &dssInfo;
     pInfo.pColorBlendState = &bsInfo;
     pInfo.pDynamicState = &dsInfo;
-    pInfo.layout = info.PipelineLayout;
-    pInfo.renderPass = info.Renderpass;
+    pInfo.layout = info.PipelineLayout->GetHandle();
+    pInfo.renderPass = info.Renderpass->GetHandle();
     pInfo.subpass = 0;
     pInfo.basePipelineHandle = nullptr;
     pInfo.basePipelineIndex = 0;
 
-    VK(vkCreateGraphicsPipelines(Context::GetDeviceHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &Handle));
+    VK(vkCreateGraphicsPipelines(Context::GetDeviceHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &PipelineHandle));
 
 }
 

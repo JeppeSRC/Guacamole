@@ -26,42 +26,23 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "shader.h"
-#include "renderpass.h"
-#include "pipelinelayout.h"
+#include "descriptor.h"
 
 namespace Guacamole {
 
-class Pipeline {
+class PipelineLayout {
 public:
-    virtual ~Pipeline();
+    PipelineLayout(DescriptorSetLayout* layout);
+    PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts);
+    ~PipelineLayout();
 
-    inline VkPipeline GetHandle() const { return PipelineHandle; }
-protected:
-    VkPipeline PipelineHandle;
-
-
-};
-
-struct GraphicsPipelineInfo {
-    uint32_t Width;
-    uint32_t Height;
-
-    std::vector<VkVertexInputBindingDescription> VertexInputBindings;
-    std::vector<VkVertexInputAttributeDescription> VertexInputAttributes;
-    PipelineLayout* PipelineLayout;
-    Renderpass* Renderpass;
-
-    Shader* VertexShader;
-    Shader* FragmentShader;
-};
-
-class GraphicsPipeline : public Pipeline {
-public:
-    GraphicsPipeline(const GraphicsPipelineInfo& info);
+    inline VkPipelineLayout GetHandle() const { return LayoutHandle; }
 
 private:
-    GraphicsPipelineInfo Info;
+
+
+private:
+    VkPipelineLayout LayoutHandle;
 };
 
 }
