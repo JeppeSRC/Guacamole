@@ -46,7 +46,7 @@ const char* vkEnumToString(VkPhysicalDeviceType type) {
 }
 
 
-void* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
+uint8_t* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
     if (!std::filesystem::exists(file)) {
         GM_LOG_CRITICAL("File \"{0}\" doesn't exist!", file.string().c_str());
         return nullptr;
@@ -60,13 +60,17 @@ void* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
 
     uint8_t* data = new uint8_t[fileSize];
 
-    std::fstream stream;
+    FILE* f = fopen(file.string().c_str(), "rb");
 
-    stream.open(file, std::ios::in);
-    stream >> data;
-    stream.close();
+    if (f == nullptr) {
+        GM_LOG_CRITICAL("Failed to open file \"{0}\"", file.string().c_str());
+        return nullptr;
+    }
 
-    return (void*)data;
+    fread(data, fileSize, 1, f);
+    fclose(f);
+
+    return data;
 }
 
 }
