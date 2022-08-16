@@ -36,6 +36,8 @@ SOFTWARE.
 
 #if defined(GM_LINUX)
 
+#if defined(GM_DEBUG)
+
 #define GM_ASSERT(cond) if (!(cond)) { spdlog::critical("Assertion Failed:\n" \
                                                         "\tCondition: {0}\n" \
                                                         "\tFile: {1}\n"\
@@ -43,13 +45,44 @@ SOFTWARE.
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
                                                         __builtin_trap(); }
 
+#else
+
+#define GM_ASSERT(cond)
+
+#endif
+
+
+
+#define GM_VERIFY(cond) if (!(cond)) { spdlog::critical("Verification Failed:\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __builtin_trap(); }
+
+
 #define GM_LOG_INFO(message...) spdlog::info(message)
 #define GM_LOG_WARNING(message...) spdlog::warn(message)
 #define GM_LOG_DEBUG(message...) spdlog::debug(message)
 #define GM_LOG_CRITICAL(message...) spdlog::critical(message)
 #elif defined(GM_WINDOWS)
 
+#if defined(GM_DEBUG)
+
 #define GM_ASSERT(cond) if (!(cond)) { spdlog::critical("Assertion Failed:\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __debugbreak(); }
+
+#else
+
+#define GM_ASSERT(cond)
+
+#endif
+
+#define GM_VERIFY(cond) if (!(cond)) { spdlog::critical("Verification Failed:\n" \
                                                         "\tCondition: {0}\n" \
                                                         "\tFile: {1}\n"\
                                                         "\tFunction: {2}\n"\
