@@ -29,6 +29,7 @@ SOFTWARE.
 #include <Guacamole/core/renderpass.h>
 #include <Guacamole/core/pipeline.h>
 #include <Guacamole/core/descriptor.h>
+#include <Guacamole/core/shader.h>
 #include <glm/glm.hpp>
 
 using namespace Guacamole;
@@ -54,7 +55,11 @@ int main() {
 
     Swapchain::Init(&window);
 
+
     {
+        Shader vert("res/shader.vert", true, ShaderStage::Vertex);
+        Shader frag("res/shader.frag", true, ShaderStage::Fragment);
+
         BasicRenderpass pass;
 
         DescriptorPool pool(10);
@@ -70,7 +75,10 @@ int main() {
         gInfo.VertexInputAttributes.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2)});
         gInfo.PipelineLayout = &pipelineLayout;
         gInfo.Renderpass = &pass;
+        gInfo.VertexShader = &vert;
+        gInfo.FragmentShader = &frag;
         
+        GraphicsPipeline gPipeline(gInfo);
 
         while (!window.ShouldClose()) {
             glfwPollEvents();

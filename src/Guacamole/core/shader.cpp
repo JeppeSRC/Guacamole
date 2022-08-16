@@ -24,17 +24,50 @@ SOFTWARE.
 
 #include <Guacamole.h>
 #include <Guacamole/util/util.h>
+
+#undef min
+
+#include <spirv_cross/spirv_glsl.hpp>
+#include <shaderc/shaderc.hpp>
 #include "shader.h"
 #include "context.h"
 
+
 namespace Guacamole {
 
-Shader::Shader(const std::string& file, bool src) : ModuleHandle(VK_NULL_HANDLE) {
+static shaderc_shader_kind ShaderStageToShaderC(ShaderStage stage) {
+    switch (stage) {
+        case ShaderStage::Vertex:
+            return shaderc_vertex_shader;
+        case ShaderStage::Fragment:
+            return shaderc_fragment_shader;
+        case ShaderStage::Geometry:
+            return shaderc_geometry_shader;
+        case ShaderStage::Compute:
+            return shaderc_compute_shader;
+    }
+
+    GM_VERIFY(false);
+
+    return shaderc_glsl_infer_from_source; // Should never be reached
+}
+
+Shader::Shader(const std::string& file, bool src, ShaderStage stage) : ModuleHandle(VK_NULL_HANDLE), IsSource(src), File(file), Stage(stage) {
+    Reload();
+}
+
+Shader::~Shader() {
+    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
+}
+
+void Shader::Reload(bool reCompile) {
+    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
+
     uint64_t size;
-    void* data = Util::ReadFile(file, size);
+    char* data = (char*)Util::ReadFile(File, size);
 
     if (data == nullptr) {
-        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", file.c_str());
+        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", File.c_str());
         return;
     }
 
@@ -44,14 +77,37 @@ Shader::Shader(const std::string& file, bool src) : ModuleHandle(VK_NULL_HANDLE)
     mInfo.pNext = nullptr;
     mInfo.flags = 0;
 
-    if (src) {
-        //TODO
+    if (IsSource) {
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        options.SetGenerateDebugInfo();
+
+        shaderc::CompilationResult result = compiler.CompileGlslToSpv(data, size, ShaderStageToShaderC(Stage), File.c_str(), options);
+
+        if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+            GM_LOG_CRITICAL(result.GetErrorMessage());
+            GM_VERIFY(false);
+        }
+
+        std::vector<uint32_t> spirv(result.begin(), result.end());
+
+        delete[] data;
+
+        data = new char[spirv.size() * 4];
+        memcpy(data, spirv.data(), spirv.size() * 4);
+
+        mInfo.codeSize = spirv.size() * 4;
+        mInfo.pCode = (uint32_t*)data;
+
     } else {
         if (size & 0x03) {
-            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", file.c_str());
+            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", File.c_str());
 
             uint64_t newSize = (size & ~0x03) + 4;
-            uint8_t* newData = new uint8_t[newSize];
+            char* newData = new char[newSize];
 
             memcpy(newData, data, size);
 
@@ -67,11 +123,11 @@ Shader::Shader(const std::string& file, bool src) : ModuleHandle(VK_NULL_HANDLE)
 
     VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &ModuleHandle));
 
+    spirv_cross::Compiler compiler(mInfo.pCode, mInfo.codeSize / 4);
+
+
+
     delete[] data;
 }
-
-Shader::~Shader() {
-    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
-}
-
-}
+    
+    }

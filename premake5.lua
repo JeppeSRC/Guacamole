@@ -120,4 +120,27 @@ project "Guacamole"
         "GLFW"
     }
 
+    filter {"debug", "system:windows"}
+
+        links {
+            "spirv-cross-cored",
+            "spirv-cross-glsld",
+            "shaderc_sharedd"
+        }
+
+    filter {"release", "system:windows"}
+        links {
+            "spirv-cross-core",
+            "spirv-cross-glsl",
+            "shaderc_shared"
+        }
+
+    filter {"system:linux"}
+        links {
+            "spirv-cross-core",
+            "spirv-cross-glsl",
+            "shaderc_shared"
+        }
+        
+
     

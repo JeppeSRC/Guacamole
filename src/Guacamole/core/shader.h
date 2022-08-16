@@ -28,15 +28,29 @@ SOFTWARE.
 
 namespace Guacamole {
 
+enum class ShaderStage {
+    Vertex,
+    Fragment,
+    Geometry,
+    Compute,
+};
+
 class Shader {
 public:
-    Shader(const std::string& file, bool src);
+    Shader(const std::string& file, bool src, ShaderStage stage);
     ~Shader();
+
+    void Reload(bool reCompile = false);
 
     inline VkShaderModule GetHandle() const { return ModuleHandle; }
 
 private:
     VkShaderModule ModuleHandle;
+
+    ShaderStage Stage;
+    bool IsSource;
+    std::string File;
+
 };
 
 }
