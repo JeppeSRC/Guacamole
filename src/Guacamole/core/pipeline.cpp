@@ -86,7 +86,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     viewPort.x = 0;
     viewPort.y = 0;
     viewPort.minDepth = 0.001f;
-    viewPort.maxDepth = 100.0f;
+    viewPort.maxDepth = 1.0f;
 
     vsInfo.pViewports = &viewPort;
     vsInfo.scissorCount = 1;
