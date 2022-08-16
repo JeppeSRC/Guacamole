@@ -87,7 +87,8 @@ project "Guacamole"
         
         defines {
             "GM_WINDOWS",
-            "VK_USE_PLATFORM_WIN32_KHR"
+            "VK_USE_PLATFORM_WIN32_KHR",
+            "_CRT_SECURE_NO_WARNINGS"
         }
         
         links {
