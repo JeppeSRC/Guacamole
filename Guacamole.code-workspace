@@ -14,6 +14,9 @@
             "libs/glfw/include",
             "libs/spdlog/include",
             "src"
+        ],
+        "C_Cpp.default.defines": [
+            "GM_LINUX",
         ]
     }
 }
