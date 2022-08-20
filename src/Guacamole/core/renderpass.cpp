@@ -31,13 +31,13 @@ SOFTWARE.
 namespace Guacamole {
 
 Renderpass::~Renderpass() {
-    vkDestroyRenderPass(Context::GetDeviceHandle(), Handle, nullptr);
+    vkDestroyRenderPass(Context::GetDeviceHandle(), RenderpassHandle, nullptr);
 }
 
 void Renderpass::Create(VkRenderPassCreateInfo* rInfo) {
     GM_ASSERT(rInfo)
 
-    VK(vkCreateRenderPass(Context::GetDeviceHandle(), rInfo, nullptr, &Handle));
+    VK(vkCreateRenderPass(Context::GetDeviceHandle(), rInfo, nullptr, &RenderpassHandle));
 }
 
 BasicRenderpass::BasicRenderpass() {
@@ -92,7 +92,7 @@ BasicRenderpass::BasicRenderpass() {
     fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     fbInfo.pNext = nullptr;
     fbInfo.flags = 0;
-    fbInfo.renderPass = Handle;
+    fbInfo.renderPass = RenderpassHandle;
     fbInfo.attachmentCount = 1;
     //fbInfo.pAttachments = nullptr;
     fbInfo.width = Swapchain::GetExtent().width;
@@ -110,13 +110,32 @@ BasicRenderpass::BasicRenderpass() {
         Framebuffers.push_back(fb);
     }
 
-
+    BeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    BeginInfo.pNext = nullptr;
+    BeginInfo.renderPass = RenderpassHandle;
+    BeginInfo.renderArea.extent = Swapchain::GetExtent();
+    BeginInfo.renderArea.offset.x = 0;
+    BeginInfo.renderArea.offset.y = 0;
 }
 
 BasicRenderpass::~BasicRenderpass() {
     for (VkFramebuffer fb : Framebuffers) {
         vkDestroyFramebuffer(Context::GetDeviceHandle(), fb, nullptr);
     }
+}
+
+void BasicRenderpass::Begin(CommandBuffer* cmd) {
+    VkClearValue clear = {};
+
+    BeginInfo.framebuffer = GetFramebufferHandle(Swapchain::GetCurrentImageIndex());
+    BeginInfo.clearValueCount = 1;
+    BeginInfo.pClearValues = &clear;
+    
+    vkCmdBeginRenderPass(cmd->GetHandle(), &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void BasicRenderpass::End(CommandBuffer* cmd) {
+    vkCmdEndRenderPass(cmd->GetHandle());
 }
 
 VkFramebuffer BasicRenderpass::GetFramebufferHandle(uint32_t index) const {

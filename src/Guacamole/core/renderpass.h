@@ -25,18 +25,22 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-
+#include "commandbuffer.h"
 
 namespace Guacamole {
 
 class Renderpass {
 public:
-    VkRenderPass GetHandle() const { return Handle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-
     virtual ~Renderpass();
+
+    VkRenderPass GetHandle() const { return RenderpassHandle; }
+    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
+    virtual void Begin(CommandBuffer* cmd) = 0;
+    virtual void End(CommandBuffer* cmd) = 0;
+
 protected:
-    VkRenderPass Handle;
+    VkRenderPass RenderpassHandle;
+    VkRenderPassBeginInfo BeginInfo;
 
     void Create(VkRenderPassCreateInfo* rInfo);
 private:
@@ -49,6 +53,9 @@ private:
 public:
     BasicRenderpass();
     ~BasicRenderpass();
+
+    void Begin(CommandBuffer* cmd) override;
+    void End(CommandBuffer* cmd) override;
 
     VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
 };
