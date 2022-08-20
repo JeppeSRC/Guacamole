@@ -66,7 +66,7 @@ DescriptorSetLayout::~DescriptorSetLayout() {
 }
 
 
-DescriptorPool::DescriptorPool(uint32_t maxSets) : RemainingSets(maxSets) {
+DescriptorPool::DescriptorPool(uint32_t maxSets) {
     VkDescriptorPoolCreateInfo pInfo;
 
     pInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -84,8 +84,15 @@ DescriptorPool::~DescriptorPool() {
 }
 
 DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
-    GM_ASSERT(RemainingSets > 0);
+    DescriptorSet** sets = AllocateDescriptorSets(layout, 1);
+    DescriptorSet* ret = *sets;
 
+    delete[] sets;
+
+    return ret;
+}
+
+DescriptorSet** DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
     VkDescriptorSetLayout tmp = layout->GetHandle();
 
     VkDescriptorSetAllocateInfo aInfo;
@@ -93,14 +100,21 @@ DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout
     aInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     aInfo.pNext = nullptr;
     aInfo.descriptorPool = PoolHandle;
-    aInfo.descriptorSetCount = 1;
+    aInfo.descriptorSetCount = num;
     aInfo.pSetLayouts = &tmp;
 
-    VkDescriptorSet set;
+    VkDescriptorSet* set = new VkDescriptorSet[num];
+    DescriptorSet** sets = new DescriptorSet*[num];
 
-    VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, &set));
+    VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, set));
 
-    return new DescriptorSet(set, layout);
+    for (uint32_t i = 0; i < num; i++) {
+        sets[i] = new DescriptorSet(set[i], layout);
+    }
+
+    delete[] set;
+
+    return sets;
 }
 
 

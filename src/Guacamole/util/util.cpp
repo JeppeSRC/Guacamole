@@ -73,5 +73,61 @@ uint8_t* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
     return data;
 }
 
+VkFormat SPIRTypeToVkFormat(spirv_cross::SPIRType type) {
+
+    using namespace spirv_cross;
+
+    if (type.basetype == SPIRType::Float) {
+        GM_VERIFY(type.width == 32);
+
+        if (type.columns == 1) {
+            switch (type.vecsize) {
+                case 1:
+                    return VK_FORMAT_R32_SFLOAT;
+                case 2:
+                    return VK_FORMAT_R32G32_SFLOAT;
+                case 3:
+                    return VK_FORMAT_R32G32B32_SFLOAT;
+                case 4:
+                    return VK_FORMAT_R32G32B32A32_SFLOAT;
+            }
+        }
+    } else if (type.basetype == SPIRType::Int) {
+        GM_VERIFY(type.width == 32);
+
+        if (type.columns == 1) {
+            switch (type.vecsize) {
+                case 1:
+                    return VK_FORMAT_R32_SINT;
+                case 2:
+                    return VK_FORMAT_R32G32_SINT;
+                case 3:
+                    return VK_FORMAT_R32G32B32_SINT;
+                case 4:
+                    return VK_FORMAT_R32G32B32A32_SINT;
+            }
+        }
+    } else if (type.basetype == SPIRType::UInt) {
+        GM_VERIFY(type.width == 32);
+
+        if (type.columns == 1) {
+            switch (type.vecsize) {
+                case 1:
+                    return VK_FORMAT_R32_UINT;
+                case 2:
+                    return VK_FORMAT_R32G32_UINT;
+                case 3:
+                    return VK_FORMAT_R32G32B32_UINT;
+                case 4:
+                    return VK_FORMAT_R32G32B32A32_UINT;
+            }
+        }
+    }
+
+    GM_VERIFY(false);
+
+    return VK_FORMAT_UNDEFINED;
+}
+
 }
 }

@@ -63,11 +63,11 @@ public:
     ~DescriptorPool();
 
     DescriptorSet* AllocateDescriptorSet(DescriptorSetLayout* layout);
+    DescriptorSet** AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
 
     inline VkDescriptorPool GetHandle() const { return PoolHandle; }
 
 private:
-    uint32_t RemainingSets;
     VkDescriptorPool PoolHandle;
 };
 

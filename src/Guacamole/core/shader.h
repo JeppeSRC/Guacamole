@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include "descriptor.h"
+
 namespace Guacamole {
 
 enum class ShaderStage {
@@ -41,6 +43,9 @@ public:
     ~Shader();
 
     void Reload(bool reCompile = false);
+    std::vector<VkVertexInputAttributeDescription> GetVertexInputLayout(std::vector<std::pair<uint32_t, std::vector<uint32_t>>> locations) const;
+    DescriptorSetLayout* GetDescriptorSetLayout(uint32_t set) const;
+    DescriptorSet** AllocateDescriptorSets(uint32_t set, uint32_t num);
 
     inline VkShaderModule GetHandle() const { return ModuleHandle; }
 
@@ -50,6 +55,44 @@ private:
     ShaderStage Stage;
     bool IsSource;
     std::string File;
+
+    struct StageInput {
+        StageInput(uint8_t location, spirv_cross::SPIRType type) : Location(location), Type(type) {}
+
+        uint8_t Location;
+        spirv_cross::SPIRType Type;
+    };
+
+    struct UniformBuffer {
+        UniformBuffer() {}
+        UniformBuffer(uint32_t set, uint32_t binding, uint32_t size, std::vector<spirv_cross::SPIRType> members) : 
+            Set(set), Binding(binding), Size(size), Members(members) {}
+
+        uint32_t Set;
+        uint32_t Binding;
+        uint32_t Size;
+        std::vector<spirv_cross::SPIRType> Members;
+    };
+
+    struct SampledImage {
+        SampledImage(uint32_t set, uint32_t binding, uint32_t arrayCount, spirv_cross::SPIRType::ImageType image) : 
+            Set(set), Binding(binding), ArrayCount(arrayCount), Image(image) {}
+
+        uint32_t Set;
+        uint32_t Binding;
+        uint32_t ArrayCount;
+        spirv_cross::SPIRType::ImageType Image;
+    };
+
+    std::vector<StageInput> StageInputs;
+    std::vector<UniformBuffer> UniformBuffers;
+    std::vector<SampledImage> SampledImages;
+
+    std::vector<std::pair<uint32_t, DescriptorSetLayout*>> DescriptorSetLayouts;
+    std::vector<DescriptorPool*> DescriptorPools;
+
+private:
+    void CreateDescriptorSetLayouts();
 
 };
 

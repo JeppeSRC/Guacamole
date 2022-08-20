@@ -27,10 +27,15 @@ SOFTWARE.
 #include <Guacamole.h>
 #include <filesystem>
 
+#undef min
+
+#include <spirv_cross/spirv_glsl.hpp>
+
 namespace Guacamole { namespace Util {
 
 const char* vkEnumToString(VkPhysicalDeviceType type);
 uint8_t* ReadFile(const std::filesystem::path& file, uint64_t& fileSize);
+VkFormat SPIRTypeToVkFormat(spirv_cross::SPIRType type);
 
 }
 }
