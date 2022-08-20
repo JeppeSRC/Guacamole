@@ -25,6 +25,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 #include "commandbuffer.h"
+#include "context.h"
 
 namespace Guacamole {
 
@@ -49,6 +50,48 @@ void CommandBuffer::End() {
 
 CommandBuffer::~CommandBuffer() {
 
+CommandPool::CommandPool() {
+    VkCommandPoolCreateInfo info;
+
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.pNext = nullptr;
+    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    info.queueFamilyIndex = Context::GetPhysicalDevice()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+
+    VK(vkCreateCommandPool(Context::GetDeviceHandle(), &info, nullptr, &CommandPoolHandle));
 }
+
+CommandPool::~CommandPool() {
+    vkDestroyCommandPool(Context::GetDeviceHandle(), CommandPoolHandle, nullptr);
+}
+
+void CommandPool::Reset() const {
+    VK(vkResetCommandPool(Context::GetDeviceHandle(), CommandPoolHandle, 0));
+}
+
+std::vector<CommandBuffer*> CommandPool::AllocateCommandBuffers(uint32_t num, bool primary) const {
+    VkCommandBufferAllocateInfo info;
+
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    info.pNext = nullptr;
+    info.level = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    info.commandBufferCount = num;
+    info.commandPool = CommandPoolHandle;
+
+    VkCommandBuffer* buffers = new VkCommandBuffer[num];
+
+    VK(vkAllocateCommandBuffers(Context::GetDeviceHandle(), &info, buffers));
+
+    std::vector<CommandBuffer*> result;
+
+    for (uint32_t i = 0; i < num; i++) {
+        result.push_back(new CommandBuffer(buffers[i]));
+    }
+
+    delete[] buffers;
+
+    return result;
+}
+
 
 }

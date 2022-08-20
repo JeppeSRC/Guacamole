@@ -41,6 +41,17 @@ private:
     VkCommandBuffer CommandBufferHandle;
 
 
+class CommandPool {
+public:
+    CommandPool();
+    ~CommandPool();
+
+    void Reset() const;
+    std::vector<CommandBuffer*> AllocateCommandBuffers(uint32_t num, bool primary) const;
+
+    inline VkCommandPool GetHandle() const { return CommandPoolHandle; }
+private:
+    VkCommandPool CommandPoolHandle;
 };
 
 }
