@@ -39,22 +39,45 @@ enum class ShaderStage {
 
 class Shader {
 public:
-    Shader(const std::string& file, bool src, ShaderStage stage);
+    class ShaderModule {
+    public:
+        ShaderModule(const std::string& file, bool src, ShaderStage stage);
+        ~ShaderModule();
+
+        void Reload(bool reCompile = false);
+
+        inline VkShaderModule GetHandle() const { return ModuleHandle; }
+        inline ShaderStage GetStage() const { return Stage; }
+
+    private:
+        VkShaderModule ModuleHandle;
+
+        ShaderStage Stage;
+        bool IsSource;
+        std::string File;
+
+        uint32_t ShaderSourceSize;
+        uint32_t* ShaderSource;
+
+        friend class Shader;
+    };
+
+public:
+    Shader();
     ~Shader();
 
     void Reload(bool reCompile = false);
+    void AddModule(const std::string& file, bool src, ShaderStage stage);
+    void Compile();
+
+    VkShaderModule GetHandle(ShaderStage stage) const;
+
     std::vector<VkVertexInputAttributeDescription> GetVertexInputLayout(std::vector<std::pair<uint32_t, std::vector<uint32_t>>> locations) const;
     DescriptorSetLayout* GetDescriptorSetLayout(uint32_t set) const;
     DescriptorSet** AllocateDescriptorSets(uint32_t set, uint32_t num);
 
-    inline VkShaderModule GetHandle() const { return ModuleHandle; }
-
 private:
-    VkShaderModule ModuleHandle;
-
-    ShaderStage Stage;
-    bool IsSource;
-    std::string File;
+    std::vector<ShaderModule> Modules;
 
     struct StageInput {
         StageInput(uint8_t location, spirv_cross::SPIRType type) : Location(location), Type(type) {}
@@ -64,10 +87,10 @@ private:
     };
 
     struct UniformBuffer {
-        UniformBuffer() {}
-        UniformBuffer(uint32_t set, uint32_t binding, uint32_t size, std::vector<spirv_cross::SPIRType> members) : 
-            Set(set), Binding(binding), Size(size), Members(members) {}
+        UniformBuffer(ShaderStage stage, uint32_t set, uint32_t binding, uint32_t size, std::vector<spirv_cross::SPIRType> members) :
+            Stage(stage), Set(set), Binding(binding), Size(size), Members(members) {}
 
+        ShaderStage Stage;
         uint32_t Set;
         uint32_t Binding;
         uint32_t Size;
@@ -75,9 +98,10 @@ private:
     };
 
     struct SampledImage {
-        SampledImage(uint32_t set, uint32_t binding, uint32_t arrayCount, spirv_cross::SPIRType::ImageType image) : 
-            Set(set), Binding(binding), ArrayCount(arrayCount), Image(image) {}
+        SampledImage(ShaderStage stage, uint32_t set, uint32_t binding, uint32_t arrayCount, spirv_cross::SPIRType::ImageType image) :
+            Stage(stage), Set(set), Binding(binding), ArrayCount(arrayCount), Image(image) {}
 
+        ShaderStage Stage;
         uint32_t Set;
         uint32_t Binding;
         uint32_t ArrayCount;
@@ -92,8 +116,8 @@ private:
     std::vector<DescriptorPool*> DescriptorPools;
 
 private:
+    void ReflectStages();
     void CreateDescriptorSetLayouts();
-
 };
 
 }

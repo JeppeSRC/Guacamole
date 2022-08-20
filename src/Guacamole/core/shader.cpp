@@ -66,22 +66,19 @@ static VkShaderStageFlags ShaderStageToVkShaderStage(ShaderStage stage) {
     return VK_SHADER_STAGE_ALL_GRAPHICS; // Should never be reached
 }
 
-Shader::Shader(const std::string& file, bool src, ShaderStage stage) : ModuleHandle(VK_NULL_HANDLE), IsSource(src), File(file), Stage(stage) {
-    Reload();
+Shader::ShaderModule::ShaderModule(const std::string& file, bool src, ShaderStage stage) 
+    : ModuleHandle(VK_NULL_HANDLE), IsSource(src), File(file), Stage(stage), ShaderSource(nullptr), ShaderSourceSize(0) {
 }
 
-Shader::~Shader() {
+Shader::ShaderModule::~ShaderModule() {
     vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
 
-    for (auto& [set, layout] : DescriptorSetLayouts)
-        delete layout;
-
-    for (DescriptorPool* pool : DescriptorPools)
-        delete pool;
+    delete ShaderSource;
 }
 
-void Shader::Reload(bool reCompile) {
+void Shader::ShaderModule::Reload(bool reCompile) {
     vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
+    delete ShaderSource;
 
     uint64_t size;
     char* data = (char*)Util::ReadFile(File, size);
@@ -143,71 +140,61 @@ void Shader::Reload(bool reCompile) {
 
     VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &ModuleHandle));
 
-    spirv_cross::Compiler compiler(mInfo.pCode, mInfo.codeSize / 4);
+    ShaderSourceSize = mInfo.codeSize;
+    ShaderSource = (uint32_t*)mInfo.pCode;
+}
 
-    spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-
-    GM_LOG_DEBUG("Shader reflection");
-
-    GM_LOG_DEBUG("Stage Inputs: ");
-
-    for (auto& input : resources.stage_inputs) {
-        GM_LOG_DEBUG("\tName: {0} ", input.name.c_str());
-
-        uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
-        spirv_cross::SPIRType type = compiler.get_type(input.type_id);
-
-        StageInputs.emplace_back(location, type);
-    }
-
-    GM_LOG_DEBUG("Stage Outputs: ");
-
-    for (auto& output : resources.stage_outputs) {
-        GM_LOG_DEBUG("\tName: {0} ", output.name.c_str());
-    }
-
-    GM_LOG_DEBUG("Uniform Buffers: ");
-
-    for (auto& uniform : resources.uniform_buffers) {
-        GM_LOG_DEBUG("\tName: {0} ", uniform.name.c_str());
-
-        uint32_t set = compiler.get_decoration(uniform.id, spv::DecorationDescriptorSet);
-        uint32_t binding = compiler.get_decoration(uniform.id, spv::DecorationBinding);
-        spirv_cross::SPIRType type = compiler.get_type(uniform.type_id);
-
-        GM_VERIFY(type.basetype == spirv_cross::SPIRType::Struct);
-
-        UniformBuffer buf;
-
-        buf.Set = set;
-        buf.Binding = binding;
-
-        for (spirv_cross::TypeID id : type.member_types) {
-            spirv_cross::SPIRType memberType = compiler.get_type(id);
-
-            buf.Members.push_back(memberType);
-        }
-
-        UniformBuffers.push_back(buf);
-    }
-
-    GM_LOG_DEBUG("Sampled Images: ");
+Shader::Shader() {
     
-    for (auto& image : resources.sampled_images) {
-        GM_LOG_DEBUG("\tName: {0} ", image.name.c_str());
+}
 
-        uint32_t set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
-        uint32_t binding = compiler.get_decoration(image.id, spv::DecorationBinding);
-        spirv_cross::SPIRType type = compiler.get_type(image.type_id);
-        uint32_t count = type.array.empty() ? 0 : type.array[0];
+Shader::~Shader() {
+    for (auto& [set, layout] : DescriptorSetLayouts)
+        delete layout;
 
+    for (DescriptorPool* pool : DescriptorPools)
+        delete pool;
+}
 
-        SampledImages.emplace_back(set, binding, count, type.image);
+void Shader::Reload(bool reCompile) {
+    for (ShaderModule& shader : Modules) {
+        shader.Reload(reCompile);
     }
 
-    delete[] data;
+    for (auto& [set, layout] : DescriptorSetLayouts)
+        delete layout;
 
+    for (DescriptorPool* pool : DescriptorPools)
+        delete pool;
+
+    DescriptorSetLayouts.clear();
+
+    ReflectStages();
     CreateDescriptorSetLayouts();
+
+}
+
+void Shader::AddModule(const std::string& file, bool src, ShaderStage stage) {
+    for (ShaderModule& shader : Modules) {
+        GM_VERIFY(shader.Stage != stage);
+    }
+
+    Modules.emplace_back(file, src, stage);
+}
+
+void Shader::Compile() {
+    for (ShaderModule& shader : Modules) {
+        shader.Reload(false);
+    }
+
+    ReflectStages();
+    CreateDescriptorSetLayouts();
+}
+
+VkShaderModule Shader::GetHandle(ShaderStage stage) const {
+    for (const ShaderModule& shader : Modules) {
+        if (shader.Stage == stage) return shader.ModuleHandle;
+    }
 }
 
 std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std::vector<std::pair<uint32_t, std::vector<uint32_t>>> locations) const {
@@ -267,8 +254,53 @@ DescriptorSet** Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
     return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
 }
 
-void Shader::CreateDescriptorSetLayouts() {
+void Shader::ReflectStages() {
     
+    for (ShaderModule& shader : Modules) {
+        spirv_cross::Compiler compiler(shader.ShaderSource, shader.ShaderSourceSize / 4);
+        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+        
+        for (auto& input : resources.stage_inputs) {
+            uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
+            spirv_cross::SPIRType type = compiler.get_type(input.type_id);
+
+            StageInputs.emplace_back(location, type);
+        }
+
+        for (auto& uniform : resources.uniform_buffers) {
+            uint32_t set = compiler.get_decoration(uniform.id, spv::DecorationDescriptorSet);
+            uint32_t binding = compiler.get_decoration(uniform.id, spv::DecorationBinding);
+            spirv_cross::SPIRType type = compiler.get_type(uniform.type_id);
+
+            GM_VERIFY(type.basetype == spirv_cross::SPIRType::Struct);
+
+            uint32_t size = (uint32_t)compiler.get_declared_struct_size(type);
+
+            std::vector<spirv_cross::SPIRType> members;
+
+            for (spirv_cross::TypeID id : type.member_types) {
+                spirv_cross::SPIRType memberType = compiler.get_type(id);
+
+                members.push_back(memberType);
+            }
+
+            UniformBuffers.emplace_back(shader.Stage, set, binding, size, std::move(members));
+        }
+
+        for (auto& image : resources.sampled_images) {
+            uint32_t set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
+            uint32_t binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+            spirv_cross::SPIRType type = compiler.get_type(image.type_id);
+            uint32_t count = type.array.empty() ? 0 : type.array[0];
+
+
+            SampledImages.emplace_back(shader.Stage, set, binding, count, type.image);
+        }
+    }
+}
+
+void Shader::CreateDescriptorSetLayouts() {
+
     std::vector<std::pair<uint32_t, std::vector<VkDescriptorSetLayoutBinding>>> Sets;
     VkDescriptorSetLayoutBinding binding;
 
@@ -285,12 +317,11 @@ void Shader::CreateDescriptorSetLayouts() {
         Sets.emplace_back(set, std::move(tmp));
     };
 
-
-    binding.stageFlags = ShaderStageToVkShaderStage(Stage);
     binding.pImmutableSamplers = nullptr;
     binding.descriptorCount = 1;
 
     for (UniformBuffer& buf : UniformBuffers) {
+        binding.stageFlags = ShaderStageToVkShaderStage(buf.Stage);
         binding.binding = buf.Binding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
@@ -298,11 +329,16 @@ void Shader::CreateDescriptorSetLayouts() {
     }
 
     for (SampledImage& img : SampledImages) {
+        binding.stageFlags = ShaderStageToVkShaderStage(img.Stage);
         binding.binding = img.Binding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         binding.descriptorCount = img.ArrayCount;
 
         AddBindingToSet(img.Set);
+    }
+
+    if (Sets.empty()) {
+        DescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
     }
 
     for (auto& [set, bindings] : Sets) {

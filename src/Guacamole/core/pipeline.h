@@ -40,7 +40,6 @@ public:
 protected:
     VkPipeline PipelineHandle;
 
-
 };
 
 struct GraphicsPipelineInfo {
@@ -51,9 +50,8 @@ struct GraphicsPipelineInfo {
     std::vector<VkVertexInputAttributeDescription> VertexInputAttributes;
     PipelineLayout* PipelineLayout;
     Renderpass* Renderpass;
-
-    Shader* VertexShader;
-    Shader* FragmentShader;
+    
+    Shader* Shader;
 };
 
 class GraphicsPipeline : public Pipeline {
