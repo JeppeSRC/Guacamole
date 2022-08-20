@@ -129,6 +129,7 @@ void Context::Init() {
 
 
 void Context::Shutdown() {
+    delete AuxCmdBuffer;
     vkDestroyCommandPool(LogicalDevice->GetHandle(), CommandPool, nullptr);
     delete LogicalDevice;
     vkDestroyInstance(Instance, nullptr);

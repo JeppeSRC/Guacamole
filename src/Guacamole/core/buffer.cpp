@@ -131,7 +131,7 @@ void Buffer::StageCopy(bool immediate) {
     if (immediate) {
         CommandBuffer* cmd = Context::GetAuxCmdBuffer();
 
-        cmd->Begin();
+        cmd->Begin(true);
 
         VkBufferCopy copy;
 

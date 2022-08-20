@@ -33,13 +33,18 @@ public:
     CommandBuffer(VkCommandBuffer Handle);
     ~CommandBuffer();
 
-    void Begin();
-    void End();
+    void Reset() const;
+    void Begin(bool oneTimeSubmit) const;
+    void End() const;
+    void WaitForFence() const;
 
     inline VkCommandBuffer GetHandle() const { return CommandBufferHandle; }
+    inline VkFence GetFence() const { return FenceHandle; }
 private:
     VkCommandBuffer CommandBufferHandle;
+    VkFence FenceHandle;
 
+};
 
 class CommandPool {
 public:

@@ -30,25 +30,42 @@ SOFTWARE.
 namespace Guacamole {
 
 CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : CommandBufferHandle(Handle) {
+    VkFenceCreateInfo fInfo;
 
+    fInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fInfo.pNext = nullptr;
+    fInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VK(vkCreateFence(Context::GetDeviceHandle(), &fInfo, nullptr, &FenceHandle));
 }
 
-void CommandBuffer::Begin() {
+CommandBuffer::~CommandBuffer() {
+    vkDestroyFence(Context::GetDeviceHandle(), FenceHandle, nullptr);
+}
+
+
+void CommandBuffer::Reset() const {
+    VK(vkResetCommandBuffer(CommandBufferHandle, 0));
+}
+
+void CommandBuffer::Begin(bool oneTimeSubmit) const {
     VkCommandBufferBeginInfo bInfo;
 
     bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     bInfo.pNext = nullptr;
-    bInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    bInfo.flags = oneTimeSubmit ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
     bInfo.pInheritanceInfo = nullptr;
-
+    
     VK(vkBeginCommandBuffer(CommandBufferHandle, &bInfo));
 }
 
-void CommandBuffer::End() {
+void CommandBuffer::End() const {
     VK(vkEndCommandBuffer(CommandBufferHandle));
 }
 
-CommandBuffer::~CommandBuffer() {
+void CommandBuffer::WaitForFence() const {
+    VK(vkWaitForFences(Context::GetDeviceHandle(), 1, &FenceHandle, false, ~0));
+}
 
 CommandPool::CommandPool() {
     VkCommandPoolCreateInfo info;

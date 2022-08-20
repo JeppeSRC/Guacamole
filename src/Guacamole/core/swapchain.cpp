@@ -31,6 +31,12 @@ VkSwapchainCreateInfoKHR Swapchain::sInfo;
 VkSwapchainKHR Swapchain::SwapchainHandle;
 VkSurfaceKHR Swapchain::SurfaceHandle;
 VkQueue Swapchain::GraphicsQueue;
+uint32_t Swapchain::CurrentImageIndex = ~0;
+VkSemaphore Swapchain::ImageSemaphore;
+VkSemaphore Swapchain::SubmitSemaphore;
+std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> Swapchain::CommandPools;
+VkSubmitInfo Swapchain::SubmitInfo;
+VkPresentInfoKHR Swapchain::PresentInfo;
 std::vector<VkImage> Swapchain::SwapchainImages;
 std::vector<VkImageView> Swapchain::SwapchainImageViews;
 
@@ -50,6 +56,8 @@ void Swapchain::Init(Window* window) {
     VkSurfaceFormatKHR* surfaceFormats = new VkSurfaceFormatKHR[formatCount];
     VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), SurfaceHandle, &formatCount, surfaceFormats));
 
+
+    //TODO: fix
     sInfo.imageFormat = surfaceFormats[1].format;
     sInfo.imageColorSpace = surfaceFormats[1].colorSpace;
 
@@ -106,15 +114,108 @@ void Swapchain::Init(Window* window) {
         SwapchainImageViews.push_back(view);
     }
 
+    VkSemaphoreCreateInfo spInfo;
+
+    spInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    spInfo.pNext = nullptr;
+    spInfo.flags = 0;
+
+    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &ImageSemaphore));
+    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &SubmitSemaphore));
+
+     // Allocate one command pool per thread and imageCount buffers per pool
+    CommandPool* mainPool = new CommandPool();
+    CommandPools.emplace_back(mainPool, mainPool->AllocateCommandBuffers(imageCount, true));
+
+    // Preset constant values for VkSubmitInfo
+    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    SubmitInfo.pNext = nullptr;
+    SubmitInfo.waitSemaphoreCount = 1;
+    SubmitInfo.pWaitSemaphores = &ImageSemaphore;
+    SubmitInfo.pWaitDstStageMask = 0;
+    SubmitInfo.commandBufferCount = 1; // 1 for now
+    SubmitInfo.signalSemaphoreCount = 1;
+    SubmitInfo.pSignalSemaphores = &SubmitSemaphore;
+
+    // Preset constant values for VkPresentInfoKHR
+    PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    PresentInfo.pNext = nullptr;
+    PresentInfo.waitSemaphoreCount = 1;
+    PresentInfo.pWaitSemaphores = &SubmitSemaphore;
+    PresentInfo.swapchainCount = 1;
+    PresentInfo.pSwapchains = &SwapchainHandle;
+    
 }
 
 void Swapchain::Shutdown() {
+    WaitForAllCommandBufferFences();
+
+    vkDestroySemaphore(Context::GetDeviceHandle(), ImageSemaphore, nullptr);
+    vkDestroySemaphore(Context::GetDeviceHandle(), SubmitSemaphore, nullptr);
+
+    for (auto& [pool, cmds] : CommandPools) {
+        delete pool;
+
+        for (CommandBuffer* cmd : cmds)
+            delete cmd;
+    }
+
     for (VkImageView view : SwapchainImageViews) {
         vkDestroyImageView(Context::GetDeviceHandle(), view, nullptr);
     }
 
     vkDestroySwapchainKHR(Context::GetDeviceHandle(), SwapchainHandle, nullptr);
     vkDestroySurfaceKHR(Context::GetInstance(), SurfaceHandle, nullptr);
+}
+
+void Swapchain::Begin() {
+    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), SwapchainHandle, ~0, ImageSemaphore, VK_NULL_HANDLE, &CurrentImageIndex));
+
+    CommandBuffer* cmd = GetPrimaryCommandBuffer(0);
+    
+    cmd->WaitForFence();
+    cmd->Begin(true);
+}
+
+static VkPipelineStageFlags waitStages[]{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+void Swapchain::Present() {
+    CommandBuffer* cmd = GetPrimaryCommandBuffer(0);
+    VkCommandBuffer cmdHandle = cmd->GetHandle();
+    VkFence cmdFence = cmd->GetFence();
+
+    cmd->End();
+   
+    SubmitInfo.pCommandBuffers = &cmdHandle;
+    SubmitInfo.pWaitDstStageMask = waitStages;
+
+
+    VK(vkResetFences(Context::GetDeviceHandle(), 1, &cmdFence));
+    VK(vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, cmdFence));
+
+    VkResult result;
+
+    PresentInfo.pImageIndices = &CurrentImageIndex;
+    PresentInfo.pResults = &result;
+
+    VK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
+
+    CurrentImageIndex = ~0;
+}
+
+void Swapchain::WaitForAllCommandBufferFences() {
+    for (auto& [pool, cmds] : CommandPools) {
+        for (CommandBuffer* cmd : cmds) {
+            cmd->WaitForFence();
+        }
+    }
+}
+
+CommandBuffer* Swapchain::GetPrimaryCommandBuffer(uint32_t threadID) {
+    GM_ASSERT(threadID == 0);
+    GM_ASSERT(CurrentImageIndex != ~0);
+
+    return CommandPools[threadID].second[CurrentImageIndex];
 }
 
 }

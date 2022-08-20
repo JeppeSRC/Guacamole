@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 #include "Window.h"
+#include "commandbuffer.h"
 
 namespace Guacamole {
 
@@ -34,11 +35,18 @@ public:
     static void Init(Window* window);
     static void Shutdown();
 
+    static void Begin();
+    static void Present();
+    static void WaitForAllCommandBufferFences();
+
+    static CommandBuffer* GetPrimaryCommandBuffer(uint32_t threadID);
+
     static VkFormat GetFormat() { return sInfo.imageFormat; }
     static VkExtent2D GetExtent() { return sInfo.imageExtent; }
     static VkQueue GetGraphicsQueue() { return GraphicsQueue; }
 
     static std::vector<VkImageView> GetImageViews() { return SwapchainImageViews; }
+    static uint32_t GetCurrentImageIndex() { return CurrentImageIndex; }
 
 private:
     static VkSwapchainCreateInfoKHR sInfo;
@@ -47,6 +55,15 @@ private:
     static VkSurfaceKHR SurfaceHandle;
 
     static VkQueue GraphicsQueue;
+
+    static uint32_t CurrentImageIndex;
+    static VkSemaphore ImageSemaphore;
+    static VkSemaphore SubmitSemaphore;
+   
+    static std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> CommandPools;
+
+    static VkSubmitInfo SubmitInfo;
+    static VkPresentInfoKHR PresentInfo;
 
     static std::vector<VkImage> SwapchainImages;
     static std::vector<VkImageView> SwapchainImageViews;
