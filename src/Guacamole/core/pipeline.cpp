@@ -69,7 +69,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     iasInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     iasInfo.pNext = nullptr;
     iasInfo.flags = 0;
-    iasInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    iasInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
     iasInfo.primitiveRestartEnable = VK_FALSE;
 
     VkPipelineViewportStateCreateInfo vsInfo;

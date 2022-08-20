@@ -28,15 +28,17 @@ SOFTWARE.
 #include <Guacamole/core/swapchain.h>
 #include <Guacamole/core/renderpass.h>
 #include <Guacamole/core/pipeline.h>
+#include <Guacamole/core/buffer.h>
 #include <Guacamole/core/descriptor.h>
 #include <Guacamole/core/shader.h>
+#include <time.h>
 #include <glm/glm.hpp>
 
 using namespace Guacamole;
 
 struct Vertex {
     glm::vec3 Position;
-    glm::vec2 TexCoord;
+    glm::vec4 Color;
 };
 
 int main() {
@@ -55,15 +57,26 @@ int main() {
 
     Swapchain::Init(&window);
 
+    Vertex vertices[]{
+        {glm::vec3(-0.5, -0.5, 0), glm::vec4(1, 0, 0, 1)},
+        {glm::vec3( 0.5, -0.5, 0), glm::vec4(0, 1, 0, 1)},
+        {glm::vec3( 0.5,  0.5, 0), glm::vec4(0, 1, 1, 1)},
+        {glm::vec3(-0.5,  0.5, 0), glm::vec4(0, 0, 1, 1)}
+    };
+
+    uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
 
     {
+        Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices), vertices);
+        Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices), indices);
+
         Shader vert("res/shader.vert", true, ShaderStage::Vertex);
         Shader frag("res/shader.frag", true, ShaderStage::Fragment);
 
         BasicRenderpass pass;
 
         DescriptorPool pool(10);
-        DescriptorSetLayout descriptorLayout;
+        DescriptorSetLayout descriptorLayout;// = vert.GetDescriptorSetLayout(0);
         PipelineLayout pipelineLayout(&descriptorLayout);
 
         GraphicsPipelineInfo gInfo;
@@ -71,8 +84,7 @@ int main() {
         gInfo.Width = spec.Width;
         gInfo.Height = spec.Height;
         gInfo.VertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
-        gInfo.VertexInputAttributes.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
-        gInfo.VertexInputAttributes.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2)});
+        gInfo.VertexInputAttributes = vert.GetVertexInputLayout({ {0, {0, 1} } });
         gInfo.PipelineLayout = &pipelineLayout;
         gInfo.Renderpass = &pass;
         gInfo.VertexShader = &vert;
@@ -81,9 +93,42 @@ int main() {
         GraphicsPipeline gPipeline(gInfo);
 
         while (!window.ShouldClose()) {
+            auto start = std::chrono::high_resolution_clock::now();
+            Swapchain::Begin();
+            CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer(0);
+
+            VkCommandBuffer handle = cmd->GetHandle();
+
             glfwPollEvents();
+
+            vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, gPipeline.GetHandle());
+
+            pass.Begin(cmd);
+
+            VkBuffer vboHandle = vbo.GetHandle();
+            VkBuffer iboHandle = ibo.GetHandle();
+
+            VkDeviceSize offset = 0;
+
+            vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
+            vkCmdBindIndexBuffer(handle, iboHandle, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdDrawIndexed(handle, 6, 1, 0, 0, 0);
+
+            pass.End(cmd);
+
+
+            Swapchain::Present();
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
+            float ms = float(duration) / 1000.0f;
+
+            std::cout << "Frame Time: " << ms << "ms FPS: " << 1000.0f / ms << "\n";
         }
 
+        Swapchain::WaitForAllCommandBufferFences();
     }
 
     Swapchain::Shutdown();
