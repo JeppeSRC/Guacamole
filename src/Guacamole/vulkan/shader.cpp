@@ -302,7 +302,7 @@ void Shader::ReflectStages() {
             uint32_t set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
             uint32_t binding = compiler.get_decoration(image.id, spv::DecorationBinding);
             spirv_cross::SPIRType type = compiler.get_type(image.type_id);
-            uint32_t count = type.array.empty() ? 0 : type.array[0];
+            uint32_t count = type.array.empty() ? 1 : type.array[0];
 
 
             SampledImages.emplace_back(compiler.get_name(image.id), shader.Stage, set, binding, count, type.image);
