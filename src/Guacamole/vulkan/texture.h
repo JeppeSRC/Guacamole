@@ -24,11 +24,51 @@ SOFTWARE.
 
 #pragma once
 
+#include <Guacamole.h>
+
+#include "buffer.h"
+
 namespace Guacamole {
 
 class Texture {
+protected:
+    Texture();
 
+    void CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout);
+
+public:
+    virtual ~Texture();
+
+    void* Map();
+    void Unmap();
+    void WriteData(void* data, uint64_t size, uint64_t offset = 0);
+    void StageCopy(bool immediate);
+
+    inline uint32_t GetWidth() const { return ImageInfo.extent.width; }
+    inline uint32_t GetHeight() const { return ImageInfo.extent.height; }
+
+    inline VkImage GetImageHandle() const { return ImageHandle; }
+    inline VkImageView GetImageViewHandle() const { return ImageViewHandle; }
+protected:
+    VkImage ImageHandle;
+    VkDeviceMemory ImageMemory;
+    VkImageView ImageViewHandle;
+
+    VkImageCreateInfo ImageInfo;
+
+    uint32_t ImageMemorySize;
+    void* MappedMemory;
+
+    VkBuffer MappedBufferHandle;
+    VkDeviceMemory MappedBufferMemory;
 };
 
+class Texture2D : public Texture {
+public:
+    Texture2D(uint32_t width, uint32_t height, VkFormat format);
+
+private:
+    VkImageViewCreateInfo ImageViewInfo;
+};
 
 }
