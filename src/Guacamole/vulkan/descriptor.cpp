@@ -49,7 +49,8 @@ DescriptorSetLayout::DescriptorSetLayout() : DescriptorSetLayoutHandle(VK_NULL_H
     VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &DescriptorSetLayoutHandle));
 }
 
-DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings) : DescriptorSetLayoutHandle(VK_NULL_HANDLE) {
+DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout) 
+    : DescriptorSetLayoutHandle(VK_NULL_HANDLE), UniformLayout(uniformLayout) {
     VkDescriptorSetLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -63,6 +64,52 @@ DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayout
 
 DescriptorSetLayout::~DescriptorSetLayout() {
     vkDestroyDescriptorSetLayout(Context::GetDeviceHandle(), DescriptorSetLayoutHandle, nullptr);
+}
+
+const UniformBufferType* DescriptorSetLayout::GetUniformBuffer(uint32_t binding) const {
+    for (UniformBaseType* base : UniformLayout) {
+        if (base->Binding == binding) {
+            GM_ASSERT(base->Type == UniformType::Buffer);
+
+            return (UniformBufferType*)base;
+        }
+    }
+
+    GM_VERIFY(false);
+
+    return nullptr;
+}
+
+const UniformBufferType::Member* DescriptorSetLayout::GetUniformBufferMember(uint32_t binding, uint32_t memberIndex) const {
+    const UniformBufferType* buf = GetUniformBuffer(binding);
+
+    GM_ASSERT(memberIndex < buf->Members.size()) ;
+
+    return &buf->Members[memberIndex];
+}
+
+uint32_t DescriptorSetLayout::GetUniformBufferSize(uint32_t binding) const {
+    const UniformBufferType* buf = GetUniformBuffer(binding);
+
+    return buf->Size;
+}
+
+uint32_t DescriptorSetLayout::GetUniformBufferMemeberCount(uint32_t binding) const {
+    const UniformBufferType* buf = GetUniformBuffer(binding);
+
+    return buf->Members.size();
+}
+
+uint32_t DescriptorSetLayout::GetUniformBufferMemberSize(uint32_t binding, uint32_t memberIndex) const {
+    const UniformBufferType::Member* member = GetUniformBufferMember(binding, memberIndex);
+
+    return member->Size;
+}
+
+uint32_t DescriptorSetLayout::GetUniformBufferMemberOffset(uint32_t binding, uint32_t memberIndex) const {
+    const UniformBufferType::Member* member = GetUniformBufferMember(binding, memberIndex);
+
+    return member->Offset;
 }
 
 

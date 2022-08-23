@@ -122,7 +122,7 @@ void Buffer::Unmap() {
 void Buffer::WriteData(void* data, uint64_t size, uint64_t offset) {
     void* mem = Map();
 
-    memcpy((unsigned char*)mem + offset, data, size);
+    memcpy((uint8_t*)mem + offset, data, size);
 
     StageCopy(true);
 

@@ -48,6 +48,7 @@ public:
     bool GetDevicePresentationSupport() const;
     bool GetQueuePresentationSupport(uint32_t queueIndex) const;
     bool IsExtensionSupported(const char* extension) const;
+    bool CheckImageFormat(VkFormat format, VkImageType imageType, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* prop) const;
 
     void PrintDeviceInfo(bool withExtensions) const;
 

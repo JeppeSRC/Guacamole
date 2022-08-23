@@ -122,7 +122,25 @@ bool PhysicalDevice::IsExtensionSupported(const char* extension) const {
     }
 
     return false;
-} 
+}
+bool PhysicalDevice::CheckImageFormat(VkFormat format, VkImageType imageType, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* prop) const {
+    GM_ASSERT(prop != nullptr);
+
+    VkImageFormatProperties imageProperties;
+    VkResult result = vkGetPhysicalDeviceImageFormatProperties(DeviceHandle, format, imageType, tiling, usage, 0, prop);
+
+    if (result == VK_SUCCESS) return true;
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+        return false;
+    }
+
+    VK(result);
+    GM_VERIFY(result == VK_SUCCESS);
+
+    return false;
+}
+
 
 void PhysicalDevice::PrintDeviceInfo(bool withExtensions) const {
     GM_LOG_DEBUG("Physical Device ({4}): {5} {0} {1}.{2}.{3}", 

@@ -276,15 +276,26 @@ void Shader::ReflectStages() {
 
             uint32_t size = (uint32_t)compiler.get_declared_struct_size(type);
 
-            std::vector<spirv_cross::SPIRType> members;
+            std::vector<UniformBufferType::Member> members;
 
+            uint32_t index = 0;
+            uint32_t offset = 0;
             for (spirv_cross::TypeID id : type.member_types) {
                 spirv_cross::SPIRType memberType = compiler.get_type(id);
+                UniformBufferType::Member member;
 
-                members.push_back(memberType);
+                uint32_t memberSize = compiler.get_declared_struct_member_size(type, index++);
+
+                member.Name = compiler.get_name(id);
+                member.Size = memberSize;
+                member.Offset = offset;
+
+                offset += member.Size;
+
+                members.push_back(member);
             }
 
-            UniformBuffers.emplace_back(shader.Stage, set, binding, size, std::move(members));
+            UniformBuffers.emplace_back(compiler.get_name(uniform.id), shader.Stage, set, binding, size, std::move(members));
         }
 
         for (auto& image : resources.sampled_images) {
@@ -294,55 +305,73 @@ void Shader::ReflectStages() {
             uint32_t count = type.array.empty() ? 0 : type.array[0];
 
 
-            SampledImages.emplace_back(shader.Stage, set, binding, count, type.image);
+            SampledImages.emplace_back(compiler.get_name(image.id), shader.Stage, set, binding, count, type.image);
         }
     }
 }
 
 void Shader::CreateDescriptorSetLayouts() {
 
-    std::vector<std::pair<uint32_t, std::vector<VkDescriptorSetLayoutBinding>>> Sets;
+    struct BindingIndex {
+        BindingIndex(VkDescriptorSetLayoutBinding binding, UniformBaseType* uniform)
+            : Binding(binding), Uniform(uniform) {}
+
+        VkDescriptorSetLayoutBinding Binding;
+        UniformBaseType* Uniform;
+    };
+
+    std::vector<std::pair<uint32_t, std::vector<BindingIndex>>> sets;
     VkDescriptorSetLayoutBinding binding;
 
-    auto AddBindingToSet = [&Sets, &binding](uint32_t set) {
-        for (auto& [listSet, bindings] : Sets) {
+    auto AddBindingToSet = [&sets, &binding](uint32_t set, UniformBaseType* uniform) {
+        for (auto& [listSet, bindings] : sets) {
             if (set == listSet) {
-                bindings.push_back(binding);
+                bindings.emplace_back(binding, uniform);
                 break;
             }
         }
 
-        std::vector<VkDescriptorSetLayoutBinding> tmp = { binding };
+        std::vector<BindingIndex> tmp = { {binding , uniform} };
 
-        Sets.emplace_back(set, std::move(tmp));
+        sets.emplace_back(set, std::move(tmp));
     };
 
     binding.pImmutableSamplers = nullptr;
     binding.descriptorCount = 1;
 
-    for (UniformBuffer& buf : UniformBuffers) {
+    for (UniformBufferType& buf : UniformBuffers) {
         binding.stageFlags = ShaderStageToVkShaderStage(buf.Stage);
         binding.binding = buf.Binding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-        AddBindingToSet(buf.Set);
+        AddBindingToSet(buf.Set, &buf);
     }
 
-    for (SampledImage& img : SampledImages) {
+    for (SampledImageType& img : SampledImages) {
         binding.stageFlags = ShaderStageToVkShaderStage(img.Stage);
         binding.binding = img.Binding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         binding.descriptorCount = img.ArrayCount;
 
-        AddBindingToSet(img.Set);
+        AddBindingToSet(img.Set, &img);
     }
 
-    if (Sets.empty()) {
+    if (sets.empty()) {
         DescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
     }
 
-    for (auto& [set, bindings] : Sets) {
-        DescriptorSetLayout* layout = new DescriptorSetLayout(bindings);
+
+    uint32_t index = 0;
+    for (auto& [set, binding] : sets) {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        std::vector<UniformBaseType*> uniforms;
+
+        for (BindingIndex& index : binding) {
+            bindings.push_back(index.Binding);
+            uniforms.push_back(index.Uniform);
+        }
+
+        DescriptorSetLayout* layout = new DescriptorSetLayout(bindings, uniforms);
 
         DescriptorSetLayouts.emplace_back(set, layout);
     }

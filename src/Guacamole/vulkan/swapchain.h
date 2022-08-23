@@ -25,7 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include "Window.h"
+#include <Guacamole/core/Window.h>
 #include "commandbuffer.h"
 
 namespace Guacamole {

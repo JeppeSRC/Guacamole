@@ -30,12 +30,6 @@ SOFTWARE.
 
 namespace Guacamole {
 
-enum class ShaderStage {
-    Vertex,
-    Fragment,
-    Geometry,
-    Compute,
-};
 
 class Shader {
 public:
@@ -86,31 +80,9 @@ private:
         spirv_cross::SPIRType Type;
     };
 
-    struct UniformBuffer {
-        UniformBuffer(ShaderStage stage, uint32_t set, uint32_t binding, uint32_t size, std::vector<spirv_cross::SPIRType> members) :
-            Stage(stage), Set(set), Binding(binding), Size(size), Members(members) {}
-
-        ShaderStage Stage;
-        uint32_t Set;
-        uint32_t Binding;
-        uint32_t Size;
-        std::vector<spirv_cross::SPIRType> Members;
-    };
-
-    struct SampledImage {
-        SampledImage(ShaderStage stage, uint32_t set, uint32_t binding, uint32_t arrayCount, spirv_cross::SPIRType::ImageType image) :
-            Stage(stage), Set(set), Binding(binding), ArrayCount(arrayCount), Image(image) {}
-
-        ShaderStage Stage;
-        uint32_t Set;
-        uint32_t Binding;
-        uint32_t ArrayCount;
-        spirv_cross::SPIRType::ImageType Image;
-    };
-
     std::vector<StageInput> StageInputs;
-    std::vector<UniformBuffer> UniformBuffers;
-    std::vector<SampledImage> SampledImages;
+    std::vector<UniformBufferType> UniformBuffers;
+    std::vector<SampledImageType> SampledImages;
 
     std::vector<std::pair<uint32_t, DescriptorSetLayout*>> DescriptorSetLayouts;
     std::vector<DescriptorPool*> DescriptorPools;

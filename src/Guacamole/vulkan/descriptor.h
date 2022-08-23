@@ -26,13 +26,22 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include "shader_uniform.h"
+
 namespace Guacamole {
 
 class DescriptorSetLayout {
 public:
     DescriptorSetLayout();
-    DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
+    DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout);
     ~DescriptorSetLayout();
+
+    const UniformBufferType* GetUniformBuffer(uint32_t binding) const;
+    const UniformBufferType::Member* GetUniformBufferMember(uint32_t binding, uint32_t memberIndex) const;
+    uint32_t GetUniformBufferSize(uint32_t binding) const;
+    uint32_t GetUniformBufferMemeberCount(uint32_t binding) const;
+    uint32_t GetUniformBufferMemberSize(uint32_t binding, uint32_t memberIndex) const;
+    uint32_t GetUniformBufferMemberOffset(uint32_t binding, uint32_t memberIndex) const;
 
     inline VkDescriptorSetLayout GetHandle() const { return DescriptorSetLayoutHandle; }
     inline std::vector<VkDescriptorSetLayoutBinding> GetBindings() const { return Bindings; }
@@ -40,6 +49,8 @@ public:
 private:
     VkDescriptorSetLayout DescriptorSetLayoutHandle;
     std::vector<VkDescriptorSetLayoutBinding> Bindings;
+
+    std::vector<UniformBaseType*> UniformLayout;
 };
 
 class DescriptorSet {
