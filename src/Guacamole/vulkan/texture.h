@@ -42,7 +42,9 @@ public:
     void* Map();
     void Unmap();
     void WriteData(void* data, uint64_t size, uint64_t offset = 0);
-    void StageCopy(bool immediate);
+    virtual void StageCopy(bool immediate);
+
+    void Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate);
 
     inline uint32_t GetWidth() const { return ImageInfo.extent.width; }
     inline uint32_t GetHeight() const { return ImageInfo.extent.height; }
@@ -66,6 +68,8 @@ protected:
 class Texture2D : public Texture {
 public:
     Texture2D(uint32_t width, uint32_t height, VkFormat format);
+
+    void StageCopy(bool immediate) override;
 
 private:
     VkImageViewCreateInfo ImageViewInfo;

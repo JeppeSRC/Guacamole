@@ -34,7 +34,7 @@ namespace Guacamole {
 
 Texture::Texture() 
     : ImageMemory(VK_NULL_HANDLE), ImageHandle(VK_NULL_HANDLE), ImageViewHandle(VK_NULL_HANDLE), 
-      MappedBufferHandle(VK_NULL_HANDLE), MappedBufferMemory(VK_NULL_HANDLE) {}
+      MappedBufferHandle(VK_NULL_HANDLE), MappedBufferMemory(VK_NULL_HANDLE), MappedMemory(nullptr) {}
 
 void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout) {
     VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -192,13 +192,64 @@ void Texture::StageCopy(bool immediate) {
 
     } else {
         // TOOD
+        GM_ASSERT(false);
     }
 
 }
 
+void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate) {
+    if (immediate) {
+        CommandBuffer* cmd = Context::GetAuxCmdBuffer();
+
+        cmd->Begin(true);
+
+        VkImageMemoryBarrier bar;
+
+        bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        bar.pNext = nullptr;
+        bar.srcAccessMask = 0;
+        bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        bar.oldLayout = oldLayout;
+        bar.newLayout = newLayout;
+        bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bar.image = ImageHandle;
+        bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        bar.subresourceRange.baseMipLevel = 0;
+        bar.subresourceRange.levelCount = 1;
+        bar.subresourceRange.baseArrayLayer = 0;
+        bar.subresourceRange.layerCount = 1;
+
+        vkCmdPipelineBarrier(cmd->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, 0, 0, 0, 1, &bar);
+
+        cmd->End();
+
+        VkSubmitInfo sInfo;
+
+        VkCommandBuffer Handle = cmd->GetHandle();
+
+        sInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        sInfo.pNext = nullptr;
+        sInfo.waitSemaphoreCount = 0;
+        sInfo.pWaitSemaphores = nullptr;
+        sInfo.pWaitDstStageMask = nullptr;
+        sInfo.commandBufferCount = 1;
+        sInfo.pCommandBuffers = &Handle;
+        sInfo.signalSemaphoreCount = 0;
+        sInfo.pSignalSemaphores = nullptr;
+
+        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
+        VK(vkQueueSubmit(Swapchain::GetGraphicsQueue(), 1, &sInfo, VK_NULL_HANDLE));
+        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
+
+    } else {
+        GM_ASSERT(false);
+    }
+}
+
 
 Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
-    CreateImage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
     ImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     ImageViewInfo.pNext = nullptr;
@@ -216,6 +267,13 @@ Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
     VK(vkCreateImageView(Context::GetDeviceHandle(), &ImageViewInfo, nullptr, &ImageViewHandle));
 
 
+}
+
+void Texture2D::StageCopy(bool immediate) {
+    GM_ASSERT(immediate == true);
+    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, true);
+    Texture::StageCopy(immediate);
+    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
 }
 
 
