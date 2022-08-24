@@ -24,21 +24,24 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/context.h>
-#include <Guacamole/core/swapchain.h>
-#include <Guacamole/core/renderpass.h>
-#include <Guacamole/core/pipeline.h>
-#include <Guacamole/core/buffer.h>
-#include <Guacamole/core/descriptor.h>
-#include <Guacamole/core/shader.h>
+#include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/swapchain.h>
+#include <Guacamole/vulkan/renderpass.h>
+#include <Guacamole/vulkan/pipeline.h>
+#include <Guacamole/vulkan/buffer.h>
+#include <Guacamole/vulkan/texture.h>
+#include <Guacamole/vulkan/descriptor.h>
+#include <Guacamole/vulkan/shader.h>
 #include <time.h>
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 using namespace Guacamole;
 
 struct Vertex {
     glm::vec3 Position;
     glm::vec4 Color;
+    glm::vec2 TexCoord;
 };
 
 int main() {
@@ -58,10 +61,10 @@ int main() {
     Swapchain::Init(&window);
 
     Vertex vertices[]{
-        {glm::vec3(-0.5, -0.5, 0), glm::vec4(1, 0, 0, 1)},
-        {glm::vec3( 0.5, -0.5, 0), glm::vec4(0, 1, 0, 1)},
-        {glm::vec3( 0.5,  0.5, 0), glm::vec4(0, 1, 1, 1)},
-        {glm::vec3(-0.5,  0.5, 0), glm::vec4(0, 0, 1, 1)}
+        {glm::vec3(-0.5, -0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(0, 0)},
+        {glm::vec3( 0.5, -0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(1, 0)},
+        {glm::vec3( 0.5,  0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(1, 1)},
+        {glm::vec3(-0.5,  0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(0, 1)}
     };
 
     uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
@@ -70,27 +73,113 @@ int main() {
         Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices), vertices);
         Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices), indices);
 
-        Shader vert("res/shader.vert", true, ShaderStage::Vertex);
-        Shader frag("res/shader.frag", true, ShaderStage::Fragment);
+        Shader shader;
+        shader.AddModule("res/shader.vert", true, ShaderStage::Vertex);
+        shader.AddModule("res/shader.frag", true, ShaderStage::Fragment);
+        shader.Compile();
+
+        Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
+
+        glm::vec4 colors[100 * 100];
+
+        for (uint32_t y = 0; y < 100; y++) {
+            for (uint32_t x = 0; x < 100; x++) {
+                colors[y * 100 + x] = glm::vec4((float)x / 100.0f, 0, (float)y / 100.0f, 1);
+            }
+        }
+
+        tex.WriteData(colors, sizeof(colors));
 
         BasicRenderpass pass;
 
-        DescriptorPool pool(10);
-        DescriptorSetLayout descriptorLayout;// = vert.GetDescriptorSetLayout(0);
-        PipelineLayout pipelineLayout(&descriptorLayout);
+        PipelineLayout pipelineLayout(shader.GetDescriptorSetLayout(0));
 
         GraphicsPipelineInfo gInfo;
 
         gInfo.Width = spec.Width;
         gInfo.Height = spec.Height;
         gInfo.VertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
-        gInfo.VertexInputAttributes = vert.GetVertexInputLayout({ {0, {0, 1} } });
+        gInfo.VertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2} } });
         gInfo.PipelineLayout = &pipelineLayout;
         gInfo.Renderpass = &pass;
-        gInfo.VertexShader = &vert;
-        gInfo.FragmentShader = &frag;
+        gInfo.Shader = &shader;
         
         GraphicsPipeline gPipeline(gInfo);
+
+        DescriptorSet* set = *shader.AllocateDescriptorSets(0, 1);
+        VkDescriptorSet setHandle = set->GetHandle();
+
+        Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));
+
+        VkSamplerCreateInfo sInfo;
+
+        sInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sInfo.pNext = nullptr;
+        sInfo.flags = 0;
+        sInfo.magFilter = VK_FILTER_LINEAR;
+        sInfo.minFilter = VK_FILTER_LINEAR;
+        sInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        sInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE; 
+        sInfo.mipLodBias = 0;
+        sInfo.anisotropyEnable = true;
+        sInfo.maxAnisotropy = 16;
+        sInfo.compareEnable = false;
+        sInfo.compareOp = VK_COMPARE_OP_EQUAL;
+        sInfo.minLod = 0;
+        sInfo.maxLod = 0;
+        sInfo.unnormalizedCoordinates = false;
+
+        VkSampler sampler;
+
+        VK(vkCreateSampler(Context::GetDeviceHandle(), &sInfo, nullptr, &sampler));
+
+        VkDescriptorBufferInfo bInfo;
+
+        bInfo.buffer = uniform.GetHandle();
+        bInfo.offset = 0;
+        bInfo.range = uniform.GetSize();
+
+        VkWriteDescriptorSet wSet[2];
+
+        wSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wSet[0].pNext = nullptr;
+        wSet[0].dstSet = setHandle;
+        wSet[0].dstBinding = 0;
+        wSet[0].dstArrayElement = 0;
+        wSet[0].descriptorCount = 1;
+        wSet[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        wSet[0].pImageInfo = nullptr;
+        wSet[0].pBufferInfo = &bInfo;
+        wSet[0].pTexelBufferView = nullptr;
+
+        VkDescriptorImageInfo iInfo;
+
+        iInfo.sampler = sampler;
+        iInfo.imageView = tex.GetImageViewHandle();
+        iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        wSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wSet[1].pNext = nullptr;
+        wSet[1].dstSet = setHandle;
+        wSet[1].dstBinding = 1;
+        wSet[1].dstArrayElement = 0;
+        wSet[1].descriptorCount = 1;
+        wSet[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        wSet[1].pImageInfo = &iInfo;
+        wSet[1].pBufferInfo = nullptr;
+        wSet[1].pTexelBufferView = nullptr;
+        
+        vkUpdateDescriptorSets(Context::GetDeviceHandle(), 2, wSet, 0, nullptr);
+
+        void* mem = uniform.Map();
+
+        glm::vec4 color(1, 1, 1, 1);
+
+        memcpy(mem, &color, sizeof(glm::vec4));
+
+        uniform.StageCopy(true);
 
         while (!window.ShouldClose()) {
             auto start = std::chrono::high_resolution_clock::now();
@@ -112,6 +201,7 @@ int main() {
 
             vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
             vkCmdBindIndexBuffer(handle, iboHandle, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);
 
             vkCmdDrawIndexed(handle, 6, 1, 0, 0, 0);
 
@@ -129,6 +219,8 @@ int main() {
         }
 
         Swapchain::WaitForAllCommandBufferFences();
+
+        vkDestroySampler(Context::GetDeviceHandle(), sampler, nullptr);
     }
 
     Swapchain::Shutdown();
