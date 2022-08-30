@@ -31,13 +31,13 @@ SOFTWARE.
 namespace Guacamole {
 
 Renderpass::~Renderpass() {
-    vkDestroyRenderPass(Context::GetDeviceHandle(), RenderpassHandle, nullptr);
+    vkDestroyRenderPass(Context::GetDeviceHandle(), mRenderpassHandle, nullptr);
 }
 
 void Renderpass::Create(VkRenderPassCreateInfo* rInfo) {
     GM_ASSERT(rInfo)
 
-    VK(vkCreateRenderPass(Context::GetDeviceHandle(), rInfo, nullptr, &RenderpassHandle));
+    VK(vkCreateRenderPass(Context::GetDeviceHandle(), rInfo, nullptr, &mRenderpassHandle));
 }
 
 BasicRenderpass::BasicRenderpass() {
@@ -92,7 +92,7 @@ BasicRenderpass::BasicRenderpass() {
     fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     fbInfo.pNext = nullptr;
     fbInfo.flags = 0;
-    fbInfo.renderPass = RenderpassHandle;
+    fbInfo.renderPass = mRenderpassHandle;
     fbInfo.attachmentCount = 1;
     //fbInfo.pAttachments = nullptr;
     fbInfo.width = Swapchain::GetExtent().width;
@@ -107,19 +107,19 @@ BasicRenderpass::BasicRenderpass() {
         VkFramebuffer fb;
         VK(vkCreateFramebuffer(Context::GetDeviceHandle(), &fbInfo, nullptr, &fb));
 
-        Framebuffers.push_back(fb);
+        mFramebuffers.push_back(fb);
     }
 
-    BeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    BeginInfo.pNext = nullptr;
-    BeginInfo.renderPass = RenderpassHandle;
-    BeginInfo.renderArea.extent = Swapchain::GetExtent();
-    BeginInfo.renderArea.offset.x = 0;
-    BeginInfo.renderArea.offset.y = 0;
+    mBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    mBeginInfo.pNext = nullptr;
+    mBeginInfo.renderPass = mRenderpassHandle;
+    mBeginInfo.renderArea.extent = Swapchain::GetExtent();
+    mBeginInfo.renderArea.offset.x = 0;
+    mBeginInfo.renderArea.offset.y = 0;
 }
 
 BasicRenderpass::~BasicRenderpass() {
-    for (VkFramebuffer fb : Framebuffers) {
+    for (VkFramebuffer fb : mFramebuffers) {
         vkDestroyFramebuffer(Context::GetDeviceHandle(), fb, nullptr);
     }
 }
@@ -127,11 +127,11 @@ BasicRenderpass::~BasicRenderpass() {
 void BasicRenderpass::Begin(CommandBuffer* cmd) {
     VkClearValue clear = {};
 
-    BeginInfo.framebuffer = GetFramebufferHandle(Swapchain::GetCurrentImageIndex());
-    BeginInfo.clearValueCount = 1;
-    BeginInfo.pClearValues = &clear;
+    mBeginInfo.framebuffer = GetFramebufferHandle(Swapchain::GetCurrentImageIndex());
+    mBeginInfo.clearValueCount = 1;
+    mBeginInfo.pClearValues = &clear;
     
-    vkCmdBeginRenderPass(cmd->GetHandle(), &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd->GetHandle(), &mBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void BasicRenderpass::End(CommandBuffer* cmd) {
@@ -139,7 +139,7 @@ void BasicRenderpass::End(CommandBuffer* cmd) {
 }
 
 VkFramebuffer BasicRenderpass::GetFramebufferHandle(uint32_t index) const {
-    return Framebuffers[index];
+    return mFramebuffers[index];
 }
 
 }

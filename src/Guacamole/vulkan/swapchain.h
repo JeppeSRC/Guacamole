@@ -41,32 +41,32 @@ public:
 
     static CommandBuffer* GetPrimaryCommandBuffer(uint32_t threadID);
 
-    static VkFormat GetFormat() { return sInfo.imageFormat; }
-    static VkExtent2D GetExtent() { return sInfo.imageExtent; }
-    static VkQueue GetGraphicsQueue() { return GraphicsQueue; }
+    static VkFormat GetFormat() { return msInfo.imageFormat; }
+    static VkExtent2D GetExtent() { return msInfo.imageExtent; }
+    static VkQueue GetGraphicsQueue() { return mGraphicsQueue; }
 
-    static std::vector<VkImageView> GetImageViews() { return SwapchainImageViews; }
-    static uint32_t GetCurrentImageIndex() { return CurrentImageIndex; }
+    static std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
+    static uint32_t GetCurrentImageIndex() { return mCurrentImageIndex; }
 
 private:
-    static VkSwapchainCreateInfoKHR sInfo;
+    static VkSwapchainCreateInfoKHR msInfo;
 
-    static VkSwapchainKHR SwapchainHandle;
-    static VkSurfaceKHR SurfaceHandle;
+    static VkSwapchainKHR mSwapchainHandle;
+    static VkSurfaceKHR mSurfaceHandle;
 
-    static VkQueue GraphicsQueue;
+    static VkQueue mGraphicsQueue;
 
-    static uint32_t CurrentImageIndex;
-    static VkSemaphore ImageSemaphore;
-    static VkSemaphore SubmitSemaphore;
+    static uint32_t mCurrentImageIndex;
+    static VkSemaphore mImageSemaphore;
+    static VkSemaphore mSubmitSemaphore;
    
-    static std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> CommandPools;
+    static std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> mCommandPools;
 
-    static VkSubmitInfo SubmitInfo;
-    static VkPresentInfoKHR PresentInfo;
+    static VkSubmitInfo mSubmitInfo;
+    static VkPresentInfoKHR mPresentInfo;
 
-    static std::vector<VkImage> SwapchainImages;
-    static std::vector<VkImageView> SwapchainImageViews;
+    static std::vector<VkImage> mSwapchainImages;
+    static std::vector<VkImageView> mSwapchainImageViews;
 };
 
 }

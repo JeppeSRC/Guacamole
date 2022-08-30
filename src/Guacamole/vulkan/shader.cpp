@@ -67,24 +67,24 @@ static VkShaderStageFlags ShaderStageToVkShaderStage(ShaderStage stage) {
 }
 
 Shader::ShaderModule::ShaderModule(const std::string& file, bool src, ShaderStage stage) 
-    : ModuleHandle(VK_NULL_HANDLE), IsSource(src), File(file), Stage(stage), ShaderSource(nullptr), ShaderSourceSize(0) {
+    : mModuleHandle(VK_NULL_HANDLE), mIsSource(src), mFile(file), mStage(stage), mShaderSource(nullptr), mShaderSourceSize(0) {
 }
 
 Shader::ShaderModule::~ShaderModule() {
-    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
+    vkDestroyShaderModule(Context::GetDeviceHandle(), mModuleHandle, nullptr);
 
-    delete ShaderSource;
+    delete mShaderSource;
 }
 
 void Shader::ShaderModule::Reload(bool reCompile) {
-    vkDestroyShaderModule(Context::GetDeviceHandle(), ModuleHandle, nullptr);
-    delete ShaderSource;
+    vkDestroyShaderModule(Context::GetDeviceHandle(), mModuleHandle, nullptr);
+    delete mShaderSource;
 
     uint64_t size;
-    char* data = (char*)Util::ReadFile(File, size);
+    char* data = (char*)Util::ReadFile(mFile, size);
 
     if (data == nullptr) {
-        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", File.c_str());
+        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", mFile.c_str());
         return;
     }
 
@@ -94,7 +94,7 @@ void Shader::ShaderModule::Reload(bool reCompile) {
     mInfo.pNext = nullptr;
     mInfo.flags = 0;
 
-    if (IsSource) {
+    if (mIsSource) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
@@ -102,7 +102,7 @@ void Shader::ShaderModule::Reload(bool reCompile) {
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
         options.SetGenerateDebugInfo();
 
-        shaderc::CompilationResult result = compiler.CompileGlslToSpv(data, size, ShaderStageToShaderC(Stage), File.c_str(), options);
+        shaderc::CompilationResult result = compiler.CompileGlslToSpv(data, size, ShaderStageToShaderC(mStage), mFile.c_str(), options);
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             GM_LOG_CRITICAL(result.GetErrorMessage());
@@ -121,7 +121,7 @@ void Shader::ShaderModule::Reload(bool reCompile) {
 
     } else {
         if (size & 0x03) {
-            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", File.c_str());
+            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", mFile.c_str());
 
             uint64_t newSize = (size & ~0x03) + 4;
             char* newData = new char[newSize];
@@ -138,10 +138,10 @@ void Shader::ShaderModule::Reload(bool reCompile) {
         mInfo.pCode = (uint32_t*)data;
     }
 
-    VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &ModuleHandle));
+    VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &mModuleHandle));
 
-    ShaderSourceSize = mInfo.codeSize;
-    ShaderSource = (uint32_t*)mInfo.pCode;
+    mShaderSourceSize = mInfo.codeSize;
+    mShaderSource = (uint32_t*)mInfo.pCode;
 }
 
 Shader::Shader() {
@@ -149,25 +149,25 @@ Shader::Shader() {
 }
 
 Shader::~Shader() {
-    for (auto& [set, layout] : DescriptorSetLayouts)
+    for (auto& [set, layout] : mDescriptorSetLayouts)
         delete layout;
 
-    for (DescriptorPool* pool : DescriptorPools)
+    for (DescriptorPool* pool : mDescriptorPools)
         delete pool;
 }
 
 void Shader::Reload(bool reCompile) {
-    for (ShaderModule& shader : Modules) {
+    for (ShaderModule& shader : mModules) {
         shader.Reload(reCompile);
     }
 
-    for (auto& [set, layout] : DescriptorSetLayouts)
+    for (auto& [set, layout] : mDescriptorSetLayouts)
         delete layout;
 
-    for (DescriptorPool* pool : DescriptorPools)
+    for (DescriptorPool* pool : mDescriptorPools)
         delete pool;
 
-    DescriptorSetLayouts.clear();
+    mDescriptorSetLayouts.clear();
 
     ReflectStages();
     CreateDescriptorSetLayouts();
@@ -175,15 +175,15 @@ void Shader::Reload(bool reCompile) {
 }
 
 void Shader::AddModule(const std::string& file, bool src, ShaderStage stage) {
-    for (ShaderModule& shader : Modules) {
-        GM_VERIFY(shader.Stage != stage);
+    for (ShaderModule& shader : mModules) {
+        GM_VERIFY(shader.mStage != stage);
     }
 
-    Modules.emplace_back(file, src, stage);
+    mModules.emplace_back(file, src, stage);
 }
 
 void Shader::Compile() {
-    for (ShaderModule& shader : Modules) {
+    for (ShaderModule& shader : mModules) {
         shader.Reload(false);
     }
 
@@ -192,8 +192,8 @@ void Shader::Compile() {
 }
 
 VkShaderModule Shader::GetHandle(ShaderStage stage) const {
-    for (const ShaderModule& shader : Modules) {
-        if (shader.Stage == stage) return shader.ModuleHandle;
+    for (const ShaderModule& shader : mModules) {
+        if (shader.mStage == stage) return shader.mModuleHandle;
     }
 }
 
@@ -214,7 +214,7 @@ std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std:
             info.location = location;
             info.format = VK_FORMAT_UNDEFINED;
 
-            for (auto& input : StageInputs) {
+            for (auto& input : mStageInputs) {
                 if (input.Location == info.location) {
                     info.format = Util::SPIRTypeToVkFormat(input.Type);
                     result.push_back(info);
@@ -234,9 +234,9 @@ std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std:
 }
 
 DescriptorSetLayout* Shader::GetDescriptorSetLayout(uint32_t set) const {
-    GM_ASSERT(set < DescriptorSetLayouts.size());
+    GM_ASSERT(set < mDescriptorSetLayouts.size());
 
-    for (auto& [setNum, layout] : DescriptorSetLayouts) {
+    for (auto& [setNum, layout] : mDescriptorSetLayouts) {
         if (setNum == set) return layout;
     }
 
@@ -249,22 +249,22 @@ DescriptorSetLayout* Shader::GetDescriptorSetLayout(uint32_t set) const {
 DescriptorSet** Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
     DescriptorPool* pool = new DescriptorPool(num);
 
-    DescriptorPools.push_back(pool);
+    mDescriptorPools.push_back(pool);
 
     return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
 }
 
 void Shader::ReflectStages() {
     
-    for (ShaderModule& shader : Modules) {
-        spirv_cross::Compiler compiler(shader.ShaderSource, shader.ShaderSourceSize / 4);
+    for (ShaderModule& shader : mModules) {
+        spirv_cross::Compiler compiler(shader.mShaderSource, shader.mShaderSourceSize / 4);
         spirv_cross::ShaderResources resources = compiler.get_shader_resources();
         
         for (auto& input : resources.stage_inputs) {
             uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
             spirv_cross::SPIRType type = compiler.get_type(input.type_id);
 
-            StageInputs.emplace_back(location, type);
+            mStageInputs.emplace_back(location, type);
         }
 
         for (auto& uniform : resources.uniform_buffers) {
@@ -295,7 +295,7 @@ void Shader::ReflectStages() {
                 members.push_back(member);
             }
 
-            UniformBuffers.emplace_back(compiler.get_name(uniform.id), shader.Stage, set, binding, size, std::move(members));
+            mUniformBuffers.emplace_back(compiler.get_name(uniform.id), shader.mStage, set, binding, size, std::move(members));
         }
 
         for (auto& image : resources.sampled_images) {
@@ -305,7 +305,7 @@ void Shader::ReflectStages() {
             uint32_t count = type.array.empty() ? 1 : type.array[0];
 
 
-            SampledImages.emplace_back(compiler.get_name(image.id), shader.Stage, set, binding, count, type.image);
+            mSampledImages.emplace_back(compiler.get_name(image.id), shader.mStage, set, binding, count, type.image);
         }
     }
 }
@@ -339,25 +339,25 @@ void Shader::CreateDescriptorSetLayouts() {
     binding.pImmutableSamplers = nullptr;
     binding.descriptorCount = 1;
 
-    for (UniformBufferType& buf : UniformBuffers) {
-        binding.stageFlags = ShaderStageToVkShaderStage(buf.Stage);
-        binding.binding = buf.Binding;
+    for (UniformBufferType& buf : mUniformBuffers) {
+        binding.stageFlags = ShaderStageToVkShaderStage(buf.mStage);
+        binding.binding = buf.mBinding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-        AddBindingToSet(buf.Set, &buf);
+        AddBindingToSet(buf.mSet, &buf);
     }
 
-    for (SampledImageType& img : SampledImages) {
-        binding.stageFlags = ShaderStageToVkShaderStage(img.Stage);
-        binding.binding = img.Binding;
+    for (SampledImageType& img : mSampledImages) {
+        binding.stageFlags = ShaderStageToVkShaderStage(img.mStage);
+        binding.binding = img.mBinding;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        binding.descriptorCount = img.ArrayCount;
+        binding.descriptorCount = img.mArrayCount;
 
-        AddBindingToSet(img.Set, &img);
+        AddBindingToSet(img.mSet, &img);
     }
 
     if (sets.empty()) {
-        DescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
+        mDescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
     }
 
 
@@ -373,7 +373,7 @@ void Shader::CreateDescriptorSetLayouts() {
 
         DescriptorSetLayout* layout = new DescriptorSetLayout(bindings, uniforms);
 
-        DescriptorSetLayouts.emplace_back(set, layout);
+        mDescriptorSetLayouts.emplace_back(set, layout);
     }
 }
     

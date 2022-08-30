@@ -47,23 +47,23 @@ public:
 
     void Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate);
 
-    inline uint32_t GetWidth() const { return ImageInfo.extent.width; }
-    inline uint32_t GetHeight() const { return ImageInfo.extent.height; }
+    inline uint32_t GetWidth() const { return mImageInfo.extent.width; }
+    inline uint32_t GetHeight() const { return mImageInfo.extent.height; }
 
-    inline VkImage GetImageHandle() const { return ImageHandle; }
-    inline VkImageView GetImageViewHandle() const { return ImageViewHandle; }
+    inline VkImage GetImageHandle() const { return mImageHandle; }
+    inline VkImageView GetImageViewHandle() const { return mImageViewHandle; }
 protected:
-    VkImage ImageHandle;
-    VkDeviceMemory ImageMemory;
-    VkImageView ImageViewHandle;
+    VkImage mImageHandle;
+    VkDeviceMemory mImageMemory;
+    VkImageView mImageViewHandle;
 
-    VkImageCreateInfo ImageInfo;
+    VkImageCreateInfo mImageInfo;
 
-    uint32_t ImageMemorySize;
-    void* MappedMemory;
+    uint32_t mImageMemorySize;
+    void* mMappedMemory;
 
-    VkBuffer MappedBufferHandle;
-    VkDeviceMemory MappedBufferMemory;
+    VkBuffer mMappedBufferHandle;
+    VkDeviceMemory mMappedBufferMemory;
 };
 
 class Texture2D : public Texture {
@@ -73,7 +73,7 @@ public:
     void StageCopy(bool immediate) override;
 
 private:
-    VkImageViewCreateInfo ImageViewInfo;
+    VkImageViewCreateInfo mImageViewInfo;
 };
 
 }

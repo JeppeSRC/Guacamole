@@ -36,13 +36,10 @@ public:
     PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts);
     ~PipelineLayout();
 
-    inline VkPipelineLayout GetHandle() const { return LayoutHandle; }
+    inline VkPipelineLayout GetHandle() const { return mLayoutHandle; }
 
 private:
-
-
-private:
-    VkPipelineLayout LayoutHandle;
+    VkPipelineLayout mLayoutHandle;
 };
 
 }

@@ -36,22 +36,22 @@ class Pipeline {
 public:
     virtual ~Pipeline();
 
-    inline VkPipeline GetHandle() const { return PipelineHandle; }
+    inline VkPipeline GetHandle() const { return mPipelineHandle; }
 protected:
-    VkPipeline PipelineHandle;
+    VkPipeline mPipelineHandle;
 
 };
 
 struct GraphicsPipelineInfo {
-    uint32_t Width;
-    uint32_t Height;
+    uint32_t mWidth;
+    uint32_t mHeight;
 
-    std::vector<VkVertexInputBindingDescription> VertexInputBindings;
-    std::vector<VkVertexInputAttributeDescription> VertexInputAttributes;
-    PipelineLayout* PipelineLayout;
-    Renderpass* Renderpass;
+    std::vector<VkVertexInputBindingDescription> mVertexInputBindings;
+    std::vector<VkVertexInputAttributeDescription> mVertexInputAttributes;
+    PipelineLayout* mPipelineLayout;
+    Renderpass* mRenderpass;
     
-    Shader* Shader;
+    Shader* mShader;
 };
 
 class GraphicsPipeline : public Pipeline {
@@ -59,7 +59,7 @@ public:
     GraphicsPipeline(const GraphicsPipelineInfo& info);
 
 private:
-    GraphicsPipelineInfo Info;
+    GraphicsPipelineInfo mInfo;
 };
 
 }

@@ -43,14 +43,14 @@ public:
     uint32_t GetUniformBufferMemberSize(uint32_t binding, uint32_t memberIndex) const;
     uint32_t GetUniformBufferMemberOffset(uint32_t binding, uint32_t memberIndex) const;
 
-    inline VkDescriptorSetLayout GetHandle() const { return DescriptorSetLayoutHandle; }
-    inline std::vector<VkDescriptorSetLayoutBinding> GetBindings() const { return Bindings; }
-    inline VkDescriptorSetLayoutBinding GetBinding(uint32_t binding) const { return Bindings[binding]; }
+    inline VkDescriptorSetLayout GetHandle() const { return mDescriptorSetLayoutHandle; }
+    inline std::vector<VkDescriptorSetLayoutBinding> GetBindings() const { return mBindings; }
+    inline VkDescriptorSetLayoutBinding GetBinding(uint32_t binding) const { return mBindings[binding]; }
 private:
-    VkDescriptorSetLayout DescriptorSetLayoutHandle;
-    std::vector<VkDescriptorSetLayoutBinding> Bindings;
+    VkDescriptorSetLayout mDescriptorSetLayoutHandle;
+    std::vector<VkDescriptorSetLayoutBinding> mBindings;
 
-    std::vector<UniformBaseType*> UniformLayout;
+    std::vector<UniformBaseType*> mUniformLayout;
 };
 
 class DescriptorSet {
@@ -60,11 +60,11 @@ public:
     DescriptorSet(VkDescriptorSet Handle, DescriptorSetLayout* layout);
     ~DescriptorSet();
 
-    inline VkDescriptorSet GetHandle() const { return DescriptorSetHandle; }
-    inline DescriptorSetLayout* GetLayout() const { return Layout; }
+    inline VkDescriptorSet GetHandle() const { return mDescriptorSetHandle; }
+    inline DescriptorSetLayout* GetLayout() const { return mLayout; }
 private:
-    VkDescriptorSet DescriptorSetHandle;
-    DescriptorSetLayout* Layout;
+    VkDescriptorSet mDescriptorSetHandle;
+    DescriptorSetLayout* mLayout;
 
 };
 
@@ -76,10 +76,10 @@ public:
     DescriptorSet* AllocateDescriptorSet(DescriptorSetLayout* layout);
     DescriptorSet** AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
 
-    inline VkDescriptorPool GetHandle() const { return PoolHandle; }
+    inline VkDescriptorPool GetHandle() const { return mPoolHandle; }
 
 private:
-    VkDescriptorPool PoolHandle;
+    VkDescriptorPool mPoolHandle;
 };
 
 }

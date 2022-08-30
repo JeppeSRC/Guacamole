@@ -44,13 +44,13 @@ enum class UniformType {
 class UniformBaseType {
 protected:
     UniformBaseType(UniformType type, const std::string& name, ShaderStage stage, uint32_t set, uint32_t binding)
-        : Type(type), Name(name), Stage(stage), Set(set), Binding(binding) {}
+        : mType(type), mName(name), mStage(stage), mSet(set), mBinding(binding) {}
 public:
-    UniformType Type;
-    ShaderStage Stage;
-    std::string Name;
-    uint32_t Set;
-    uint32_t Binding;
+    UniformType mType;
+    ShaderStage mStage;
+    std::string mName;
+    uint32_t mSet;
+    uint32_t mBinding;
 };
 
 class UniformBufferType : public UniformBaseType {
@@ -63,19 +63,19 @@ public:
     };
 
     UniformBufferType(const std::string& name, ShaderStage stage, uint32_t set, uint32_t binding, uint32_t size, std::vector<Member> members)
-        : UniformBaseType(UniformType::Buffer, name, stage, set, binding), Size(size), Members(members) {}
+        : UniformBaseType(UniformType::Buffer, name, stage, set, binding), mSize(size), mMembers(members) {}
 
-    uint32_t Size;
-    std::vector<Member> Members;
+    uint32_t mSize;
+    std::vector<Member> mMembers;
 };
 
 class SampledImageType : public UniformBaseType {
 public:
     SampledImageType(const std::string& name, ShaderStage stage, uint32_t set, uint32_t binding, uint32_t arrayCount, spirv_cross::SPIRType::ImageType image)
-        : UniformBaseType(UniformType::SampledImage, name, stage, set, binding), ArrayCount(arrayCount), Image(image) {}
+        : UniformBaseType(UniformType::SampledImage, name, stage, set, binding), mArrayCount(arrayCount), mImage(image) {}
 
-    uint32_t ArrayCount;
-    spirv_cross::SPIRType::ImageType Image;
+    uint32_t mArrayCount;
+    spirv_cross::SPIRType::ImageType mImage;
 };
 
 }

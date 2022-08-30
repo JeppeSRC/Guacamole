@@ -29,13 +29,13 @@ SOFTWARE.
 
 namespace Guacamole {
 
-std::vector<Context::InstanceLayer> Context::InstanceLayers;
+std::vector<Context::InstanceLayer> Context::mInstanceLayers;
 
-VkInstance Context::Instance;
-PhysicalDevice* Context::SelectedPhysDevice;
-Device* Context::LogicalDevice;
-VkCommandPool Context::CommandPool;
-CommandBuffer* Context::AuxCmdBuffer;
+VkInstance Context::mInstance;
+PhysicalDevice* Context::mSelectedPhysDevice;
+Device* Context::mLogicalDevice;
+VkCommandPool Context::mCommandPool;
+CommandBuffer* Context::mAuxCmdBuffer;
 
 void Context::Init() {
 
@@ -84,15 +84,15 @@ void Context::Init() {
     instanceInfo.enabledExtensionCount = count;
     instanceInfo.ppEnabledExtensionNames = ext;
 
-    VK(vkCreateInstance(&instanceInfo, nullptr, &Instance));
+    VK(vkCreateInstance(&instanceInfo, nullptr, &mInstance));
 
-    PhysicalDevice::EnumeratePhysicalDevices(Instance);
+    PhysicalDevice::EnumeratePhysicalDevices(mInstance);
 
-    for (PhysicalDevice* dev : PhysicalDevice::PhysicalDevices)
+    for (PhysicalDevice* dev : PhysicalDevice::mPhysicalDevices)
         dev->PrintDeviceInfo(true);
 
 
-    SelectedPhysDevice = PhysicalDevice::SelectDevice();
+    mSelectedPhysDevice = PhysicalDevice::SelectDevice();
 
     VkPhysicalDeviceFeatures features;
     memset(&features, 0, sizeof(VkPhysicalDeviceFeatures));
@@ -101,38 +101,38 @@ void Context::Init() {
     features.wideLines = true;
     features.samplerAnisotropy = true;
 
-    LogicalDevice = new Device(SelectedPhysDevice, features);
+    mLogicalDevice = new Device(mSelectedPhysDevice, features);
 
     VkCommandPoolCreateInfo poolInfo;
 
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.pNext = nullptr;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = LogicalDevice->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
+    poolInfo.queueFamilyIndex = mLogicalDevice->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
 
-    VK(vkCreateCommandPool(LogicalDevice->GetHandle(), &poolInfo, nullptr, &CommandPool));
+    VK(vkCreateCommandPool(mLogicalDevice->GetHandle(), &poolInfo, nullptr, &mCommandPool));
 
     VkCommandBufferAllocateInfo allocInfo;
 
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.pNext = nullptr;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = CommandPool;
+    allocInfo.commandPool = mCommandPool;
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer CmdHandle;
 
-    VK(vkAllocateCommandBuffers(LogicalDevice->GetHandle(), &allocInfo, &CmdHandle));
+    VK(vkAllocateCommandBuffers(mLogicalDevice->GetHandle(), &allocInfo, &CmdHandle));
 
-    AuxCmdBuffer = new CommandBuffer(CmdHandle);
+    mAuxCmdBuffer = new CommandBuffer(CmdHandle);
 }
 
 
 void Context::Shutdown() {
-    delete AuxCmdBuffer;
-    vkDestroyCommandPool(LogicalDevice->GetHandle(), CommandPool, nullptr);
-    delete LogicalDevice;
-    vkDestroyInstance(Instance, nullptr);
+    delete mAuxCmdBuffer;
+    vkDestroyCommandPool(mLogicalDevice->GetHandle(), mCommandPool, nullptr);
+    delete mLogicalDevice;
+    vkDestroyInstance(mInstance, nullptr);
 }
 
 void Context::EnumerateLayersAndExtensions() {
@@ -172,7 +172,7 @@ void Context::EnumerateLayersAndExtensions() {
             GM_LOG_DEBUG("\t\t{0}", ext.extensionName);
         }
 
-        InstanceLayers.push_back(std::move(layer));
+        mInstanceLayers.push_back(std::move(layer));
     }
 
     delete props;
@@ -192,7 +192,7 @@ uint32_t Context::IsLayerExtensionSupported(const char* layerName, const char* e
     if (layerName == nullptr) {
         size_t extLength = strlen(extensionName);
 
-        for (VkExtensionProperties ext : InstanceLayers[0].Extensions) {
+        for (VkExtensionProperties ext : mInstanceLayers[0].Extensions) {
             if (memcmp(extensionName, ext.extensionName, extLength) == 0) {
                 return 1;
             }
@@ -203,7 +203,7 @@ uint32_t Context::IsLayerExtensionSupported(const char* layerName, const char* e
 
     size_t nameLength = strlen(layerName);
 
-    for (InstanceLayer layer : InstanceLayers) {
+    for (InstanceLayer layer : mInstanceLayers) {
         if (memcmp(layerName, layer.Prop.layerName, nameLength) == 0) {
             if (extensionName == nullptr) return 1;
 

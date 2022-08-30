@@ -30,13 +30,13 @@ namespace Guacamole {
 
 class Buffer {
 protected:
-    VkBuffer BufferHandle;
-    VkDeviceMemory BufferMemory;
-    VkBuffer MappedBufferHandle;
-    VkDeviceMemory MappedBufferMemory;
+    VkBuffer mBufferHandle;
+    VkDeviceMemory mBufferMemory;
+    VkBuffer mMappedBufferHandle;
+    VkDeviceMemory mMappedBufferMemory;
 
-    uint64_t BufferSize;
-    void* MappedMemory;
+    uint64_t mBufferSize;
+    void* mMappedMemory;
 
 public:
     Buffer(VkBufferUsageFlags usage, uint64_t size, void* data = nullptr);
@@ -47,8 +47,8 @@ public:
     void WriteData(void* data, uint64_t size, uint64_t offset = 0);
     void StageCopy(bool immediate);
 
-    inline VkBuffer GetHandle() const { return BufferHandle; }
-    inline uint32_t GetSize() const { return BufferSize; }
+    inline VkBuffer GetHandle() const { return mBufferHandle; }
+    inline uint32_t GetSize() const { return mBufferSize; }
 
 public:
     static uint32_t GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, uint32_t type, VkMemoryPropertyFlags flags);

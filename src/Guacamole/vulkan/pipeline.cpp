@@ -31,10 +31,10 @@ namespace Guacamole {
 
 
 Pipeline::~Pipeline() {
-    vkDestroyPipeline(Context::GetDeviceHandle(), PipelineHandle, nullptr);
+    vkDestroyPipeline(Context::GetDeviceHandle(), mPipelineHandle, nullptr);
 }
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info) {
+GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : mInfo(info) {
 
     VkPipelineShaderStageCreateInfo ssInfo[2];
 
@@ -42,7 +42,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     ssInfo[0].pNext = nullptr;
     ssInfo[0].flags = 0;
     ssInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    ssInfo[0].module = info.Shader->GetHandle(ShaderStage::Vertex);
+    ssInfo[0].module = info.mShader->GetHandle(ShaderStage::Vertex);
     ssInfo[0].pName = "main";
     ssInfo[0].pSpecializationInfo = nullptr;
 
@@ -50,7 +50,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     ssInfo[1].pNext = nullptr;
     ssInfo[1].flags = 0;
     ssInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    ssInfo[1].module = info.Shader->GetHandle(ShaderStage::Fragment);
+    ssInfo[1].module = info.mShader->GetHandle(ShaderStage::Fragment);
     ssInfo[1].pName = "main";
     ssInfo[1].pSpecializationInfo = nullptr;
   
@@ -59,10 +59,10 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     viInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     viInfo.pNext = nullptr;
     viInfo.flags = 0;
-    viInfo.vertexBindingDescriptionCount = (uint32_t)info.VertexInputBindings.size();
-    viInfo.pVertexBindingDescriptions = info.VertexInputBindings.data();
-    viInfo.vertexAttributeDescriptionCount = (uint32_t)info.VertexInputAttributes.size();
-    viInfo.pVertexAttributeDescriptions = info.VertexInputAttributes.data();
+    viInfo.vertexBindingDescriptionCount = (uint32_t)info.mVertexInputBindings.size();
+    viInfo.pVertexBindingDescriptions = info.mVertexInputBindings.data();
+    viInfo.vertexAttributeDescriptionCount = (uint32_t)info.mVertexInputAttributes.size();
+    viInfo.pVertexAttributeDescriptions = info.mVertexInputAttributes.data();
 
     VkPipelineInputAssemblyStateCreateInfo iasInfo;
 
@@ -81,8 +81,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
 
     VkViewport viewPort;
 
-    viewPort.width = info.Width;
-    viewPort.height = info.Height;
+    viewPort.width = info.mWidth;
+    viewPort.height = info.mHeight;
     viewPort.x = 0;
     viewPort.y = 0;
     viewPort.minDepth = 0.001f;
@@ -95,8 +95,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
 
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent.width = info.Width;
-    scissor.extent.height = info.Height;
+    scissor.extent.width = info.mWidth;
+    scissor.extent.height = info.mHeight;
 
     vsInfo.pScissors = &scissor;
 
@@ -186,13 +186,13 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : Info(info
     pInfo.pDepthStencilState = &dssInfo;
     pInfo.pColorBlendState = &bsInfo;
     pInfo.pDynamicState = &dsInfo;
-    pInfo.layout = info.PipelineLayout->GetHandle();
-    pInfo.renderPass = info.Renderpass->GetHandle();
+    pInfo.layout = info.mPipelineLayout->GetHandle();
+    pInfo.renderPass = info.mRenderpass->GetHandle();
     pInfo.subpass = 0;
     pInfo.basePipelineHandle = nullptr;
     pInfo.basePipelineIndex = 0;
 
-    VK(vkCreateGraphicsPipelines(Context::GetDeviceHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &PipelineHandle));
+    VK(vkCreateGraphicsPipelines(Context::GetDeviceHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &mPipelineHandle));
 
 }
 

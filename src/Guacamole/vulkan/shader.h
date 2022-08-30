@@ -40,18 +40,18 @@ public:
 
         void Reload(bool reCompile = false);
 
-        inline VkShaderModule GetHandle() const { return ModuleHandle; }
-        inline ShaderStage GetStage() const { return Stage; }
+        inline VkShaderModule GetHandle() const { return mModuleHandle; }
+        inline ShaderStage GetStage() const { return mStage; }
 
     private:
-        VkShaderModule ModuleHandle;
+        VkShaderModule mModuleHandle;
 
-        ShaderStage Stage;
-        bool IsSource;
-        std::string File;
+        ShaderStage mStage;
+        bool mIsSource;
+        std::string mFile;
 
-        uint32_t ShaderSourceSize;
-        uint32_t* ShaderSource;
+        uint32_t mShaderSourceSize;
+        uint32_t* mShaderSource;
 
         friend class Shader;
     };
@@ -71,7 +71,7 @@ public:
     DescriptorSet** AllocateDescriptorSets(uint32_t set, uint32_t num);
 
 private:
-    std::vector<ShaderModule> Modules;
+    std::vector<ShaderModule> mModules;
 
     struct StageInput {
         StageInput(uint8_t location, spirv_cross::SPIRType type) : Location(location), Type(type) {}
@@ -80,12 +80,12 @@ private:
         spirv_cross::SPIRType Type;
     };
 
-    std::vector<StageInput> StageInputs;
-    std::vector<UniformBufferType> UniformBuffers;
-    std::vector<SampledImageType> SampledImages;
+    std::vector<StageInput> mStageInputs;
+    std::vector<UniformBufferType> mUniformBuffers;
+    std::vector<SampledImageType> mSampledImages;
 
-    std::vector<std::pair<uint32_t, DescriptorSetLayout*>> DescriptorSetLayouts;
-    std::vector<DescriptorPool*> DescriptorPools;
+    std::vector<std::pair<uint32_t, DescriptorSetLayout*>> mDescriptorSetLayouts;
+    std::vector<DescriptorPool*> mDescriptorPools;
 
 private:
     void ReflectStages();

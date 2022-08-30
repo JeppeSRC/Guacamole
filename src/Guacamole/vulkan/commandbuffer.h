@@ -38,11 +38,11 @@ public:
     void End() const;
     void WaitForFence() const;
 
-    inline VkCommandBuffer GetHandle() const { return CommandBufferHandle; }
-    inline VkFence GetFence() const { return FenceHandle; }
+    inline VkCommandBuffer GetHandle() const { return mCommandBufferHandle; }
+    inline VkFence GetFence() const { return mFenceHandle; }
 private:
-    VkCommandBuffer CommandBufferHandle;
-    VkFence FenceHandle;
+    VkCommandBuffer mCommandBufferHandle;
+    VkFence mFenceHandle;
 
 };
 
@@ -54,9 +54,9 @@ public:
     void Reset() const;
     std::vector<CommandBuffer*> AllocateCommandBuffers(uint32_t num, bool primary) const;
 
-    inline VkCommandPool GetHandle() const { return CommandPoolHandle; }
+    inline VkCommandPool GetHandle() const { return mCommandPoolHandle; }
 private:
-    VkCommandPool CommandPoolHandle;
+    VkCommandPool mCommandPoolHandle;
 };
 
 }

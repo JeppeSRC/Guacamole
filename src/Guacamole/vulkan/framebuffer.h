@@ -30,10 +30,10 @@ namespace Guacamole {
 
 class Framebuffer {
 private:
-    VkFramebuffer Handle;
+    VkFramebuffer mFramebufferHandle;
 
-    uint32_t Width;
-    uint32_t Height;
+    uint32_t mWidth;
+    uint32_t mHeight;
 
 public:
     Framebuffer(uint32_t width, uint32_t height);

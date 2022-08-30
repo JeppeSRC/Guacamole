@@ -32,15 +32,15 @@ namespace Guacamole {
 
 
 Sampler::Sampler() 
-    : SamplerHandle(VK_NULL_HANDLE) {}
+    : mSamplerHandle(VK_NULL_HANDLE) {}
 
 
 void Sampler::Create(const VkSamplerCreateInfo& info) {
-    VK(vkCreateSampler(Context::GetDeviceHandle(), &info, nullptr, &SamplerHandle));
+    VK(vkCreateSampler(Context::GetDeviceHandle(), &info, nullptr, &mSamplerHandle));
 }
 
 Sampler::~Sampler() {
-    vkDestroySampler(Context::GetDeviceHandle(), SamplerHandle, nullptr);
+    vkDestroySampler(Context::GetDeviceHandle(), mSamplerHandle, nullptr);
 }
 
 

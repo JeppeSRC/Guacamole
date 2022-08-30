@@ -33,14 +33,14 @@ class Renderpass {
 public:
     virtual ~Renderpass();
 
-    VkRenderPass GetHandle() const { return RenderpassHandle; }
+    VkRenderPass GetHandle() const { return mRenderpassHandle; }
     virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
     virtual void Begin(CommandBuffer* cmd) = 0;
     virtual void End(CommandBuffer* cmd) = 0;
 
 protected:
-    VkRenderPass RenderpassHandle;
-    VkRenderPassBeginInfo BeginInfo;
+    VkRenderPass mRenderpassHandle;
+    VkRenderPassBeginInfo mBeginInfo;
 
     void Create(VkRenderPassCreateInfo* rInfo);
 private:
@@ -49,7 +49,7 @@ private:
 
 class BasicRenderpass : public Renderpass {
 private:
-    std::vector<VkFramebuffer> Framebuffers;
+    std::vector<VkFramebuffer> mFramebuffers;
 public:
     BasicRenderpass();
     ~BasicRenderpass();

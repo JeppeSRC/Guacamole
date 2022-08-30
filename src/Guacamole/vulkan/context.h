@@ -37,12 +37,12 @@ public:
     static void Init();
     static void Shutdown();
 
-    static VkInstance GetInstance() { return Instance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return SelectedPhysDevice->GetHandle(); }
-    static PhysicalDevice* GetPhysicalDevice() { return SelectedPhysDevice; }
-    static VkDevice GetDeviceHandle() { return LogicalDevice->GetHandle(); }
-    static Device* GetDevice() { return LogicalDevice; }
-    static CommandBuffer* GetAuxCmdBuffer() { return AuxCmdBuffer; }
+    static VkInstance GetInstance() { return mInstance; }
+    static VkPhysicalDevice GetPhysicalDeviceHandle() { return mSelectedPhysDevice->GetHandle(); }
+    static PhysicalDevice* GetPhysicalDevice() { return mSelectedPhysDevice; }
+    static VkDevice GetDeviceHandle() { return mLogicalDevice->GetHandle(); }
+    static Device* GetDevice() { return mLogicalDevice; }
+    static CommandBuffer* GetAuxCmdBuffer() { return mAuxCmdBuffer; }
 private:
 
     struct InstanceLayer {
@@ -50,14 +50,14 @@ private:
         std::vector<VkExtensionProperties> Extensions;
     };
 
-    static std::vector<InstanceLayer> InstanceLayers;
+    static std::vector<InstanceLayer> mInstanceLayers;
 
-    static VkInstance Instance;
-    static PhysicalDevice* SelectedPhysDevice;
-    static Device* LogicalDevice;
+    static VkInstance mInstance;
+    static PhysicalDevice* mSelectedPhysDevice;
+    static Device* mLogicalDevice;
 
-    static VkCommandPool CommandPool;
-    static CommandBuffer* AuxCmdBuffer;
+    static VkCommandPool mCommandPool;
+    static CommandBuffer* mAuxCmdBuffer;
 
     static void EnumerateLayersAndExtensions();
     static bool IsLayerSupported(const char* layerName);

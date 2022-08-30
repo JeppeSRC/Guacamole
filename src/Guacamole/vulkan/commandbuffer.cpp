@@ -29,23 +29,23 @@ SOFTWARE.
 
 namespace Guacamole {
 
-CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : CommandBufferHandle(Handle) {
+CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : mCommandBufferHandle(Handle) {
     VkFenceCreateInfo fInfo;
 
     fInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fInfo.pNext = nullptr;
     fInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    VK(vkCreateFence(Context::GetDeviceHandle(), &fInfo, nullptr, &FenceHandle));
+    VK(vkCreateFence(Context::GetDeviceHandle(), &fInfo, nullptr, &mFenceHandle));
 }
 
 CommandBuffer::~CommandBuffer() {
-    vkDestroyFence(Context::GetDeviceHandle(), FenceHandle, nullptr);
+    vkDestroyFence(Context::GetDeviceHandle(), mFenceHandle, nullptr);
 }
 
 
 void CommandBuffer::Reset() const {
-    VK(vkResetCommandBuffer(CommandBufferHandle, 0));
+    VK(vkResetCommandBuffer(mCommandBufferHandle, 0));
 }
 
 void CommandBuffer::Begin(bool oneTimeSubmit) const {
@@ -56,15 +56,15 @@ void CommandBuffer::Begin(bool oneTimeSubmit) const {
     bInfo.flags = oneTimeSubmit ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 0;
     bInfo.pInheritanceInfo = nullptr;
     
-    VK(vkBeginCommandBuffer(CommandBufferHandle, &bInfo));
+    VK(vkBeginCommandBuffer(mCommandBufferHandle, &bInfo));
 }
 
 void CommandBuffer::End() const {
-    VK(vkEndCommandBuffer(CommandBufferHandle));
+    VK(vkEndCommandBuffer(mCommandBufferHandle));
 }
 
 void CommandBuffer::WaitForFence() const {
-    VK(vkWaitForFences(Context::GetDeviceHandle(), 1, &FenceHandle, false, ~0));
+    VK(vkWaitForFences(Context::GetDeviceHandle(), 1, &mFenceHandle, false, ~0));
 }
 
 CommandPool::CommandPool() {
@@ -75,15 +75,15 @@ CommandPool::CommandPool() {
     info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     info.queueFamilyIndex = Context::GetPhysicalDevice()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
 
-    VK(vkCreateCommandPool(Context::GetDeviceHandle(), &info, nullptr, &CommandPoolHandle));
+    VK(vkCreateCommandPool(Context::GetDeviceHandle(), &info, nullptr, &mCommandPoolHandle));
 }
 
 CommandPool::~CommandPool() {
-    vkDestroyCommandPool(Context::GetDeviceHandle(), CommandPoolHandle, nullptr);
+    vkDestroyCommandPool(Context::GetDeviceHandle(), mCommandPoolHandle, nullptr);
 }
 
 void CommandPool::Reset() const {
-    VK(vkResetCommandPool(Context::GetDeviceHandle(), CommandPoolHandle, 0));
+    VK(vkResetCommandPool(Context::GetDeviceHandle(), mCommandPoolHandle, 0));
 }
 
 std::vector<CommandBuffer*> CommandPool::AllocateCommandBuffers(uint32_t num, bool primary) const {
@@ -93,7 +93,7 @@ std::vector<CommandBuffer*> CommandPool::AllocateCommandBuffers(uint32_t num, bo
     info.pNext = nullptr;
     info.level = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     info.commandBufferCount = num;
-    info.commandPool = CommandPoolHandle;
+    info.commandPool = mCommandPoolHandle;
 
     VkCommandBuffer* buffers = new VkCommandBuffer[num];
 

@@ -30,8 +30,8 @@ SOFTWARE.
 
 namespace Guacamole {
 
-std::vector<PhysicalDevice*> PhysicalDevice::PhysicalDevices;
-uint32_t PhysicalDevice::DeviceCount = 0;
+std::vector<PhysicalDevice*> PhysicalDevice::mPhysicalDevices;
+uint32_t PhysicalDevice::mDeviceCount = 0;
 
 void PhysicalDevice::EnumeratePhysicalDevices(VkInstance instance) {
     GM_ASSERT(instance != nullptr)
@@ -43,14 +43,14 @@ void PhysicalDevice::EnumeratePhysicalDevices(VkInstance instance) {
     VK(vkEnumeratePhysicalDevices(instance, &num, devices));
 
     for (uint32_t i = 0; i < num; i++) {
-        PhysicalDevices.push_back(new PhysicalDevice(devices[i]));
+        mPhysicalDevices.push_back(new PhysicalDevice(devices[i]));
     }
 
     delete devices;
 }
 
 PhysicalDevice* PhysicalDevice::SelectDevice() {
-    for (PhysicalDevice* dev : PhysicalDevices) {
+    for (PhysicalDevice* dev : mPhysicalDevices) {
         if (dev->GetDevicePresentationSupport()) return dev;
     }
 
@@ -59,42 +59,42 @@ PhysicalDevice* PhysicalDevice::SelectDevice() {
     return nullptr;
 }
     
-PhysicalDevice::PhysicalDevice(VkPhysicalDevice device) : DeviceHandle(device) {
-    Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    Properties.pNext = nullptr;
-    vkGetPhysicalDeviceProperties(device, &Properties.properties);
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice device) : mDeviceHandle(device) {
+    mProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    mProperties.pNext = nullptr;
+    vkGetPhysicalDeviceProperties(device, &mProperties.properties);
 
-    uint32_t major = VK_API_VERSION_MAJOR(Properties.properties.apiVersion);
-    uint32_t minor = VK_API_VERSION_MINOR(Properties.properties.apiVersion);
+    uint32_t major = VK_API_VERSION_MAJOR(mProperties.properties.apiVersion);
+    uint32_t minor = VK_API_VERSION_MINOR(mProperties.properties.apiVersion);
 
     if (major >= 1 && minor >= 1) {
-        vkGetPhysicalDeviceProperties2(device, &Properties);
+        vkGetPhysicalDeviceProperties2(device, &mProperties);
     }
 
     uint32_t queueCount = 0;
 
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, nullptr);
-    QueueProperties.resize(queueCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, QueueProperties.data());
+    mQueueProperties.resize(queueCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, mQueueProperties.data());
 
-    ID = DeviceCount++;
+    mID = mDeviceCount++;
 
 
     uint32_t extensionCount = 0;
 
-    vkEnumerateDeviceExtensionProperties(DeviceHandle, nullptr, &extensionCount, nullptr);
-    Extensions.resize(extensionCount);
-    vkEnumerateDeviceExtensionProperties(DeviceHandle, nullptr, &extensionCount, Extensions.data());
+    vkEnumerateDeviceExtensionProperties(mDeviceHandle, nullptr, &extensionCount, nullptr);
+    mExtensions.resize(extensionCount);
+    vkEnumerateDeviceExtensionProperties(mDeviceHandle, nullptr, &extensionCount, mExtensions.data());
 
-    vkGetPhysicalDeviceMemoryProperties(DeviceHandle, &MemoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(mDeviceHandle, &mMemoryProperties);
 }
 
 PhysicalDevice::~PhysicalDevice() {
 }
 
 uint32_t PhysicalDevice::GetQueueIndex(VkQueueFlags queues) const {
-    for (uint32_t i = 0; i < QueueProperties.size(); i++) {
-        const VkQueueFamilyProperties& q = QueueProperties[i];
+    for (uint32_t i = 0; i < mQueueProperties.size(); i++) {
+        const VkQueueFamilyProperties& q = mQueueProperties[i];
         
         if (q.queueFlags & queues) return i;
     }
@@ -111,13 +111,13 @@ bool PhysicalDevice::GetDevicePresentationSupport() const {
 }
 
 bool PhysicalDevice::GetQueuePresentationSupport(uint32_t queueIndex) const {
-    return glfwGetPhysicalDevicePresentationSupport(Context::GetInstance(), DeviceHandle, queueIndex) == GLFW_TRUE;
+    return glfwGetPhysicalDevicePresentationSupport(Context::GetInstance(), mDeviceHandle, queueIndex) == GLFW_TRUE;
 }
 
 bool PhysicalDevice::IsExtensionSupported(const char* extension) const {
     GM_ASSERT(extension != nullptr)
 
-    for (VkExtensionProperties prop : Extensions) {
+    for (VkExtensionProperties prop : mExtensions) {
         if (memcmp(prop.extensionName, extension, strlen(extension)) == 0) return true;
     }
 
@@ -127,7 +127,7 @@ bool PhysicalDevice::CheckImageFormat(VkFormat format, VkImageType imageType, Vk
     GM_ASSERT(prop != nullptr);
 
     VkImageFormatProperties imageProperties;
-    VkResult result = vkGetPhysicalDeviceImageFormatProperties(DeviceHandle, format, imageType, tiling, usage, 0, prop);
+    VkResult result = vkGetPhysicalDeviceImageFormatProperties(mDeviceHandle, format, imageType, tiling, usage, 0, prop);
 
     if (result == VK_SUCCESS) return true;
 
@@ -144,23 +144,23 @@ bool PhysicalDevice::CheckImageFormat(VkFormat format, VkImageType imageType, Vk
 
 void PhysicalDevice::PrintDeviceInfo(bool withExtensions) const {
     GM_LOG_DEBUG("Physical Device ({4}): {5} {0} {1}.{2}.{3}", 
-    Properties.properties.deviceName, 
-    VK_API_VERSION_MAJOR(Properties.properties.apiVersion), 
-    VK_API_VERSION_MINOR(Properties.properties.apiVersion),
-    VK_API_VERSION_PATCH(Properties.properties.apiVersion),
-    ID, Util::vkEnumToString(Properties.properties.deviceType));
+    mProperties.properties.deviceName, 
+    VK_API_VERSION_MAJOR(mProperties.properties.apiVersion), 
+    VK_API_VERSION_MINOR(mProperties.properties.apiVersion),
+    VK_API_VERSION_PATCH(mProperties.properties.apiVersion),
+    mID, Util::vkEnumToString(mProperties.properties.deviceType));
 
 
     if (withExtensions) {
-        GM_LOG_DEBUG("Extensions ({0}):", Extensions.size());
+        GM_LOG_DEBUG("Extensions ({0}):", mExtensions.size());
 
-        for (VkExtensionProperties ext : Extensions) {
+        for (VkExtensionProperties ext : mExtensions) {
             GM_LOG_DEBUG("\t{0}", ext.extensionName);
         }
     }
 }
 
-Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features) : Parent(physicalDevice) {
+Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features) : mParent(physicalDevice) {
     GM_ASSERT(physicalDevice != nullptr)
 
     std::vector<VkDeviceQueueCreateInfo> queues;
@@ -207,14 +207,14 @@ Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features
     info.ppEnabledLayerNames = 0;
     info.enabledLayerCount = 0;
 
-    VK(vkCreateDevice(physicalDevice->GetHandle(), &info, nullptr, &DeviceHandle));
+    VK(vkCreateDevice(physicalDevice->GetHandle(), &info, nullptr, &mDeviceHandle));
 
     GM_LOG_DEBUG("LogicalDevice created on \"{0}\"", physicalDevice->GetProperties().deviceName);
 
 }
 
 Device::~Device() {
-    vkDestroyDevice(DeviceHandle, nullptr);
+    vkDestroyDevice(mDeviceHandle, nullptr);
 }
 
 }

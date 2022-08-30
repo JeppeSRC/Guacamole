@@ -38,9 +38,9 @@ protected:
 public:
     virtual ~Sampler();
 
-    inline VkSampler GetHandle() const { return SamplerHandle; }
+    inline VkSampler GetHandle() const { return mSamplerHandle; }
 private:
-    VkSampler SamplerHandle;
+    VkSampler mSamplerHandle;
 };
 
 class BasicSampler : public Sampler {

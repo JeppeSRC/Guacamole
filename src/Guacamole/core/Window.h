@@ -40,19 +40,18 @@ struct WindowSpec {
 };
 
 class Window {
-private:
-    WindowSpec Spec;
-
-    GLFWwindow* WindowHandle;
-    GLFWmonitor** Monitors;
-
 public:
     Window(WindowSpec spec);
     ~Window();
 
-    inline GLFWwindow* GetHandle() const { return WindowHandle; }
-    inline const WindowSpec& GetSpec() const { return Spec; }
-    inline bool ShouldClose() const { return glfwWindowShouldClose(WindowHandle); }
+    inline GLFWwindow* GetHandle() const { return mWindowHandle; }
+    inline const WindowSpec& GetSpec() const { return mSpec; }
+    inline bool ShouldClose() const { return glfwWindowShouldClose(mWindowHandle); }
+private:
+    WindowSpec mSpec;
+
+    GLFWwindow* mWindowHandle;
+    GLFWmonitor** mMonitors;
 
 };
 

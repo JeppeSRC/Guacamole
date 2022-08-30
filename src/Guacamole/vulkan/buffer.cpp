@@ -31,7 +31,7 @@ SOFTWARE.
 namespace Guacamole {
 
 Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, void* data) : 
-    MappedBufferHandle(VK_NULL_HANDLE), MappedBufferMemory(VK_NULL_HANDLE), BufferSize(size), MappedMemory(nullptr) {
+    mMappedBufferHandle(VK_NULL_HANDLE), mMappedBufferMemory(VK_NULL_HANDLE), mBufferSize(size), mMappedMemory(nullptr) {
 
     VkBufferCreateInfo bInfo;
 
@@ -44,10 +44,10 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, void* data) :
     bInfo.queueFamilyIndexCount = 0;
     bInfo.pQueueFamilyIndices = nullptr;
 
-    VK(vkCreateBuffer(Context::GetDeviceHandle(), &bInfo, nullptr, &BufferHandle));
+    VK(vkCreateBuffer(Context::GetDeviceHandle(), &bInfo, nullptr, &mBufferHandle));
 
     VkMemoryRequirements memReq;
-    vkGetBufferMemoryRequirements(Context::GetDeviceHandle(), BufferHandle, &memReq);
+    vkGetBufferMemoryRequirements(Context::GetDeviceHandle(), mBufferHandle, &memReq);
     
     VkMemoryAllocateInfo aInfo;
 
@@ -56,8 +56,8 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, void* data) :
     aInfo.allocationSize = memReq.size;
     aInfo.memoryTypeIndex = GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);;
 
-    VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &BufferMemory));
-    VK(vkBindBufferMemory(Context::GetDeviceHandle(), BufferHandle, BufferMemory, 0));
+    VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mBufferMemory));
+    VK(vkBindBufferMemory(Context::GetDeviceHandle(), mBufferHandle, mBufferMemory, 0));
 
     if (data) {
         WriteData(data, size);
@@ -65,31 +65,31 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, void* data) :
 }
 
 Buffer::~Buffer() {
-    vkFreeMemory(Context::GetDeviceHandle(), BufferMemory, nullptr);
-    vkFreeMemory(Context::GetDeviceHandle(), MappedBufferMemory, nullptr);
-    vkDestroyBuffer(Context::GetDeviceHandle(), BufferHandle, nullptr);
-    vkDestroyBuffer(Context::GetDeviceHandle(), MappedBufferHandle, nullptr);
+    vkFreeMemory(Context::GetDeviceHandle(), mBufferMemory, nullptr);
+    vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
+    vkDestroyBuffer(Context::GetDeviceHandle(), mBufferHandle, nullptr);
+    vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
 }
 
 void* Buffer::Map() {
-    if (MappedMemory) return MappedMemory;
+    if (mMappedMemory) return mMappedMemory;
 
-    if (MappedBufferMemory == VK_NULL_HANDLE) {
+    if (mMappedBufferMemory == VK_NULL_HANDLE) {
         VkBufferCreateInfo bInfo;
 
         bInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bInfo.pNext = nullptr;
         bInfo.flags = 0;
-        bInfo.size = BufferSize;
+        bInfo.size = mBufferSize;
         bInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         bInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bInfo.queueFamilyIndexCount = 0;
         bInfo.pQueueFamilyIndices = nullptr;
 
-        VK(vkCreateBuffer(Context::GetDeviceHandle(), &bInfo, nullptr, &MappedBufferHandle));
+        VK(vkCreateBuffer(Context::GetDeviceHandle(), &bInfo, nullptr, &mMappedBufferHandle));
 
         VkMemoryRequirements memReq;
-        vkGetBufferMemoryRequirements(Context::GetDeviceHandle(), MappedBufferHandle, &memReq);
+        vkGetBufferMemoryRequirements(Context::GetDeviceHandle(), mMappedBufferHandle, &memReq);
 
         VkMemoryAllocateInfo aInfo;
 
@@ -98,25 +98,25 @@ void* Buffer::Map() {
         aInfo.allocationSize = memReq.size;
         aInfo.memoryTypeIndex = GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &MappedBufferMemory));
-        VK(vkBindBufferMemory(Context::GetDeviceHandle(), MappedBufferHandle, MappedBufferMemory, 0));
+        VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mMappedBufferMemory));
+        VK(vkBindBufferMemory(Context::GetDeviceHandle(), mMappedBufferHandle, mMappedBufferMemory, 0));
     }
 
-    VK(vkMapMemory(Context::GetDeviceHandle(), MappedBufferMemory, 0, BufferSize, 0, &MappedMemory));
+    VK(vkMapMemory(Context::GetDeviceHandle(), mMappedBufferMemory, 0, mBufferSize, 0, &mMappedMemory));
 
-    return MappedMemory;
+    return mMappedMemory;
 }
 
 void Buffer::Unmap() {
-    GM_ASSERT(MappedMemory)
+    GM_ASSERT(mMappedMemory)
 
-    vkUnmapMemory(Context::GetDeviceHandle(), MappedBufferMemory);
-    vkFreeMemory(Context::GetDeviceHandle(), MappedBufferMemory, nullptr);
-    vkDestroyBuffer(Context::GetDeviceHandle(), MappedBufferHandle, nullptr);
+    vkUnmapMemory(Context::GetDeviceHandle(), mMappedBufferMemory);
+    vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
+    vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
 
-    MappedMemory = nullptr;
-    MappedBufferMemory = VK_NULL_HANDLE;
-    MappedBufferHandle = VK_NULL_HANDLE;
+    mMappedMemory = nullptr;
+    mMappedBufferMemory = VK_NULL_HANDLE;
+    mMappedBufferHandle = VK_NULL_HANDLE;
 }
 
 void Buffer::WriteData(void* data, uint64_t size, uint64_t offset) {
@@ -139,9 +139,9 @@ void Buffer::StageCopy(bool immediate) {
 
         copy.srcOffset = 0;
         copy.dstOffset = 0;
-        copy.size = BufferSize;
+        copy.size = mBufferSize;
 
-        vkCmdCopyBuffer(cmd->GetHandle(), MappedBufferHandle, BufferHandle, 1, &copy);
+        vkCmdCopyBuffer(cmd->GetHandle(), mMappedBufferHandle, mBufferHandle, 1, &copy);
 
         cmd->End();
 

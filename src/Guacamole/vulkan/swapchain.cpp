@@ -27,64 +27,64 @@ SOFTWARE.
 
 namespace Guacamole {
 
-VkSwapchainCreateInfoKHR Swapchain::sInfo;
-VkSwapchainKHR Swapchain::SwapchainHandle;
-VkSurfaceKHR Swapchain::SurfaceHandle;
-VkQueue Swapchain::GraphicsQueue;
-uint32_t Swapchain::CurrentImageIndex = ~0;
-VkSemaphore Swapchain::ImageSemaphore;
-VkSemaphore Swapchain::SubmitSemaphore;
-std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> Swapchain::CommandPools;
-VkSubmitInfo Swapchain::SubmitInfo;
-VkPresentInfoKHR Swapchain::PresentInfo;
-std::vector<VkImage> Swapchain::SwapchainImages;
-std::vector<VkImageView> Swapchain::SwapchainImageViews;
+VkSwapchainCreateInfoKHR Swapchain::msInfo;
+VkSwapchainKHR Swapchain::mSwapchainHandle;
+VkSurfaceKHR Swapchain::mSurfaceHandle;
+VkQueue Swapchain::mGraphicsQueue;
+uint32_t Swapchain::mCurrentImageIndex = ~0;
+VkSemaphore Swapchain::mImageSemaphore;
+VkSemaphore Swapchain::mSubmitSemaphore;
+std::vector<std::pair<CommandPool*, std::vector<CommandBuffer*>>> Swapchain::mCommandPools;
+VkSubmitInfo Swapchain::mSubmitInfo;
+VkPresentInfoKHR Swapchain::mPresentInfo;
+std::vector<VkImage> Swapchain::mSwapchainImages;
+std::vector<VkImageView> Swapchain::mSwapchainImageViews;
 
 void Swapchain::Init(Window* window) {
 
-    VK(glfwCreateWindowSurface(Context::GetInstance(), window->GetHandle(), nullptr, &SurfaceHandle));
+    VK(glfwCreateWindowSurface(Context::GetInstance(), window->GetHandle(), nullptr, &mSurfaceHandle));
 
-    sInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    sInfo.pNext = nullptr;
-    sInfo.flags = 0;
-    sInfo.surface = SurfaceHandle;
-    sInfo.minImageCount = 2;
+    msInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    msInfo.pNext = nullptr;
+    msInfo.flags = 0;
+    msInfo.surface = mSurfaceHandle;
+    msInfo.minImageCount = 2;
     
     uint32_t formatCount = 0;
 
-    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), SurfaceHandle, &formatCount, nullptr));
+    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), mSurfaceHandle, &formatCount, nullptr));
     VkSurfaceFormatKHR* surfaceFormats = new VkSurfaceFormatKHR[formatCount];
-    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), SurfaceHandle, &formatCount, surfaceFormats));
+    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), mSurfaceHandle, &formatCount, surfaceFormats));
 
 
     //TODO: fix
-    sInfo.imageFormat = surfaceFormats[1].format;
-    sInfo.imageColorSpace = surfaceFormats[1].colorSpace;
+    msInfo.imageFormat = surfaceFormats[1].format;
+    msInfo.imageColorSpace = surfaceFormats[1].colorSpace;
 
     delete surfaceFormats;
 
-    sInfo.imageExtent.width = window->GetSpec().Width;
-    sInfo.imageExtent.height = window->GetSpec().Height;
-    sInfo.imageArrayLayers = 1;
-    sInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    sInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    sInfo.queueFamilyIndexCount = 0;
-    sInfo.pQueueFamilyIndices = nullptr;
-    sInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    sInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    sInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-    sInfo.clipped = VK_FALSE;
-    sInfo.oldSwapchain = nullptr;
+    msInfo.imageExtent.width = window->GetSpec().Width;
+    msInfo.imageExtent.height = window->GetSpec().Height;
+    msInfo.imageArrayLayers = 1;
+    msInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    msInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    msInfo.queueFamilyIndexCount = 0;
+    msInfo.pQueueFamilyIndices = nullptr;
+    msInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    msInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    msInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    msInfo.clipped = VK_FALSE;
+    msInfo.oldSwapchain = nullptr;
 
-    VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &sInfo, nullptr, &SwapchainHandle));
+    VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &msInfo, nullptr, &mSwapchainHandle));
 
-    vkGetDeviceQueue(Context::GetDevice()->GetHandle(), Context::GetDevice()->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &GraphicsQueue);
+    vkGetDeviceQueue(Context::GetDevice()->GetHandle(), Context::GetDevice()->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &mGraphicsQueue);
 
     uint32_t imageCount = 0;
 
-    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, nullptr));
-    SwapchainImages.resize(imageCount);
-    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), SwapchainHandle, &imageCount, SwapchainImages.data()));
+    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), mSwapchainHandle, &imageCount, nullptr));
+    mSwapchainImages.resize(imageCount);
+    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
     
     VkImageViewCreateInfo iwInfo;
 
@@ -93,7 +93,7 @@ void Swapchain::Init(Window* window) {
     iwInfo.flags = 0;
     //iwInfo.image
     iwInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    iwInfo.format = sInfo.imageFormat;
+    iwInfo.format = msInfo.imageFormat;
     iwInfo.components.r = VK_COMPONENT_SWIZZLE_R;
     iwInfo.components.g = VK_COMPONENT_SWIZZLE_G;
     iwInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -104,14 +104,14 @@ void Swapchain::Init(Window* window) {
     iwInfo.subresourceRange.layerCount = 1;
     iwInfo.subresourceRange.levelCount = 1;
     
-    for (VkImage image : SwapchainImages) {
+    for (VkImage image : mSwapchainImages) {
         iwInfo.image = image;
 
         VkImageView view;
 
         VK(vkCreateImageView(Context::GetDeviceHandle(), &iwInfo, nullptr, &view));
 
-        SwapchainImageViews.push_back(view);
+        mSwapchainImageViews.push_back(view);
     }
 
     VkSemaphoreCreateInfo spInfo;
@@ -120,56 +120,56 @@ void Swapchain::Init(Window* window) {
     spInfo.pNext = nullptr;
     spInfo.flags = 0;
 
-    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &ImageSemaphore));
-    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &SubmitSemaphore));
+    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mImageSemaphore));
+    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mSubmitSemaphore));
 
      // Allocate one command pool per thread and imageCount buffers per pool
     CommandPool* mainPool = new CommandPool();
-    CommandPools.emplace_back(mainPool, mainPool->AllocateCommandBuffers(imageCount, true));
+    mCommandPools.emplace_back(mainPool, mainPool->AllocateCommandBuffers(imageCount, true));
 
     // Preset constant values for VkSubmitInfo
-    SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    SubmitInfo.pNext = nullptr;
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = &ImageSemaphore;
-    SubmitInfo.pWaitDstStageMask = 0;
-    SubmitInfo.commandBufferCount = 1; // 1 for now
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = &SubmitSemaphore;
+    mSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    mSubmitInfo.pNext = nullptr;
+    mSubmitInfo.waitSemaphoreCount = 1;
+    mSubmitInfo.pWaitSemaphores = &mImageSemaphore;
+    mSubmitInfo.pWaitDstStageMask = 0;
+    mSubmitInfo.commandBufferCount = 1; // 1 for now
+    mSubmitInfo.signalSemaphoreCount = 1;
+    mSubmitInfo.pSignalSemaphores = &mSubmitSemaphore;
 
     // Preset constant values for VkPresentInfoKHR
-    PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    PresentInfo.pNext = nullptr;
-    PresentInfo.waitSemaphoreCount = 1;
-    PresentInfo.pWaitSemaphores = &SubmitSemaphore;
-    PresentInfo.swapchainCount = 1;
-    PresentInfo.pSwapchains = &SwapchainHandle;
+    mPresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    mPresentInfo.pNext = nullptr;
+    mPresentInfo.waitSemaphoreCount = 1;
+    mPresentInfo.pWaitSemaphores = &mSubmitSemaphore;
+    mPresentInfo.swapchainCount = 1;
+    mPresentInfo.pSwapchains = &mSwapchainHandle;
     
 }
 
 void Swapchain::Shutdown() {
     WaitForAllCommandBufferFences();
 
-    vkDestroySemaphore(Context::GetDeviceHandle(), ImageSemaphore, nullptr);
-    vkDestroySemaphore(Context::GetDeviceHandle(), SubmitSemaphore, nullptr);
+    vkDestroySemaphore(Context::GetDeviceHandle(), mImageSemaphore, nullptr);
+    vkDestroySemaphore(Context::GetDeviceHandle(), mSubmitSemaphore, nullptr);
 
-    for (auto& [pool, cmds] : CommandPools) {
+    for (auto& [pool, cmds] : mCommandPools) {
         delete pool;
 
         for (CommandBuffer* cmd : cmds)
             delete cmd;
     }
 
-    for (VkImageView view : SwapchainImageViews) {
+    for (VkImageView view : mSwapchainImageViews) {
         vkDestroyImageView(Context::GetDeviceHandle(), view, nullptr);
     }
 
-    vkDestroySwapchainKHR(Context::GetDeviceHandle(), SwapchainHandle, nullptr);
-    vkDestroySurfaceKHR(Context::GetInstance(), SurfaceHandle, nullptr);
+    vkDestroySwapchainKHR(Context::GetDeviceHandle(), mSwapchainHandle, nullptr);
+    vkDestroySurfaceKHR(Context::GetInstance(), mSurfaceHandle, nullptr);
 }
 
 void Swapchain::Begin() {
-    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), SwapchainHandle, ~0, ImageSemaphore, VK_NULL_HANDLE, &CurrentImageIndex));
+    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), mSwapchainHandle, ~0, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
 
     CommandBuffer* cmd = GetPrimaryCommandBuffer(0);
     
@@ -186,25 +186,25 @@ void Swapchain::Present() {
 
     cmd->End();
    
-    SubmitInfo.pCommandBuffers = &cmdHandle;
-    SubmitInfo.pWaitDstStageMask = waitStages;
+    mSubmitInfo.pCommandBuffers = &cmdHandle;
+    mSubmitInfo.pWaitDstStageMask = waitStages;
 
 
     VK(vkResetFences(Context::GetDeviceHandle(), 1, &cmdFence));
-    VK(vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, cmdFence));
+    VK(vkQueueSubmit(mGraphicsQueue, 1, &mSubmitInfo, cmdFence));
 
     VkResult result;
 
-    PresentInfo.pImageIndices = &CurrentImageIndex;
-    PresentInfo.pResults = &result;
+    mPresentInfo.pImageIndices = &mCurrentImageIndex;
+    mPresentInfo.pResults = &result;
 
-    VK(vkQueuePresentKHR(GraphicsQueue, &PresentInfo));
+    VK(vkQueuePresentKHR(mGraphicsQueue, &mPresentInfo));
 
-    CurrentImageIndex = ~0;
+    mCurrentImageIndex = ~0;
 }
 
 void Swapchain::WaitForAllCommandBufferFences() {
-    for (auto& [pool, cmds] : CommandPools) {
+    for (auto& [pool, cmds] : mCommandPools) {
         for (CommandBuffer* cmd : cmds) {
             cmd->WaitForFence();
         }
@@ -213,9 +213,9 @@ void Swapchain::WaitForAllCommandBufferFences() {
 
 CommandBuffer* Swapchain::GetPrimaryCommandBuffer(uint32_t threadID) {
     GM_ASSERT(threadID == 0);
-    GM_ASSERT(CurrentImageIndex != ~0);
+    GM_ASSERT(mCurrentImageIndex != ~0);
 
-    return CommandPools[threadID].second[CurrentImageIndex];
+    return mCommandPools[threadID].second[mCurrentImageIndex];
 }
 
 }

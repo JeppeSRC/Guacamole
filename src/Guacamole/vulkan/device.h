@@ -30,7 +30,7 @@ namespace Guacamole {
 
 class PhysicalDevice {
 public:
-    static std::vector<PhysicalDevice*> PhysicalDevices;
+    static std::vector<PhysicalDevice*> mPhysicalDevices;
 
     static void EnumeratePhysicalDevices(VkInstance instance);
     // ATM this will select the first device with presentation support
@@ -40,9 +40,9 @@ public:
     PhysicalDevice(VkPhysicalDevice device);
     ~PhysicalDevice();
 
-    inline VkPhysicalDevice GetHandle() const { return DeviceHandle; }            
-    inline VkPhysicalDeviceProperties GetProperties() const { return Properties.properties; }
-    inline VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return MemoryProperties; }
+    inline VkPhysicalDevice GetHandle() const { return mDeviceHandle; }            
+    inline VkPhysicalDeviceProperties GetProperties() const { return mProperties.properties; }
+    inline VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return mMemoryProperties; }
 
     uint32_t GetQueueIndex(VkQueueFlags queues) const;
     bool GetDevicePresentationSupport() const;
@@ -53,14 +53,14 @@ public:
     void PrintDeviceInfo(bool withExtensions) const;
 
 private:
-    VkPhysicalDevice DeviceHandle;
-    VkPhysicalDeviceProperties2 Properties;
-    VkPhysicalDeviceMemoryProperties MemoryProperties;
-    std::vector<VkQueueFamilyProperties> QueueProperties;
-    std::vector<VkExtensionProperties> Extensions;
+    VkPhysicalDevice mDeviceHandle;
+    VkPhysicalDeviceProperties2 mProperties;
+    VkPhysicalDeviceMemoryProperties mMemoryProperties;
+    std::vector<VkQueueFamilyProperties> mQueueProperties;
+    std::vector<VkExtensionProperties> mExtensions;
 
-    uint32_t ID;
-    static uint32_t DeviceCount;
+    uint32_t mID;
+    static uint32_t mDeviceCount;
 };
 
 class Device {
@@ -68,13 +68,13 @@ public:
     Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features);
     ~Device();
 
-    inline VkDevice GetHandle() const { return DeviceHandle; }
-    inline PhysicalDevice* GetParent() const { return Parent; }
+    inline VkDevice GetHandle() const { return mDeviceHandle; }
+    inline PhysicalDevice* GetParent() const { return mParent; }
 
 private:
-    PhysicalDevice* Parent;
+    PhysicalDevice* mParent;
 
-    VkDevice DeviceHandle;
+    VkDevice mDeviceHandle;
 
 };
 

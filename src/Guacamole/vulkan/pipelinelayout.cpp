@@ -41,9 +41,9 @@ PipelineLayout::PipelineLayout(DescriptorSetLayout* layout) {
     lInfo.pushConstantRangeCount = 0;
     lInfo.pPushConstantRanges = nullptr;
 
-    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &LayoutHandle));
+    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
-PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts) : LayoutHandle(VK_NULL_HANDLE) {
+PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts) : mLayoutHandle(VK_NULL_HANDLE) {
     VkPipelineLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -61,11 +61,11 @@ PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts)
     lInfo.pushConstantRangeCount = 0;
     lInfo.pPushConstantRanges = nullptr;
 
-    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &LayoutHandle));
+    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
 
 PipelineLayout::~PipelineLayout() {
-    vkDestroyPipelineLayout(Context::GetDeviceHandle(), LayoutHandle, nullptr);
+    vkDestroyPipelineLayout(Context::GetDeviceHandle(), mLayoutHandle, nullptr);
 }
 
 }

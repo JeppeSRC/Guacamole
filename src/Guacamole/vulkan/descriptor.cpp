@@ -29,7 +29,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
-DescriptorSet::DescriptorSet(VkDescriptorSet Handle, DescriptorSetLayout* layout) : DescriptorSetHandle(Handle), Layout(layout) {
+DescriptorSet::DescriptorSet(VkDescriptorSet Handle, DescriptorSetLayout* layout) : mDescriptorSetHandle(Handle), mLayout(layout) {
 
 }
 
@@ -37,7 +37,7 @@ DescriptorSet::~DescriptorSet() {
 
 }
 
-DescriptorSetLayout::DescriptorSetLayout() : DescriptorSetLayoutHandle(VK_NULL_HANDLE) {
+DescriptorSetLayout::DescriptorSetLayout() : mDescriptorSetLayoutHandle(VK_NULL_HANDLE) {
     VkDescriptorSetLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -46,11 +46,11 @@ DescriptorSetLayout::DescriptorSetLayout() : DescriptorSetLayoutHandle(VK_NULL_H
     lInfo.bindingCount = 0;
     lInfo.pBindings = nullptr;
 
-    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &DescriptorSetLayoutHandle));
+    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
 }
 
 DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout) 
-    : DescriptorSetLayoutHandle(VK_NULL_HANDLE), UniformLayout(uniformLayout) {
+    : mDescriptorSetLayoutHandle(VK_NULL_HANDLE), mUniformLayout(uniformLayout) {
     VkDescriptorSetLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -59,17 +59,17 @@ DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayout
     lInfo.bindingCount = (uint32_t)bindings.size();
     lInfo.pBindings = bindings.data();
 
-    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &DescriptorSetLayoutHandle));
+    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(Context::GetDeviceHandle(), DescriptorSetLayoutHandle, nullptr);
+    vkDestroyDescriptorSetLayout(Context::GetDeviceHandle(), mDescriptorSetLayoutHandle, nullptr);
 }
 
 const UniformBufferType* DescriptorSetLayout::GetUniformBuffer(uint32_t binding) const {
-    for (UniformBaseType* base : UniformLayout) {
-        if (base->Binding == binding) {
-            GM_ASSERT(base->Type == UniformType::Buffer);
+    for (UniformBaseType* base : mUniformLayout) {
+        if (base->mBinding == binding) {
+            GM_ASSERT(base->mType == UniformType::Buffer);
 
             return (UniformBufferType*)base;
         }
@@ -83,21 +83,21 @@ const UniformBufferType* DescriptorSetLayout::GetUniformBuffer(uint32_t binding)
 const UniformBufferType::Member* DescriptorSetLayout::GetUniformBufferMember(uint32_t binding, uint32_t memberIndex) const {
     const UniformBufferType* buf = GetUniformBuffer(binding);
 
-    GM_ASSERT(memberIndex < buf->Members.size()) ;
+    GM_ASSERT(memberIndex < buf->mMembers.size()) ;
 
-    return &buf->Members[memberIndex];
+    return &buf->mMembers[memberIndex];
 }
 
 uint32_t DescriptorSetLayout::GetUniformBufferSize(uint32_t binding) const {
     const UniformBufferType* buf = GetUniformBuffer(binding);
 
-    return buf->Size;
+    return buf->mSize;
 }
 
 uint32_t DescriptorSetLayout::GetUniformBufferMemeberCount(uint32_t binding) const {
     const UniformBufferType* buf = GetUniformBuffer(binding);
 
-    return buf->Members.size();
+    return buf->mMembers.size();
 }
 
 uint32_t DescriptorSetLayout::GetUniformBufferMemberSize(uint32_t binding, uint32_t memberIndex) const {
@@ -123,11 +123,11 @@ DescriptorPool::DescriptorPool(uint32_t maxSets) {
     pInfo.poolSizeCount = 0;
     pInfo.pPoolSizes = nullptr;
 
-    VK(vkCreateDescriptorPool(Context::GetDeviceHandle(), &pInfo, nullptr, &PoolHandle));
+    VK(vkCreateDescriptorPool(Context::GetDeviceHandle(), &pInfo, nullptr, &mPoolHandle));
 }
 
 DescriptorPool::~DescriptorPool() {
-    vkDestroyDescriptorPool(Context::GetDeviceHandle(), PoolHandle, nullptr);
+    vkDestroyDescriptorPool(Context::GetDeviceHandle(), mPoolHandle, nullptr);
 }
 
 DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
@@ -146,7 +146,7 @@ DescriptorSet** DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layo
 
     aInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     aInfo.pNext = nullptr;
-    aInfo.descriptorPool = PoolHandle;
+    aInfo.descriptorPool = mPoolHandle;
     aInfo.descriptorSetCount = num;
     aInfo.pSetLayouts = &tmp;
 
