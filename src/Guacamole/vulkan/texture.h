@@ -27,6 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "buffer.h"
+#include "sampler.h"
 
 namespace Guacamole {
 
