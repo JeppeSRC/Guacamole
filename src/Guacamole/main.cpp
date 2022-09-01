@@ -45,9 +45,10 @@ struct Vertex {
 };
 
 int main() {
-    
     spdlog::set_level(spdlog::level::debug);
     Context::Init();
+    CommandPoolManager::Init(1);
+    CommandPoolManager::AllocateAuxCommandBuffers(2);
 
     WindowSpec spec;
 
@@ -88,7 +89,7 @@ int main() {
             }
         }
 
-        tex.WriteData(colors, sizeof(colors));
+        tex.WriteDataImmediate(colors, sizeof(colors));
 
         BasicRenderpass pass;
 
@@ -162,7 +163,7 @@ int main() {
         while (!window.ShouldClose()) {
             auto start = std::chrono::high_resolution_clock::now();
             Swapchain::Begin();
-            CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer(0);
+            CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer();
 
             VkCommandBuffer handle = cmd->GetHandle();
 
@@ -185,22 +186,21 @@ int main() {
 
             pass.End(cmd);
 
-
             Swapchain::Present();
 
-            auto end = std::chrono::high_resolution_clock::now();
+          /*  auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
             float ms = float(duration) / 1000.0f;
 
-            std::cout << "Frame Time: " << ms << "ms FPS: " << 1000.0f / ms << "\n";
+            std::cout << "Frame Time: " << ms << "ms FPS: " << 1000.0f / ms << "\n";*/
         }
 
         Swapchain::WaitForAllCommandBufferFences();
     }
 
     Swapchain::Shutdown();
-
+    CommandPoolManager::Shutdown();
     Context::Shutdown();
 
     return 0;
