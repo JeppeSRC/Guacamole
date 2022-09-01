@@ -96,13 +96,13 @@ int main() {
 
         GraphicsPipelineInfo gInfo;
 
-        gInfo.Width = spec.Width;
-        gInfo.Height = spec.Height;
-        gInfo.VertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
-        gInfo.VertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2} } });
-        gInfo.PipelineLayout = &pipelineLayout;
-        gInfo.Renderpass = &pass;
-        gInfo.Shader = &shader;
+        gInfo.mWidth = spec.Width;
+        gInfo.mHeight = spec.Height;
+        gInfo.mVertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
+        gInfo.mVertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2} } });
+        gInfo.mPipelineLayout = &pipelineLayout;
+        gInfo.mRenderpass = &pass;
+        gInfo.mShader = &shader;
         
         GraphicsPipeline gPipeline(gInfo);
 
@@ -111,29 +111,7 @@ int main() {
 
         Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));
 
-        VkSamplerCreateInfo sInfo;
-
-        sInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sInfo.pNext = nullptr;
-        sInfo.flags = 0;
-        sInfo.magFilter = VK_FILTER_LINEAR;
-        sInfo.minFilter = VK_FILTER_LINEAR;
-        sInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        sInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE; 
-        sInfo.mipLodBias = 0;
-        sInfo.anisotropyEnable = true;
-        sInfo.maxAnisotropy = 16;
-        sInfo.compareEnable = false;
-        sInfo.compareOp = VK_COMPARE_OP_EQUAL;
-        sInfo.minLod = 0;
-        sInfo.maxLod = 0;
-        sInfo.unnormalizedCoordinates = false;
-
-        VkSampler sampler;
-
-        VK(vkCreateSampler(Context::GetDeviceHandle(), &sInfo, nullptr, &sampler));
+        BasicSampler sampler;
 
         VkDescriptorBufferInfo bInfo;
 
@@ -156,7 +134,7 @@ int main() {
 
         VkDescriptorImageInfo iInfo;
 
-        iInfo.sampler = sampler;
+        iInfo.sampler = sampler.GetHandle();
         iInfo.imageView = tex.GetImageViewHandle();
         iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -219,8 +197,6 @@ int main() {
         }
 
         Swapchain::WaitForAllCommandBufferFences();
-
-        vkDestroySampler(Context::GetDeviceHandle(), sampler, nullptr);
     }
 
     Swapchain::Shutdown();
