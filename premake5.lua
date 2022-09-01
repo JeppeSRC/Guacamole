@@ -3,8 +3,8 @@ workspace "Guacamole"
     architecture "x86_64"
     location "build"
 
-    targetdir "build/bin/%{prj.name}"
-    objdir "build/obj/%{prj.name}"
+    targetdir "build/bin/%{prj.name}/%{cfg.shortname}"
+    objdir "build/obj/%{prj.name}/%{cfg.shortname}"
 
 	flags {
 		"MultiProcessorCompile"
