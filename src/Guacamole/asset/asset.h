@@ -25,3 +25,29 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
+
+#include <filesystem>
+
+#include "../vulkan/texture.h"
+
+namespace Guacamole {
+
+class Asset {
+protected:
+    std::filesystem::path mFilePath;
+    bool mLoaded;
+
+    Asset(const std::filesystem::path& filePath);
+public:
+    virtual ~Asset();
+
+    virtual void Load() = 0;
+    virtual void Unload() = 0;
+
+    inline const std::filesystem::path& GetPath() const { return mFilePath; }
+    inline std::string GetPathAsString() const { mFilePath.string(); }
+    inline bool IsLoaded() const { return mLoaded; }
+};
+
+
+}

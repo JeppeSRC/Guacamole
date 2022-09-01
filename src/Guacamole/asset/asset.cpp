@@ -23,3 +23,17 @@ SOFTWARE.
 */
 
 #include <Guacamole.h>
+
+#include "asset.h"
+
+namespace Guacamole {
+
+Asset::Asset(const std::filesystem::path& filePath) 
+    : mFilePath(filePath), mLoaded(false) {}
+
+Asset::~Asset() {}
+
+    
+}
+
+}
