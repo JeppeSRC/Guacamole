@@ -26,6 +26,7 @@ SOFTWARE.
 #include "texture.h"
 #include "context.h"
 #include "swapchain.h"
+#include "commandpoolmanager.h"
 
 
 namespace Guacamole {
@@ -89,7 +90,9 @@ void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageTyp
 
 Texture::~Texture() {
     vkFreeMemory(Context::GetDeviceHandle(), mImageMemory, nullptr);
+    vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
     vkDestroyImage(Context::GetDeviceHandle(), mImageHandle, nullptr);
+    vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
     vkDestroyImageView(Context::GetDeviceHandle(), mImageViewHandle, nullptr);
 }
 
@@ -130,6 +133,8 @@ void* Texture::Map() {
 }
 
 void Texture::Unmap() {
+    GM_ASSERT(mMappedMemory);
+
     vkUnmapMemory(Context::GetDeviceHandle(), mMappedBufferMemory);
     vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
     vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
@@ -145,6 +150,14 @@ void Texture::WriteData(void* data, uint64_t size, uint64_t offset) {
 
     memcpy((uint8_t*)mem + offset, data, size);
 
+    StageCopy(false);
+}
+
+void Texture::WriteDataImmediate(void* data, uint64_t size, uint64_t offset) {
+    void* mem = Map();
+
+    memcpy((uint8_t*)mem + offset, data, size);
+
     StageCopy(true);
 
     Unmap();
@@ -152,7 +165,7 @@ void Texture::WriteData(void* data, uint64_t size, uint64_t offset) {
 
 void Texture::StageCopy(bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = Context::GetAuxCmdBuffer();
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -191,15 +204,29 @@ void Texture::StageCopy(bool immediate) {
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        // TOOD
-        GM_ASSERT(false);
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer();
+
+        VkBufferImageCopy copy;
+
+        copy.bufferOffset = 0;
+        copy.bufferRowLength = 0;
+        copy.bufferImageHeight = 0;
+        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        copy.imageSubresource.baseArrayLayer = 0;
+        copy.imageSubresource.layerCount = 1;
+        copy.imageSubresource.mipLevel = 0;
+        copy.imageOffset = {};
+        copy.imageExtent = mImageInfo.extent;
+
+        vkCmdCopyBufferToImage(cmd->GetHandle(), mMappedBufferHandle, mImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
     }
 
 }
 
 void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = Context::GetAuxCmdBuffer();
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -208,7 +235,7 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
         bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         bar.pNext = nullptr;
         bar.srcAccessMask = 0;
-        bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        bar.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         bar.oldLayout = oldLayout;
         bar.newLayout = newLayout;
         bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -220,7 +247,7 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
         bar.subresourceRange.baseArrayLayer = 0;
         bar.subresourceRange.layerCount = 1;
 
-        vkCmdPipelineBarrier(cmd->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, 0, 0, 0, 1, &bar);
+        vkCmdPipelineBarrier(cmd->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, 0, 0, 0, 1, &bar);
 
         cmd->End();
 
@@ -243,7 +270,43 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        GM_ASSERT(false);
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(0);
+
+        VkImageMemoryBarrier bar;
+
+        bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        bar.pNext = nullptr;
+        //bar.srcAccessMask = 0;
+        //bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        bar.oldLayout = oldLayout;
+        bar.newLayout = newLayout;
+        bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bar.image = mImageHandle;
+        bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        bar.subresourceRange.baseMipLevel = 0;
+        bar.subresourceRange.levelCount = 1;
+        bar.subresourceRange.baseArrayLayer = 0;
+        bar.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags src, dst;
+
+        if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+            bar.srcAccessMask = 0;
+            bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        } else if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+            bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            src = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+
+        vkCmdPipelineBarrier(cmd->GetHandle(), src, dst, 0, 0, 0, 0, 0, 1, &bar);
+
     }
 }
 
@@ -270,10 +333,9 @@ Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
 }
 
 void Texture2D::StageCopy(bool immediate) {
-    GM_ASSERT(immediate == true);
-    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, true);
+    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, immediate);
     Texture::StageCopy(immediate);
-    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, true);
+    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, immediate);
 }
 
 

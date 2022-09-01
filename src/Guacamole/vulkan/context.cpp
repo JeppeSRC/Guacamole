@@ -34,8 +34,6 @@ std::vector<Context::InstanceLayer> Context::mInstanceLayers;
 VkInstance Context::mInstance;
 PhysicalDevice* Context::mSelectedPhysDevice;
 Device* Context::mLogicalDevice;
-VkCommandPool Context::mCommandPool;
-CommandBuffer* Context::mAuxCmdBuffer;
 
 void Context::Init() {
 
@@ -102,35 +100,10 @@ void Context::Init() {
     features.samplerAnisotropy = true;
 
     mLogicalDevice = new Device(mSelectedPhysDevice, features);
-
-    VkCommandPoolCreateInfo poolInfo;
-
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.pNext = nullptr;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = mLogicalDevice->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
-
-    VK(vkCreateCommandPool(mLogicalDevice->GetHandle(), &poolInfo, nullptr, &mCommandPool));
-
-    VkCommandBufferAllocateInfo allocInfo;
-
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.pNext = nullptr;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = mCommandPool;
-    allocInfo.commandBufferCount = 1;
-
-    VkCommandBuffer CmdHandle;
-
-    VK(vkAllocateCommandBuffers(mLogicalDevice->GetHandle(), &allocInfo, &CmdHandle));
-
-    mAuxCmdBuffer = new CommandBuffer(CmdHandle);
 }
 
 
 void Context::Shutdown() {
-    delete mAuxCmdBuffer;
-    vkDestroyCommandPool(mLogicalDevice->GetHandle(), mCommandPool, nullptr);
     delete mLogicalDevice;
     vkDestroyInstance(mInstance, nullptr);
 }

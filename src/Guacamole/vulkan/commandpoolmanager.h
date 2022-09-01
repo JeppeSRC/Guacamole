@@ -26,39 +26,31 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "device.h"
+#include "commandbuffer.h"
 
 namespace Guacamole {
 
-class Context {
+class CommandPoolManager {
 public:
-    static void Init();
+    static void Init(uint32_t numThreads);
+    static void AllocatePrimaryRenderCommandBuffers(uint32_t imageCount);
+    static void AllocateAuxCommandBuffers(uint32_t count);
+
+    static CommandBuffer* GetPrimaryRenderCommandBuffer();
+    static CommandBuffer* GetAuxCommandBuffer(uint32_t index = 0);
+
+    static void WaitForRenderFences();
+
     static void Shutdown();
 
-    static VkInstance GetInstance() { return mInstance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return mSelectedPhysDevice->GetHandle(); }
-    static PhysicalDevice* GetPhysicalDevice() { return mSelectedPhysDevice; }
-    static VkDevice GetDeviceHandle() { return mLogicalDevice->GetHandle(); }
-    static Device* GetDevice() { return mLogicalDevice; }
 private:
-
-    struct InstanceLayer {
-        VkLayerProperties Prop;
-        std::vector<VkExtensionProperties> Extensions;
+    struct Pool {
+        CommandPool* mPool;
+        std::vector<CommandBuffer*> mCommandBuffers;
     };
 
-    static std::vector<InstanceLayer> mInstanceLayers;
-
-    static VkInstance mInstance;
-    static PhysicalDevice* mSelectedPhysDevice;
-    static Device* mLogicalDevice;
-
-    static void EnumerateLayersAndExtensions();
-    static bool IsLayerSupported(const char* layerName);
-    static bool IsExtensionSupported(const char* extentionName);
-    static uint32_t IsLayerExtensionSupported(const char* layerName, const char* extensionName);
-    
+    static std::vector<Pool> mRenderCommandPools;
+    static std::vector<Pool> mAuxCommandPools;
 };
-
 
 }

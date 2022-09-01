@@ -40,10 +40,11 @@ public:
 
     inline VkCommandBuffer GetHandle() const { return mCommandBufferHandle; }
     inline VkFence GetFence() const { return mFenceHandle; }
+    inline bool IsUsed() const { return mUsed; }
 private:
     VkCommandBuffer mCommandBufferHandle;
     VkFence mFenceHandle;
-
+    mutable bool mUsed;
 };
 
 class CommandPool {
@@ -58,5 +59,8 @@ public:
 private:
     VkCommandPool mCommandPoolHandle;
 };
+
+
+
 
 }

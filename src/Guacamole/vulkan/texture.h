@@ -43,6 +43,7 @@ public:
     void* Map();
     void Unmap();
     void WriteData(void* data, uint64_t size, uint64_t offset = 0);
+    void WriteDataImmediate(void* data, uint64_t size, uint64_t offset = 0);
     virtual void StageCopy(bool immediate);
 
     void Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate);

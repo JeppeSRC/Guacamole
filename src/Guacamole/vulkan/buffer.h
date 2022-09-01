@@ -45,6 +45,7 @@ public:
     void* Map();
     void Unmap();
     void WriteData(void* data, uint64_t size, uint64_t offset = 0);
+    void WriteDataImmediate(void* data, uint64_t size, uint64_t offset = 0);
     void StageCopy(bool immediate);
 
     inline VkBuffer GetHandle() const { return mBufferHandle; }

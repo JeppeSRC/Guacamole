@@ -29,7 +29,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
-CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : mCommandBufferHandle(Handle) {
+CommandBuffer::CommandBuffer(VkCommandBuffer Handle) : mCommandBufferHandle(Handle), mUsed(false) {
     VkFenceCreateInfo fInfo;
 
     fInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -49,6 +49,8 @@ void CommandBuffer::Reset() const {
 }
 
 void CommandBuffer::Begin(bool oneTimeSubmit) const {
+    GM_ASSERT(mUsed == false);
+
     VkCommandBufferBeginInfo bInfo;
 
     bInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -57,10 +59,16 @@ void CommandBuffer::Begin(bool oneTimeSubmit) const {
     bInfo.pInheritanceInfo = nullptr;
     
     VK(vkBeginCommandBuffer(mCommandBufferHandle, &bInfo));
+
+    mUsed = true;
 }
 
 void CommandBuffer::End() const {
+    GM_ASSERT(mUsed == true);
+
     VK(vkEndCommandBuffer(mCommandBufferHandle));
+
+    mUsed = false;
 }
 
 void CommandBuffer::WaitForFence() const {

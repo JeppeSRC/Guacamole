@@ -27,6 +27,7 @@ SOFTWARE.
 #include "buffer.h"
 #include "context.h"
 #include "swapchain.h"
+#include "commandpoolmanager.h"
 
 namespace Guacamole {
 
@@ -60,7 +61,7 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, void* data) :
     VK(vkBindBufferMemory(Context::GetDeviceHandle(), mBufferHandle, mBufferMemory, 0));
 
     if (data) {
-        WriteData(data, size);
+        WriteDataImmediate(data, size);
     }
 }
 
@@ -124,6 +125,14 @@ void Buffer::WriteData(void* data, uint64_t size, uint64_t offset) {
 
     memcpy((uint8_t*)mem + offset, data, size);
 
+    StageCopy(false);
+}
+
+void Buffer::WriteDataImmediate(void* data, uint64_t size, uint64_t offset) {
+    void* mem = Map();
+
+    memcpy((uint8_t*)mem + offset, data, size);
+
     StageCopy(true);
 
     Unmap();
@@ -131,7 +140,7 @@ void Buffer::WriteData(void* data, uint64_t size, uint64_t offset) {
 
 void Buffer::StageCopy(bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = Context::GetAuxCmdBuffer();
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -164,7 +173,15 @@ void Buffer::StageCopy(bool immediate) {
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        // TOOD
+        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer();
+
+        VkBufferCopy copy;
+
+        copy.srcOffset = 0;
+        copy.dstOffset = 0;
+        copy.size = mBufferSize;
+
+        vkCmdCopyBuffer(cmd->GetHandle(), mMappedBufferHandle, mBufferHandle, 1, &copy);
     }
 }
 
