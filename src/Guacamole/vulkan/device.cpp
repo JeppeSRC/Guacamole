@@ -126,7 +126,6 @@ bool PhysicalDevice::IsExtensionSupported(const char* extension) const {
 bool PhysicalDevice::CheckImageFormat(VkFormat format, VkImageType imageType, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* prop) const {
     GM_ASSERT(prop != nullptr);
 
-    VkImageFormatProperties imageProperties;
     VkResult result = vkGetPhysicalDeviceImageFormatProperties(mDeviceHandle, format, imageType, tiling, usage, 0, prop);
 
     if (result == VK_SUCCESS) return true;
@@ -199,7 +198,7 @@ Device::Device(PhysicalDevice* physicalDevice, VkPhysicalDeviceFeatures features
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     info.pNext = nullptr;
     info.flags = 0;
-    info.queueCreateInfoCount = queues.size();
+    info.queueCreateInfoCount = (uint32_t)queues.size();
     info.pQueueCreateInfos = queues.data();
     info.enabledExtensionCount = sizeof(extensions) / 8;
     info.ppEnabledExtensionNames = extensions;

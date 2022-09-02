@@ -140,7 +140,7 @@ void Shader::ShaderModule::Reload(bool reCompile) {
 
     VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &mModuleHandle));
 
-    mShaderSourceSize = mInfo.codeSize;
+    mShaderSourceSize = (uint32_t)mInfo.codeSize;
     mShaderSource = (uint32_t*)mInfo.pCode;
 }
 
@@ -195,6 +195,8 @@ VkShaderModule Shader::GetHandle(ShaderStage stage) const {
     for (const ShaderModule& shader : mModules) {
         if (shader.mStage == stage) return shader.mModuleHandle;
     }
+
+    return VK_NULL_HANDLE;
 }
 
 std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std::vector<std::pair<uint32_t, std::vector<uint32_t>>> locations) const {
@@ -284,7 +286,7 @@ void Shader::ReflectStages() {
                 spirv_cross::SPIRType memberType = compiler.get_type(id);
                 UniformBufferType::Member member;
 
-                uint32_t memberSize = compiler.get_declared_struct_member_size(type, index++);
+                uint32_t memberSize = (uint32_t)compiler.get_declared_struct_member_size(type, index++);
 
                 member.Name = compiler.get_name(id);
                 member.Size = memberSize;

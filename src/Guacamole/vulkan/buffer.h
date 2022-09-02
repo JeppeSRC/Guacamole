@@ -49,7 +49,7 @@ public:
     void StageCopy(bool immediate);
 
     inline VkBuffer GetHandle() const { return mBufferHandle; }
-    inline uint32_t GetSize() const { return mBufferSize; }
+    inline uint64_t GetSize() const { return mBufferSize; }
 
 public:
     static uint32_t GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, uint32_t type, VkMemoryPropertyFlags flags);

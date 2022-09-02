@@ -117,7 +117,7 @@ void Context::EnumerateLayersAndExtensions() {
 
     memset(props, 0, sizeof(VkLayerProperties));
 
-    for (int32_t i = 0; i < num+1; i++) {
+    for (uint32_t i = 0; i < num+1; i++) {
         VkLayerProperties& prop = props[i];
 
         InstanceLayer layer;

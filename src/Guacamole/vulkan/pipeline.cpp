@@ -81,8 +81,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : mInfo(inf
 
     VkViewport viewPort;
 
-    viewPort.width = info.mWidth;
-    viewPort.height = info.mHeight;
+    viewPort.width = (float)info.mWidth;
+    viewPort.height = (float)info.mHeight;
     viewPort.x = 0;
     viewPort.y = 0;
     viewPort.minDepth = 0.001f;

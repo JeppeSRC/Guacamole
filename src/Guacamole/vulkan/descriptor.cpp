@@ -97,7 +97,7 @@ uint32_t DescriptorSetLayout::GetUniformBufferSize(uint32_t binding) const {
 uint32_t DescriptorSetLayout::GetUniformBufferMemeberCount(uint32_t binding) const {
     const UniformBufferType* buf = GetUniformBuffer(binding);
 
-    return buf->mMembers.size();
+    return (uint32_t)buf->mMembers.size();
 }
 
 uint32_t DescriptorSetLayout::GetUniformBufferMemberSize(uint32_t binding, uint32_t memberIndex) const {

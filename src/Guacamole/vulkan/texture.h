@@ -60,7 +60,7 @@ protected:
 
     VkImageCreateInfo mImageInfo;
 
-    uint32_t mImageMemorySize;
+    uint64_t mImageMemorySize;
     void* mMappedMemory;
 
     VkBuffer mMappedBufferHandle;

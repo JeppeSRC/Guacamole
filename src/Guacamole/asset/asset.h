@@ -45,7 +45,7 @@ public:
     virtual void Unload() = 0;
 
     inline const std::filesystem::path& GetPath() const { return mFilePath; }
-    inline std::string GetPathAsString() const { mFilePath.string(); }
+    inline std::string GetPathAsString() const { return mFilePath.string(); }
     inline bool IsLoaded() const { return mLoaded; }
 };
 

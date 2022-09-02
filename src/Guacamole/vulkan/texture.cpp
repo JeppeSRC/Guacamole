@@ -328,8 +328,6 @@ Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
     mImageViewInfo.subresourceRange.layerCount = 1;
 
     VK(vkCreateImageView(Context::GetDeviceHandle(), &mImageViewInfo, nullptr, &mImageViewHandle));
-
-
 }
 
 void Texture2D::StageCopy(bool immediate) {
