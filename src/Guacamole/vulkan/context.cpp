@@ -43,9 +43,7 @@ void Context::Init() {
 
     vkEnumerateInstanceVersion(&version);
 
-    //if (version < VK_API_VERSION_1_3) {
-    //    //TODO: error (or something)
-    //}
+    GM_ASSERT(VK_API_VERSION_MAJOR(version) == 1 && VK_API_VERSION_MINOR(version) == 3);
 
     EnumerateLayersAndExtensions();
 
