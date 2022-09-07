@@ -28,8 +28,8 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Asset::Asset(const std::filesystem::path& filePath) 
-    : mFilePath(filePath), mLoaded(false) {}
+Asset::Asset(const std::filesystem::path& filePath, AssetType type) 
+    : mHandle(), mFilePath(filePath), mLoaded(false), mType(type) {}
 
 Asset::~Asset() {}
 

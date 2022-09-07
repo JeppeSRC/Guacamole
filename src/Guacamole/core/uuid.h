@@ -26,42 +26,19 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <filesystem>
-
-#include "../vulkan/texture.h"
-#include "../core/uuid.h"
-
 namespace Guacamole {
 
-enum class AssetType {
-    Binary,
-    Text,
-    Shader,
-    Texture2D,
-    Mesh
-};
-
-typedef UUID AssetHandle;
-
-class Asset {
-protected:
-    AssetHandle mHandle;
-    std::filesystem::path mFilePath;
-    bool mLoaded;
-    AssetType mType;
-
-    Asset(const std::filesystem::path& filePath, AssetType type);
+class UUID {
 public:
-    virtual ~Asset();
+    UUID();
+    UUID(uint64_t _0, uint64_t _1);
 
-    virtual void Load() = 0;
-    virtual void Unload() = 0;
+    bool operator==(const UUID& other) const;
 
-    inline AssetHandle GetHandle() const { return mHandle; }
-    inline const std::filesystem::path& GetPath() const { return mFilePath; }
-    inline std::string GetPathAsString() const { return mFilePath.string(); }
-    inline bool IsLoaded() const { return mLoaded; }
+private:
+    uint64_t m0;
+    uint64_t m1;
+
 };
-
 
 }

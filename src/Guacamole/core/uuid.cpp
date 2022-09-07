@@ -22,46 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include <filesystem>
+#include "uuid.h"
 
-#include "../vulkan/texture.h"
-#include "../core/uuid.h"
+#include <random>
+
+static std::random_device Device;
+static std::mt19937_64 mt;
+static std::uniform_int_distribution<uint64_t> UniformDist;
 
 namespace Guacamole {
 
-enum class AssetType {
-    Binary,
-    Text,
-    Shader,
-    Texture2D,
-    Mesh
-};
+UUID::UUID() : m0(UniformDist(mt)), m1(UniformDist(mt)) {}
 
-typedef UUID AssetHandle;
+UUID::UUID(uint64_t _0, uint64_t _1) : m0(_0), m1(_1) {}
 
-class Asset {
-protected:
-    AssetHandle mHandle;
-    std::filesystem::path mFilePath;
-    bool mLoaded;
-    AssetType mType;
-
-    Asset(const std::filesystem::path& filePath, AssetType type);
-public:
-    virtual ~Asset();
-
-    virtual void Load() = 0;
-    virtual void Unload() = 0;
-
-    inline AssetHandle GetHandle() const { return mHandle; }
-    inline const std::filesystem::path& GetPath() const { return mFilePath; }
-    inline std::string GetPathAsString() const { return mFilePath.string(); }
-    inline bool IsLoaded() const { return mLoaded; }
-};
-
+bool UUID::operator==(const UUID& other) const {
+    return m0 == other.m0 && m1 == other.m1;
+}
 
 }

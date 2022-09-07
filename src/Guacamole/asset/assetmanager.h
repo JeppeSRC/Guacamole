@@ -25,3 +25,60 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
+
+#include "asset.h"
+
+#include "../core/uuid.h"
+
+#include <unordered_map>
+#include <thread>
+
+namespace std {
+
+template<>
+struct hash<std::filesystem::path> {
+
+    std::size_t operator()(const std::filesystem::path& path) const {
+        return hash_value(path);
+    }
+};
+
+}
+
+namespace Guacamole {
+
+class AssetManager {
+public:
+    typedef std::function<void(Asset*, void*)> AssetLoadedCallback;
+public:
+    static void Init();
+    static void Shutdown();
+    static void AddAsset(Asset* asset, bool load);
+
+    static Asset* GetAsset(const std::filesystem::path& path);
+    static Asset* GetAssetAsync(const std::filesystem::path& path, AssetLoadedCallback callback, void* userData);
+
+    static void ProcessCallbacks();
+private:
+
+    struct LoadAssetData {
+        Asset* mAsset;
+        std::vector<std::pair<AssetLoadedCallback, void*>> mCallbacks;
+    };
+
+    static void QueueWorker();
+    static void LoadAssetFunction(LoadAssetData* data);
+    static void AddAssetToQueue(Asset* asset, AssetLoadedCallback callback, void* userData);
+private:
+    static bool mShouldStop;
+    static std::thread mLoaderThread;
+    static std::mutex mQueueMutex;
+    static std::mutex mCallbackMutex;
+    static std::mutex mCurrentAssetMutex;
+    static LoadAssetData* mCurrentAsset;
+    static std::unordered_map<std::filesystem::path, Asset*> mAssets;
+    static std::vector<LoadAssetData*> mAssetCallbacks;
+    static std::vector<LoadAssetData*> mAssetQueue;
+};
+
+}
