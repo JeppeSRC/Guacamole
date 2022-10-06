@@ -28,6 +28,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <memory.h>
+#include <filesystem>
 
 #include <Guacamole/core/log.h>
 #include <vulkan/vulkan.h>

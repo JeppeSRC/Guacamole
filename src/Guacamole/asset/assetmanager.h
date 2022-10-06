@@ -29,56 +29,44 @@ SOFTWARE.
 #include "asset.h"
 
 #include "../core/uuid.h"
+#include "../vulkan/commandbuffer.h"
 
 #include <unordered_map>
 #include <thread>
-
-namespace std {
-
-template<>
-struct hash<std::filesystem::path> {
-
-    std::size_t operator()(const std::filesystem::path& path) const {
-        return hash_value(path);
-    }
-};
-
-}
 
 namespace Guacamole {
 
 class AssetManager {
 public:
-    typedef std::function<void(Asset*, void*)> AssetLoadedCallback;
+    struct FinishedAsset {
+        Asset* mAsset;
+        CommandBuffer* mCommandBuffer;
+    };
+
 public:
     static void Init();
     static void Shutdown();
-    static void AddAsset(Asset* asset, bool load);
+    static void AddAsset(Asset* asset, bool asyncLoad);
 
-    static Asset* GetAsset(const std::filesystem::path& path);
-    static Asset* GetAssetAsync(const std::filesystem::path& path, AssetLoadedCallback callback, void* userData);
+    template<typename T>
+    static T* GetAsset(const std::filesystem::path& path) { return (T*)GetAssetInternal(path); }
+    static bool IsAssetLoaded(const std::filesystem::path& path);
 
-    static void ProcessCallbacks();
+    static std::vector<FinishedAsset> GetFinishedAssets();
 private:
-
-    struct LoadAssetData {
-        Asset* mAsset;
-        std::vector<std::pair<AssetLoadedCallback, void*>> mCallbacks;
-    };
-
+    static Asset* GetAssetInternal(const std::filesystem::path& path);
+    
     static void QueueWorker();
-    static void LoadAssetFunction(LoadAssetData* data);
-    static void AddAssetToQueue(Asset* asset, AssetLoadedCallback callback, void* userData);
+    static void LoadAssetFunction(Asset* asset);
+
 private:
     static bool mShouldStop;
     static std::thread mLoaderThread;
     static std::mutex mQueueMutex;
-    static std::mutex mCallbackMutex;
-    static std::mutex mCurrentAssetMutex;
-    static LoadAssetData* mCurrentAsset;
+    static std::mutex mCommandBufferMutex;
     static std::unordered_map<std::filesystem::path, Asset*> mAssets;
-    static std::vector<LoadAssetData*> mAssetCallbacks;
-    static std::vector<LoadAssetData*> mAssetQueue;
+    static std::vector<FinishedAsset> mFinishedCommandBuffers;
+    static std::vector<Asset*> mAssetQueue;
 };
 
 }

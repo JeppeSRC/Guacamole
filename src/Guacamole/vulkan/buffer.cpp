@@ -140,7 +140,7 @@ void Buffer::WriteDataImmediate(void* data, uint64_t size, uint64_t offset) {
 
 void Buffer::StageCopy(bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -173,7 +173,7 @@ void Buffer::StageCopy(bool immediate) {
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer();
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
 
         VkBufferCopy copy;
 

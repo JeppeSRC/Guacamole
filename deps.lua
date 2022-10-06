@@ -15,6 +15,7 @@ IncludeDir["glm"] = "libs/glm"
 IncludeDir["glfw"] = "libs/glfw/include"
 IncludeDir["entt"] = "libs/entt/single_include"
 IncludeDir["spdlog"] = "libs/spdlog/include"
+IncludeDir["stb"] = "libs/stb"
 
 LibDir = {}
 LibDir["Vulkan"] = "%{LD_LIBRARY_PATH}"

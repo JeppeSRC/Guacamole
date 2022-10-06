@@ -25,18 +25,29 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "assetmanager.h"
+#include "../vulkan/commandpoolmanager.h"
+
+namespace std {
+/*
+template<>
+struct hash<std::filesystem::path> {
+
+    std::size_t operator()(const std::filesystem::path& path) const {
+        return hash_value(path);
+    }
+};*/
+
+}
 
 namespace Guacamole {
 
 bool AssetManager::mShouldStop;
 std::thread AssetManager::mLoaderThread;
 std::mutex AssetManager::mQueueMutex;
-std::mutex AssetManager::mCallbackMutex;
-std::mutex AssetManager::mCurrentAssetMutex;
-AssetManager::LoadAssetData* AssetManager::mCurrentAsset = nullptr;
+std::mutex AssetManager::mCommandBufferMutex;
 std::unordered_map<std::filesystem::path, Asset*> AssetManager::mAssets;
-std::vector<AssetManager::LoadAssetData*> AssetManager::mAssetCallbacks;
-std::vector<AssetManager::LoadAssetData*> AssetManager::mAssetQueue;
+std::vector<AssetManager::FinishedAsset> AssetManager::mFinishedCommandBuffers;
+std::vector<Asset*> AssetManager::mAssetQueue;
 
 
 
@@ -48,9 +59,13 @@ void AssetManager::Init() {
 void AssetManager::Shutdown() {
     mShouldStop = true;
     mLoaderThread.join();
+
+    for (auto [path, asset] : mAssets) {
+        delete asset;
+    }
 }
 
-void AssetManager::AddAsset(Asset* asset, bool load) {
+void AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
     if (mAssets.find(asset->GetPath()) != mAssets.end()) {
         GM_LOG_WARNING("Asset \"{}\" already exist!", asset->GetPathAsString().c_str());
         return;
@@ -58,111 +73,94 @@ void AssetManager::AddAsset(Asset* asset, bool load) {
 
     mAssets[asset->GetPath()] = asset;
 
-    GM_LOG_DEBUG("Added asset \"{}\" Load: {}", asset->GetPathAsString().c_str(), load);
+    GM_LOG_DEBUG("Added asset \"{}\" Load: {}", asset->GetPathAsString().c_str(), asyncLoad);
 
-    if (load) {
-        asset->Load();
-
+    if (asyncLoad) {
+        mQueueMutex.lock();
+        mAssetQueue.push_back(asset);
+        mQueueMutex.unlock();
+        GM_LOG_DEBUG("Asset \"{}\" Added To Queue!", asset->GetPathAsString().c_str());
+    } else {
+        asset->Load(true);
         GM_LOG_DEBUG("Asset \"{}\" Loaded!", asset->GetPathAsString().c_str());
     }
 
 }
 
-Asset* AssetManager::GetAsset(const std::filesystem::path& path) {
-    return mAssets.at(path);
-}
-
-Asset* AssetManager::GetAssetAsync(const std::filesystem::path& path, AssetLoadedCallback callback, void* userData) {
+Asset* AssetManager::GetAssetInternal(const std::filesystem::path& path) {
     Asset* asset = mAssets.at(path);
 
-    if (asset->IsLoaded()) return asset;
-    
-    if (!asset->mLoading) {
-        asset->mLoading = true;
-
-        AddAssetToQueue(asset, callback, userData);
-    } else {
-        mCurrentAssetMutex.lock();
-        if (mCurrentAsset) {
-            mCurrentAsset->mCallbacks.push_back({ callback, userData });
-            mCurrentAssetMutex.unlock();
-        } else {
-            mCurrentAssetMutex.unlock();
-
-            if (asset->IsLoaded()) {
-                // Only return the loaded asset if it actually loaded
-                return asset;
-            } 
-        }
+    while (!asset->IsLoaded()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    //TODO: return default asset
-    return nullptr;
+    return asset;
 }
 
-void AssetManager::ProcessCallbacks() {
-    if (mAssetCallbacks.size() == 0) return;
+bool AssetManager::IsAssetLoaded(const std::filesystem::path& path) {
+    return mAssets.at(path)->IsLoaded();
+}
 
-    mCallbackMutex.lock();
+std::vector<AssetManager::FinishedAsset> AssetManager::GetFinishedAssets() {
+    mCommandBufferMutex.lock();
+    std::vector<FinishedAsset> ret(mFinishedCommandBuffers.begin(), mFinishedCommandBuffers.end());
+    mFinishedCommandBuffers.clear();
+    mCommandBufferMutex.unlock();
 
-    for (LoadAssetData* data : mAssetCallbacks) {
-        for (auto [fn, userData] : data->mCallbacks) {
-            fn(data->mAsset, userData);
-        }
-
-        delete data;
-    }
-
-    mAssetCallbacks.clear();
-    mCallbackMutex.unlock();
+    return std::move(ret);
 }
 
 void AssetManager::QueueWorker() {
+    CommandPoolManager::AllocateAssetCommandBuffers(std::this_thread::get_id());
+
+    CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
+
     while (!mShouldStop) {
+        mQueueMutex.lock();
+
         if (mAssetQueue.size() == 0) {
+            mQueueMutex.unlock();
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
-        mCurrentAsset = mAssetQueue.front();
+        cmd->WaitForFence();
+        cmd->Begin(true);
 
-        mQueueMutex.lock();
+        Asset* currentAsset = mAssetQueue.front();
+
         mAssetQueue.erase(mAssetQueue.begin());
         mQueueMutex.unlock();
 
-        LoadAssetFunction(mCurrentAsset);
+        LoadAssetFunction(currentAsset);
 
-        // Make sure load function sets mLoading to false
-        GM_ASSERT(mCurrentAsset->mAsset->mLoading == false);
-        mCurrentAssetMutex.lock();
-        mCurrentAsset = nullptr;
-        mCurrentAssetMutex.unlock();
+        // Make sure Asset::Load sets Asset::mLoading to false
+        GM_ASSERT(currentAsset->mLoading == false);
+        cmd->End();
+
+        FinishedAsset finishedAsset;
+
+        finishedAsset.mAsset = currentAsset;
+        finishedAsset.mCommandBuffer = cmd;
+
+        mCommandBufferMutex.lock();
+        mFinishedCommandBuffers.push_back(finishedAsset);
+        mCommandBufferMutex.unlock();
+    }
+
+    cmd->WaitForFence();
+}
+
+void AssetManager::LoadAssetFunction(Asset* asset) {
+    GM_LOG_DEBUG("Loading asset \"{}\"", asset->GetPathAsString().c_str());
+
+    asset->Load(false);
+
+    if (asset->IsLoaded()) {
+        GM_LOG_DEBUG("Asset \"{}\" Loaded!", asset->GetPathAsString().c_str());
+    } else {
+        GM_LOG_DEBUG("Asset \"{}\" Not loaded!", asset->GetPathAsString().c_str());
     }
 }
-
-void AssetManager::LoadAssetFunction(LoadAssetData* data) {
-    GM_LOG_DEBUG("Loading asset \"{}\"", data->mAsset->GetPathAsString().c_str());
-
-    data->mAsset->Load();
-
-    mCallbackMutex.lock();
-    mAssetCallbacks.push_back(data);
-    mCallbackMutex.unlock();
-
-    GM_LOG_DEBUG("Asset \"{}\" Loaded!", data->mAsset->GetPathAsString().c_str());
-}
-
-void AssetManager::AddAssetToQueue(Asset* asset, AssetLoadedCallback callback, void* userData) {
-    LoadAssetData* data = new LoadAssetData;
-
-    data->mAsset = asset;
-    data->mCallbacks.push_back({ callback, userData });
-
-    mQueueMutex.lock();
-    mAssetQueue.push_back(data);
-    mQueueMutex.unlock();
-    GM_LOG_DEBUG("Asset \"{}\" Added to queue", asset->GetPathAsString().c_str());
-}
-
 
 }

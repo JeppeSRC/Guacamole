@@ -59,11 +59,11 @@ private:
     static uint32_t mCurrentImageIndex;
     static VkSemaphore mImageSemaphore;
     static VkSemaphore mRenderSubmitSemaphore;
-    static VkSemaphore mAuxSubmitSemaphore;
-    static VkSemaphore mAuxRenderSemaphores[2];
-    static VkPipelineStageFlags mRenderStageFlags[2];
+    static VkSemaphore mCopySubmitSemaphore;
+    static VkSemaphore mAssetSemaphores;
+    static VkSemaphore mAuxSemaphores[8];
    
-    static VkSubmitInfo mAuxSubmitInfo;
+    static VkSubmitInfo mCopySubmitInfo;
     static VkSubmitInfo mRenderSubmitInfo;
     static VkPresentInfoKHR mPresentInfo;
 

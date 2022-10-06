@@ -108,7 +108,8 @@ project "Guacamole"
         "%{IncludeDir.glm}",
         "%{IncludeDir.glfw}",
         "%{IncludeDir.entt}",
-        "%{IncludeDir.spdlog}"
+        "%{IncludeDir.spdlog}",
+        "%{IncludeDir.stb}"
     }
 
     libdirs {

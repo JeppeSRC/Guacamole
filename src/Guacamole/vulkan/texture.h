@@ -69,6 +69,9 @@ protected:
 
 class Texture2D : public Texture {
 public:
+    static Texture2D* LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate = false);
+    static Texture2D* LoadImageFromFile(const std::filesystem::path& path, bool immediate = false);
+public:
     Texture2D(uint32_t width, uint32_t height, VkFormat format);
 
     void StageCopy(bool immediate) override;

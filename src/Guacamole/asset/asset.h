@@ -48,20 +48,40 @@ protected:
     AssetHandle mHandle;
     std::filesystem::path mFilePath;
     bool mLoaded;
+    bool mLoading;
     AssetType mType;
 
     Asset(const std::filesystem::path& filePath, AssetType type);
 public:
     virtual ~Asset();
 
-    virtual void Load() = 0;
+    virtual void Load(bool immediate) = 0;
     virtual void Unload() = 0;
+    virtual void Unmap() {}
 
     inline AssetHandle GetHandle() const { return mHandle; }
     inline const std::filesystem::path& GetPath() const { return mFilePath; }
     inline std::string GetPathAsString() const { return mFilePath.string(); }
     inline bool IsLoaded() const { return mLoaded; }
+    inline bool IsLoading() const { return mLoading; }
+
+private:
+    friend class AssetManager;
 };
 
+class Texture2DAsset : public Asset {
+public:
+    Texture2DAsset(const std::filesystem::path& filePath);
+    virtual ~Texture2DAsset();
+
+    void Load(bool immediate) override;
+    void Unload() override;
+    void Unmap() override;
+
+    inline Texture2D* GetTexture() const { return mTexture; }
+
+private:
+    Texture2D* mTexture;
+};
 
 }

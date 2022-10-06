@@ -23,10 +23,14 @@ SOFTWARE.
 */
 
 #include <Guacamole.h>
+
+#include <stb_image.h>
+
 #include "texture.h"
 #include "context.h"
 #include "swapchain.h"
 #include "commandpoolmanager.h"
+#include "../util/util.h"
 
 
 namespace Guacamole {
@@ -165,7 +169,7 @@ void Texture::WriteDataImmediate(void* data, uint64_t size, uint64_t offset) {
 
 void Texture::StageCopy(bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -204,7 +208,7 @@ void Texture::StageCopy(bool immediate) {
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer();
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
 
         VkBufferImageCopy copy;
 
@@ -226,7 +230,7 @@ void Texture::StageCopy(bool immediate) {
 
 void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate) {
     if (immediate) {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(1);
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(1);
 
         cmd->Begin(true);
 
@@ -270,7 +274,7 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
         VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
 
     } else {
-        CommandBuffer* cmd = CommandPoolManager::GetAuxCommandBuffer(0);
+        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(0);
 
         VkImageMemoryBarrier bar;
 
@@ -310,6 +314,51 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
     }
 }
 
+
+Texture2D* Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate) {
+    GM_ASSERT(data);
+    GM_ASSERT(size);
+
+    int32_t width;
+    int32_t height;
+    int32_t channels;
+
+    uint8_t* pixels = stbi_load_from_memory(data, size, &width, &height, &channels, 4);
+
+    if (pixels == nullptr) {
+        GM_LOG_CRITICAL("stbi_load_from_memory({0}, {1}, {2}, {3}, {4}, {5}) failed", uint64_t(data), size, width, height, channels, 4);
+        free(pixels);
+        return nullptr;
+    }
+
+    Texture2D* tex = new Texture2D((uint32_t)width, (uint32_t)height, VK_FORMAT_R8G8B8A8_UNORM);
+
+    if (immediate) {
+        tex->WriteDataImmediate(pixels, width * height * 4);
+    } else {
+        tex->WriteData(pixels, width * height * 4);
+    }
+
+    return tex;
+}
+
+Texture2D* Texture2D::LoadImageFromFile(const std::filesystem::path& path, bool immediate) {
+    uint64_t fileSize = 0;
+
+    uint8_t* data = Util::ReadFile(path, &fileSize);
+
+    if (data == nullptr) return nullptr;
+
+    Texture2D* tex = LoadImageFromMemory(data, fileSize, immediate);
+    delete data;
+
+    if (tex == nullptr) {
+        GM_LOG_CRITICAL("Failed to load image \"{}\"", path.string().c_str());
+        return nullptr;
+    }
+
+    return tex;
+}
 
 Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
     CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);

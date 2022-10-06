@@ -32,6 +32,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/texture.h>
 #include <Guacamole/vulkan/descriptor.h>
 #include <Guacamole/vulkan/shader.h>
+#include <Guacamole/asset/assetmanager.h>
 #include <time.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -47,8 +48,8 @@ struct Vertex {
 int main() {
     spdlog::set_level(spdlog::level::debug);
     Context::Init();
-    CommandPoolManager::Init(1);
-    CommandPoolManager::AllocateAuxCommandBuffers(2);
+    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
+    AssetManager::Init();
 
     WindowSpec spec;
 
@@ -79,7 +80,7 @@ int main() {
         shader.AddModule("res/shader.frag", true, ShaderStage::Fragment);
         shader.Compile();
 
-        Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
+       /* Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
 
         glm::vec4 colors[100 * 100];
 
@@ -89,7 +90,9 @@ int main() {
             }
         }
 
-        tex.WriteDataImmediate(colors, sizeof(colors));
+        tex.WriteDataImmediate(colors, sizeof(colors));*/
+
+        AssetManager::AddAsset(new Texture2DAsset("res/sheet.png"), true);
 
         BasicRenderpass pass;
 
@@ -136,7 +139,7 @@ int main() {
         VkDescriptorImageInfo iInfo;
 
         iInfo.sampler = sampler.GetHandle();
-        iInfo.imageView = tex.GetImageViewHandle();
+        iInfo.imageView = AssetManager::GetAsset<Texture2DAsset>("res/sheet.png")->GetTexture()->GetImageViewHandle();
         iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         wSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -199,6 +202,7 @@ int main() {
         Swapchain::WaitForAllCommandBufferFences();
     }
 
+    AssetManager::Shutdown();
     Swapchain::Shutdown();
     CommandPoolManager::Shutdown();
     Context::Shutdown();

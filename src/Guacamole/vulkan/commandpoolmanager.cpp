@@ -29,54 +29,50 @@ SOFTWARE.
 
 namespace Guacamole {
 
-std::vector<CommandPoolManager::Pool> CommandPoolManager::mRenderCommandPools;
-std::vector<CommandPoolManager::Pool> CommandPoolManager::mAuxCommandPools;
+std::unordered_map<std::thread::id, CommandPoolManager::Pool> CommandPoolManager::mRenderCommandPools;
+std::unordered_map<std::thread::id, CommandPoolManager::Pool> CommandPoolManager::mCopyCommandPools;
 
-void CommandPoolManager::Init(uint32_t numThreads) {
+void CommandPoolManager::AllocatePrimaryRenderCommandBuffers(std::thread::id threadId, uint32_t imageCount) {
+    auto it = mRenderCommandPools.find(threadId);
 
-    for (uint32_t i = 0; i < numThreads; i++) {
-        Pool pool;
-        pool.mPool = new CommandPool;
+    GM_VERIFY_MSG(it == mRenderCommandPools.end(), "You may only allocate buffers once per thread");
 
-        mRenderCommandPools.push_back(pool);
+    CommandPool* pool = new CommandPool;
 
-        pool.mPool = new CommandPool;
-
-        mAuxCommandPools.push_back(pool);
-    }
+    mRenderCommandPools[threadId] = { pool, pool->AllocateCommandBuffers(imageCount, true) };
 }
 
-void CommandPoolManager::AllocatePrimaryRenderCommandBuffers(uint32_t imageCount) {
-    for (Pool& pool : mRenderCommandPools) {
-        pool.mCommandBuffers = pool.mPool->AllocateCommandBuffers(imageCount, true);
-    }
+void CommandPoolManager::AllocateCopyCommandBuffers(std::thread::id threadId, uint32_t count) {
+    auto it = mCopyCommandPools.find(threadId);
+
+    GM_VERIFY_MSG(it == mCopyCommandPools.end(), "You may only allocate buffers once per thread");
+
+    CommandPool* pool = new CommandPool;
+
+    mCopyCommandPools[threadId] = { pool, pool->AllocateCommandBuffers(count, true) };
 }
 
-void CommandPoolManager::AllocateAuxCommandBuffers(uint32_t count) {
-    for (Pool& pool : mAuxCommandPools) {
-        pool.mCommandBuffers = pool.mPool->AllocateCommandBuffers(count, true);
-    }
+void CommandPoolManager::AllocateAssetCommandBuffers(std::thread::id threadId) {
+    AllocateCopyCommandBuffers(threadId, 1);
 }
 
 CommandBuffer* CommandPoolManager::GetPrimaryRenderCommandBuffer() {
     uint32_t imageIndex = Swapchain::GetCurrentImageIndex();
     GM_ASSERT(imageIndex!= ~0);
 
-    // TODO: retreive thread index
-    uint32_t threadIndex = 0;
+    std::thread::id threadId = std::this_thread::get_id();
 
-    return mRenderCommandPools[threadIndex].mCommandBuffers[imageIndex];
+    return mRenderCommandPools[threadId].mCommandBuffers[imageIndex];
 }
 
-CommandBuffer* CommandPoolManager::GetAuxCommandBuffer(uint32_t index) {
-    // TODO: retreive thread index
-    uint32_t threadIndex = 0;
+CommandBuffer* CommandPoolManager::GetCopyCommandBuffer(uint32_t index) {
+    std::thread::id threadId = std::this_thread::get_id();
 
-    return mAuxCommandPools[threadIndex].mCommandBuffers[index];
+    return mCopyCommandPools[threadId].mCommandBuffers[index];
 }
 
 void CommandPoolManager::WaitForRenderFences() {
-    for (Pool& pool : mRenderCommandPools) {
+    for (auto [id, pool] : mRenderCommandPools) {
         for (CommandBuffer* buf : pool.mCommandBuffers) {
             buf->WaitForFence();
         }
@@ -84,7 +80,7 @@ void CommandPoolManager::WaitForRenderFences() {
 }
 
 void CommandPoolManager::Shutdown() {
-    for (Pool& pool : mRenderCommandPools) {
+    for (auto [id, pool] : mRenderCommandPools) {
         delete pool.mPool;
 
         for (CommandBuffer* buf : pool.mCommandBuffers) {
@@ -92,7 +88,7 @@ void CommandPoolManager::Shutdown() {
         }
     }
 
-    for (Pool& pool : mAuxCommandPools) {
+    for (auto [id, pool] : mCopyCommandPools) {
         delete pool.mPool;
 
         for (CommandBuffer* buf : pool.mCommandBuffers) {

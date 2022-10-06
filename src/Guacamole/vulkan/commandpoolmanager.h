@@ -32,13 +32,13 @@ namespace Guacamole {
 
 class CommandPoolManager {
 public:
-    static void Init(uint32_t numThreads);
-    static void AllocatePrimaryRenderCommandBuffers(uint32_t imageCount);
-    static void AllocateAuxCommandBuffers(uint32_t count);
+    static void AllocatePrimaryRenderCommandBuffers(std::thread::id threadId, uint32_t imageCount);
+    static void AllocateCopyCommandBuffers(std::thread::id threadId, uint32_t count);
+    static void AllocateAssetCommandBuffers(std::thread::id threadId);
 
     static CommandBuffer* GetPrimaryRenderCommandBuffer();
-    static CommandBuffer* GetAuxCommandBuffer(uint32_t index = 0);
-
+    static CommandBuffer* GetCopyCommandBuffer(uint32_t index = 0);
+    
     static void WaitForRenderFences();
 
     static void Shutdown();
@@ -49,8 +49,8 @@ private:
         std::vector<CommandBuffer*> mCommandBuffers;
     };
 
-    static std::vector<Pool> mRenderCommandPools;
-    static std::vector<Pool> mAuxCommandPools;
+    static std::unordered_map<std::thread::id, Pool> mRenderCommandPools;
+    static std::unordered_map<std::thread::id, Pool> mCopyCommandPools;
 };
 
 }
