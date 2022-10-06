@@ -28,8 +28,8 @@ SOFTWARE.
 
 #include <filesystem>
 
-#include "../vulkan/texture.h"
-#include "../core/uuid.h"
+#include <Guacamole/vulkan/texture.h>
+#include <Guacamole/core/uuid.h>
 
 namespace Guacamole {
 

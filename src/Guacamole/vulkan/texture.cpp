@@ -30,7 +30,7 @@ SOFTWARE.
 #include "context.h"
 #include "swapchain.h"
 #include "commandpoolmanager.h"
-#include "../util/util.h"
+#include <Guacamole/util/util.h>
 
 
 namespace Guacamole {

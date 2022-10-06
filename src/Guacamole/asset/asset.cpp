@@ -24,9 +24,9 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "asset.h"
+#include <Guacamole/util/util.h>
 
-#include "../util/util.h"
+#include "asset.h"
 
 namespace Guacamole {
 

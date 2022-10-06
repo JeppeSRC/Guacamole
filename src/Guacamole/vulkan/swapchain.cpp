@@ -24,7 +24,7 @@ SOFTWARE.
 #include <Guacamole.h>
 #include "swapchain.h"
 #include "context.h"
-#include "../asset/assetmanager.h"
+#include <Guacamole/asset/assetmanager.h>
 
 namespace Guacamole {
 
