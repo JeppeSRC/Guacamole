@@ -133,13 +133,6 @@ void Swapchain::Init(Window* window) {
         VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mAuxSemaphores[i]));
     }
 
-    // Aux submit constant values for VkSubmitInfo
-    //mAuxRenderSemaphores[0] = mImageSemaphore;
-    //mAuxRenderSemaphores[1] = mAuxSubmitSemaphore;
-    //
-    //mRenderStageFlags[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //mRenderStageFlags[1] = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-
     mCopySubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     mCopySubmitInfo.pNext = nullptr;
     mCopySubmitInfo.waitSemaphoreCount = 0;
@@ -159,7 +152,7 @@ void Swapchain::Init(Window* window) {
     mRenderSubmitInfo.signalSemaphoreCount = 1;
     mRenderSubmitInfo.pSignalSemaphores = &mRenderSubmitSemaphore;
 
-    // Preset constant values for VkPresentInfoKHR
+    // Present constant values for VkPresentInfoKHR
     mPresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     mPresentInfo.pNext = nullptr;
     mPresentInfo.waitSemaphoreCount = 1;
@@ -220,7 +213,7 @@ void Swapchain::Present() {
         info.waitSemaphoreCount = 0;
         info.pWaitSemaphores = nullptr;
         info.pWaitDstStageMask = nullptr;
-        info.commandBufferCount = 1; // 1 for now
+        info.commandBufferCount = 1;
         info.pCommandBuffers = &asset.mCommandBuffer->GetHandle();
         info.signalSemaphoreCount = 0;
         info.pSignalSemaphores = nullptr;
