@@ -26,6 +26,9 @@ SOFTWARE.
 
 #include <fstream>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "util.h"
 
 
@@ -46,31 +49,41 @@ const char* vkEnumToString(VkPhysicalDeviceType type) {
 }
 
 
-uint8_t* ReadFile(const std::filesystem::path& file, uint64_t& fileSize) {
+uint8_t* ReadFile(const std::filesystem::path& file, uint64_t* fileSize) {
+    GM_ASSERT(fileSize);
+
+    *fileSize = std::filesystem::file_size(file);
+
+    uint8_t* data = new uint8_t[*fileSize];
+
+    if (!ReadFile(file, *fileSize, data)) {
+        delete data;
+        return nullptr;
+    }
+
+    return data;
+}
+
+bool ReadFile(const std::filesystem::path& file, uint64_t bytesToRead, void* dstBuffer) {
+    GM_ASSERT(dstBuffer);
+    GM_ASSERT(bytesToRead);
+
     if (!std::filesystem::exists(file)) {
         GM_LOG_CRITICAL("File \"{0}\" doesn't exist!", file.string().c_str());
-        return nullptr;
+        return false;
     }
-
-    fileSize = std::filesystem::file_size(file);
-
-    if (fileSize == 0) {
-        return nullptr;
-    }
-
-    uint8_t* data = new uint8_t[fileSize];
 
     FILE* f = fopen(file.string().c_str(), "rb");
 
     if (f == nullptr) {
         GM_LOG_CRITICAL("Failed to open file \"{0}\"", file.string().c_str());
-        return nullptr;
+        return false;
     }
 
-    fread(data, fileSize, 1, f);
+    fread(dstBuffer, bytesToRead, 1, f);
     fclose(f);
 
-    return data;
+    return true;
 }
 
 VkFormat SPIRTypeToVkFormat(spirv_cross::SPIRType type) {

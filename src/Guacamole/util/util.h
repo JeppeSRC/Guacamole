@@ -34,7 +34,8 @@ SOFTWARE.
 namespace Guacamole { namespace Util {
 
 const char* vkEnumToString(VkPhysicalDeviceType type);
-uint8_t* ReadFile(const std::filesystem::path& file, uint64_t& fileSize);
+uint8_t* ReadFile(const std::filesystem::path& file, uint64_t* fileSize);
+bool ReadFile(const std::filesystem::path& file, uint64_t bytesToRead, void* dstBuffer);
 VkFormat SPIRTypeToVkFormat(spirv_cross::SPIRType type);
 
 }

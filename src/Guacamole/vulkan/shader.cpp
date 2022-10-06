@@ -81,7 +81,7 @@ void Shader::ShaderModule::Reload(bool reCompile) {
     delete mShaderSource;
 
     uint64_t size;
-    char* data = (char*)Util::ReadFile(mFile, size);
+    char* data = (char*)Util::ReadFile(mFile, &size);
 
     if (data == nullptr) {
         GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", mFile.c_str());
