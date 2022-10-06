@@ -45,9 +45,17 @@ SOFTWARE.
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
                                                         __builtin_trap(); }
 
+#define GM_ASSERT_MSG(cond, msg) if (!(cond)) { spdlog::critical("Assertion Failed: {4}\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__, msg);\
+                                                        __builtin_trap(); }
+
 #else
 
 #define GM_ASSERT(cond)
+#define GM_ASSERT_MSG(cond, msg)
 
 #endif
 
@@ -58,6 +66,13 @@ SOFTWARE.
                                                         "\tFile: {1}\n"\
                                                         "\tFunction: {2}\n"\
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __builtin_trap(); }
+
+#define GM_VERIFY_MSG(cond, msg) if (!(cond)) { spdlog::critical("Verification Failed: {4}\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__, msg);\
                                                         __builtin_trap(); }
 
 
@@ -76,9 +91,17 @@ SOFTWARE.
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
                                                         __debugbreak(); }
 
+#define GM_ASSERT_MSG(cond, msg) if (!(cond)) { spdlog::critical("Assertion Failed: {4}\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__, msg);\
+                                                        __debugbreak(); }
+
 #else
 
 #define GM_ASSERT(cond)
+#define GM_ASSERT_MSG(cond, msg)
 
 #endif
 
@@ -87,6 +110,13 @@ SOFTWARE.
                                                         "\tFile: {1}\n"\
                                                         "\tFunction: {2}\n"\
                                                         "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__);\
+                                                        __debugbreak(); }
+
+#define GM_VERIFY_MSG(cond, msg) if (!(cond)) { spdlog::critical("Verification Failed: {4}\n" \
+                                                        "\tCondition: {0}\n" \
+                                                        "\tFile: {1}\n"\
+                                                        "\tFunction: {2}\n"\
+                                                        "\tLine: {3}", #cond, __FILE__, FUNCSIG, __LINE__, msg);\
                                                         __debugbreak(); }
 
 #define GM_LOG_INFO(message,...) spdlog::info(message, __VA_ARGS__)
