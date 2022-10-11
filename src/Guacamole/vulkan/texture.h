@@ -28,12 +28,13 @@ SOFTWARE.
 
 #include "buffer.h"
 #include "sampler.h"
+#include <Guacamole/asset/asset.h>
 
 namespace Guacamole {
 
-class Texture {
+class Texture : public Asset {
 protected:
-    Texture();
+    Texture(const std::filesystem::path& path);
 
     void CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout);
 
@@ -41,7 +42,7 @@ public:
     virtual ~Texture();
 
     void* Map();
-    void Unmap();
+    void Unmap() override;
     void WriteData(void* data, uint64_t size, uint64_t offset = 0);
     void WriteDataImmediate(void* data, uint64_t size, uint64_t offset = 0);
     virtual void StageCopy(bool immediate);
@@ -69,15 +70,18 @@ protected:
 
 class Texture2D : public Texture {
 public:
-    static Texture2D* LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate = false);
-    static Texture2D* LoadImageFromFile(const std::filesystem::path& path, bool immediate = false);
-public:
     Texture2D(uint32_t width, uint32_t height, VkFormat format);
+    Texture2D(const std::filesystem::path& path);
 
     void StageCopy(bool immediate) override;
+    void Load(bool immediate) override;
+    void Unload() override;
 
+    void LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate = false);
+    void LoadImageFromFile(const std::filesystem::path& path, bool immediate = false);
 private:
-    VkImageViewCreateInfo mImageViewInfo;
+    void CreateImageView(VkFormat format);
+    
 };
 
 }

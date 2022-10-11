@@ -34,6 +34,18 @@ SOFTWARE.
 #include <unordered_map>
 #include <thread>
 
+
+namespace std {
+template<>
+struct hash<Guacamole::AssetHandle> {
+
+    std::size_t operator()(const Guacamole::AssetHandle& handle) const {
+        return handle.m0;
+    }
+
+};
+}
+
 namespace Guacamole {
 
 class AssetManager {
@@ -46,15 +58,17 @@ public:
 public:
     static void Init();
     static void Shutdown();
-    static void AddAsset(Asset* asset, bool asyncLoad);
+    static AssetHandle AddAsset(Asset* asset, bool asyncLoad);
+    static AssetHandle AddMemoryAsset(Asset* asset);
 
-    template<typename T>
-    static T* GetAsset(const std::filesystem::path& path) { return (T*)GetAssetInternal(path); }
-    static bool IsAssetLoaded(const std::filesystem::path& path);
+    template<typename T = Asset>
+    static T* GetAsset(AssetHandle handle) { return (T*)GetAssetInternal(handle); }
+    static bool IsAssetLoaded(AssetHandle handle);
+    static AssetHandle GetAssetHandleFromPath(const std::filesystem::path& path);
 
     static std::vector<FinishedAsset> GetFinishedAssets();
 private:
-    static Asset* GetAssetInternal(const std::filesystem::path& path);
+    static Asset* GetAssetInternal(AssetHandle handle);
     
     static void QueueWorker();
     static void LoadAssetFunction(Asset* asset);
@@ -64,7 +78,8 @@ private:
     static std::thread mLoaderThread;
     static std::mutex mQueueMutex;
     static std::mutex mCommandBufferMutex;
-    static std::unordered_map<std::filesystem::path, Asset*> mAssets;
+    static std::unordered_map<AssetHandle, Asset*> mLoadedAssets;
+    static std::unordered_map<AssetHandle, Asset*> mMemoryAssets;
     static std::vector<FinishedAsset> mFinishedCommandBuffers;
     static std::vector<Asset*> mAssetQueue;
 };

@@ -31,44 +31,10 @@ SOFTWARE.
 namespace Guacamole {
 
 Asset::Asset(const std::filesystem::path& filePath, AssetType type) 
-    : mHandle(), mFilePath(filePath), mLoaded(false), mLoading(false), mType(type) {}
+    : mHandle(), mFilePath(filePath), mLoaded(false), mType(type) {}
 
 Asset::~Asset() {
   
-}
-
-    
-Texture2DAsset::Texture2DAsset(const std::filesystem::path& filePath) 
-    : Asset(filePath, AssetType::Texture2D), mTexture(nullptr) {}
-
-Texture2DAsset::~Texture2DAsset() {
-    if (mLoaded) {
-        Unload();
-    }
-}
-
-void Texture2DAsset::Load(bool immediate) {
-    GM_ASSERT_MSG(!mLoaded, "Load may only be called if the asset isn't loaded");
-
-    mTexture = Texture2D::LoadImageFromFile(mFilePath, immediate);
-
-    if (mTexture == nullptr) {
-        mLoaded = false;
-    } else {
-        mLoaded = true;
-    }
-
-    mLoading = false;
-}
-
-void Texture2DAsset::Unload() {
-    delete mTexture;
-    mTexture = nullptr;
-    mLoaded = false;
-}
-
-void Texture2DAsset::Unmap() {
-    mTexture->Unmap();
 }
 
 }

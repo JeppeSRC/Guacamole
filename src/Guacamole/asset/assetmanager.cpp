@@ -42,7 +42,8 @@ bool AssetManager::mShouldStop;
 std::thread AssetManager::mLoaderThread;
 std::mutex AssetManager::mQueueMutex;
 std::mutex AssetManager::mCommandBufferMutex;
-std::unordered_map<std::filesystem::path, Asset*> AssetManager::mAssets;
+std::unordered_map<AssetHandle, Asset*> AssetManager::mLoadedAssets;
+std::unordered_map<AssetHandle, Asset*> AssetManager::mMemoryAssets;
 std::vector<AssetManager::FinishedAsset> AssetManager::mFinishedCommandBuffers;
 std::vector<Asset*> AssetManager::mAssetQueue;
 
@@ -57,35 +58,68 @@ void AssetManager::Shutdown() {
     mShouldStop = true;
     mLoaderThread.join();
 
-    for (auto [path, asset] : mAssets) {
+    for (auto [path, asset] : mLoadedAssets) {
         delete asset;
     }
 }
 
-void AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
-    if (mAssets.find(asset->GetPath()) != mAssets.end()) {
-        GM_LOG_WARNING("Asset \"{}\" already exist!", asset->GetPathAsString().c_str());
-        return;
+AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
+    AssetHandle handle = asset->mHandle;
+
+    if (asset->mFilePath.empty()) {
+        GM_LOG_CRITICAL("Asset \"AssetHandle: 0x{:08x}\" has no path!", handle);
+        return AssetHandle::Null();
     }
 
-    mAssets[asset->GetPath()] = asset;
+    AssetHandle tmp = GetAssetHandleFromPath(asset->mFilePath);
 
-    GM_LOG_DEBUG("Added asset \"{}\" Load: {}", asset->GetPathAsString().c_str(), asyncLoad);
+    if (tmp != AssetHandle::Null()) {
+        GM_LOG_CRITICAL("Asset Path: \"{}\" already exist!", asset->GetPathAsString().c_str());
+        return tmp;
+    }
+
+    mLoadedAssets[handle] = asset;
+    
+    GM_LOG_DEBUG("Added asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
 
     if (asyncLoad) {
         mQueueMutex.lock();
         mAssetQueue.push_back(asset);
         mQueueMutex.unlock();
-        GM_LOG_DEBUG("Asset \"{}\" Added To Queue!", asset->GetPathAsString().c_str());
+        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Added To Queue!", asset->GetPathAsString().c_str(), handle);
     } else {
         asset->Load(true);
-        GM_LOG_DEBUG("Asset \"{}\" Loaded!", asset->GetPathAsString().c_str());
+        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
     }
 
+    return handle;
 }
 
-Asset* AssetManager::GetAssetInternal(const std::filesystem::path& path) {
-    Asset* asset = mAssets.at(path);
+AssetHandle AssetManager::AddMemoryAsset(Asset* asset) {
+    AssetHandle handle = asset->mHandle;
+
+    if ((mMemoryAssets.find(handle) != mMemoryAssets.end()) || mLoadedAssets.find(handle) != mLoadedAssets.end()) {
+        GM_LOG_CRITICAL("Asset \"AssetHandle: 0x{:08x}\" already exist!", handle);
+        return AssetHandle::Null();
+    }
+
+    mMemoryAssets[handle] = asset;
+
+    GM_LOG_DEBUG("Added Asset \"AssetHandle: {:08x}\"", handle);
+
+    return handle;
+}
+
+Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
+    Asset* asset = nullptr;
+    
+    auto& itr = mMemoryAssets.find(handle);
+
+    if (itr != mMemoryAssets.end()) {
+        asset = itr->second;
+    } else {
+        asset = mLoadedAssets.at(handle);
+    }
 
     while (!asset->IsLoaded()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -94,8 +128,16 @@ Asset* AssetManager::GetAssetInternal(const std::filesystem::path& path) {
     return asset;
 }
 
-bool AssetManager::IsAssetLoaded(const std::filesystem::path& path) {
-    return mAssets.at(path)->IsLoaded();
+bool AssetManager::IsAssetLoaded(AssetHandle handle) {
+    return mLoadedAssets.at(handle)->IsLoaded();
+}
+
+AssetHandle AssetManager::GetAssetHandleFromPath(const std::filesystem::path& path) {
+    for (auto [handle, asset] : mLoadedAssets) {
+        if (asset->mFilePath == path) return handle;
+    }
+
+    return AssetHandle::Null();
 }
 
 std::vector<AssetManager::FinishedAsset> AssetManager::GetFinishedAssets() {
@@ -131,8 +173,6 @@ void AssetManager::QueueWorker() {
 
         LoadAssetFunction(currentAsset);
 
-        // Make sure Asset::Load sets Asset::mLoading to false
-        GM_ASSERT(currentAsset->mLoading == false);
         cmd->End();
 
         FinishedAsset finishedAsset;
@@ -149,14 +189,16 @@ void AssetManager::QueueWorker() {
 }
 
 void AssetManager::LoadAssetFunction(Asset* asset) {
-    GM_LOG_DEBUG("Loading asset \"{}\"", asset->GetPathAsString().c_str());
+    AssetHandle handle = asset->mHandle;
+
+    GM_LOG_DEBUG("Loading asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
 
     asset->Load(false);
 
     if (asset->IsLoaded()) {
-        GM_LOG_DEBUG("Asset \"{}\" Loaded!", asset->GetPathAsString().c_str());
+        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
     } else {
-        GM_LOG_DEBUG("Asset \"{}\" Not loaded!", asset->GetPathAsString().c_str());
+        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Not loaded!", asset->GetPathAsString().c_str(), handle);
     }
 }
 

@@ -31,14 +31,18 @@ namespace Guacamole {
 class UUID {
 public:
     UUID();
-    UUID(uint64_t _0, uint64_t _1);
+    UUID(uint64_t _0);
 
     bool operator==(const UUID& other) const;
+    operator uint64_t () { return m0; }
+    operator const uint64_t () const { return m0; }
 
-private:
+    static UUID Null();
+
+public:
     uint64_t m0;
-    uint64_t m1;
 
 };
 
 }
+
