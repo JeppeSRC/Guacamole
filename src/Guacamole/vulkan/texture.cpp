@@ -37,8 +37,9 @@ namespace Guacamole {
 
 
 
-Texture::Texture() 
-    : mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), 
+Texture::Texture(const std::filesystem::path& path) 
+    : Asset(path, AssetType::Texture),
+    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), 
       mMappedBufferHandle(VK_NULL_HANDLE), mMappedBufferMemory(VK_NULL_HANDLE), mMappedMemory(nullptr) {}
 
 void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout) {
@@ -315,7 +316,57 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool 
 }
 
 
-Texture2D* Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate) {
+
+
+void Texture2D::CreateImageView(VkFormat format) {
+    VkImageViewCreateInfo imageViewInfo;
+
+    imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewInfo.pNext = nullptr;
+    imageViewInfo.flags = 0;
+    imageViewInfo.image = mImageHandle;
+    imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewInfo.format = format;
+    imageViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewInfo.subresourceRange.baseMipLevel = 0;
+    imageViewInfo.subresourceRange.levelCount = 1;
+    imageViewInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewInfo.subresourceRange.layerCount = 1;
+
+    VK(vkCreateImageView(Context::GetDeviceHandle(), &imageViewInfo, nullptr, &mImageViewHandle));
+}
+
+Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) : Texture("") {
+    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+    CreateImageView(format);
+
+    mLoaded = true;
+}
+
+Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
+
+}
+
+void Texture2D::StageCopy(bool immediate) {
+    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, immediate);
+    Texture::StageCopy(immediate);
+    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, immediate);
+}
+
+void Texture2D::Load(bool immediate) {
+    GM_ASSERT_MSG(mLoaded == false, "Texture already loaded");
+
+    LoadImageFromFile(mFilePath, immediate);
+
+    mLoaded = true;
+}
+
+void Texture2D::Unload() {
+    mLoaded = false;
+}
+
+void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate) {
     GM_ASSERT(data);
     GM_ASSERT(size);
 
@@ -328,62 +379,31 @@ Texture2D* Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool imm
     if (pixels == nullptr) {
         GM_LOG_CRITICAL("stbi_load_from_memory({0}, {1}, {2}, {3}, {4}, {5}) failed", uint64_t(data), size, width, height, channels, 4);
         free(pixels);
-        return nullptr;
     }
 
-    Texture2D* tex = new Texture2D((uint32_t)width, (uint32_t)height, VK_FORMAT_R8G8B8A8_UNORM);
+    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { (uint32_t)width, (uint32_t)height, 1 }, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+    CreateImageView(VK_FORMAT_R8G8B8A8_UNORM);
 
     if (immediate) {
-        tex->WriteDataImmediate(pixels, width * height * 4);
+        WriteDataImmediate(pixels, width * height * 4);
     } else {
-        tex->WriteData(pixels, width * height * 4);
+        WriteData(pixels, width * height * 4);
     }
 
-    return tex;
+    free(pixels);
 }
 
-Texture2D* Texture2D::LoadImageFromFile(const std::filesystem::path& path, bool immediate) {
+void Texture2D::LoadImageFromFile(const std::filesystem::path& path, bool immediate) {
+    GM_ASSERT(path.empty() == false);
+
     uint64_t fileSize = 0;
 
     uint8_t* data = Util::ReadFile(path, &fileSize);
 
-    if (data == nullptr) return nullptr;
+    if (data == nullptr) return;
 
-    Texture2D* tex = LoadImageFromMemory(data, fileSize, immediate);
+    LoadImageFromMemory(data, fileSize, immediate);
     delete data;
-
-    if (tex == nullptr) {
-        GM_LOG_CRITICAL("Failed to load image \"{}\"", path.string().c_str());
-        return nullptr;
-    }
-
-    return tex;
 }
-
-Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) {
-    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-
-    mImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    mImageViewInfo.pNext = nullptr;
-    mImageViewInfo.flags = 0;
-    mImageViewInfo.image = mImageHandle;
-    mImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    mImageViewInfo.format = format;
-    mImageViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-    mImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    mImageViewInfo.subresourceRange.baseMipLevel = 0;
-    mImageViewInfo.subresourceRange.levelCount = 1;
-    mImageViewInfo.subresourceRange.baseArrayLayer = 0;
-    mImageViewInfo.subresourceRange.layerCount = 1;
-
-    VK(vkCreateImageView(Context::GetDeviceHandle(), &mImageViewInfo, nullptr, &mImageViewHandle));
-}
-
-void Texture2D::StageCopy(bool immediate) {
-    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, immediate);
-    Texture::StageCopy(immediate);
-    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, immediate);
-}
-
 
 }

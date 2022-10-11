@@ -80,7 +80,7 @@ int main() {
         shader.AddModule("res/shader.frag", true, ShaderStage::Fragment);
         shader.Compile();
 
-       /* Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
+        Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
 
         glm::vec4 colors[100 * 100];
 
@@ -90,9 +90,10 @@ int main() {
             }
         }
 
-        tex.WriteDataImmediate(colors, sizeof(colors));*/
+        tex.WriteDataImmediate(colors, sizeof(colors));
 
-        AssetManager::AddAsset(new Texture2DAsset("res/sheet.png"), true);
+        AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
+        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("res/sheet.png"), true);
 
         BasicRenderpass pass;
 
@@ -139,7 +140,7 @@ int main() {
         VkDescriptorImageInfo iInfo;
 
         iInfo.sampler = sampler.GetHandle();
-        iInfo.imageView = AssetManager::GetAsset<Texture2DAsset>("res/sheet.png")->GetTexture()->GetImageViewHandle();
+        iInfo.imageView = AssetManager::GetAsset<Texture>(texHandle)->GetImageViewHandle();
         iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         wSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -180,7 +181,7 @@ int main() {
             VkBuffer iboHandle = ibo.GetHandle();
 
             VkDeviceSize offset = 0;
-
+            
             vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
             vkCmdBindIndexBuffer(handle, iboHandle, 0, VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);

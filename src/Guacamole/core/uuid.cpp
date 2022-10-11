@@ -34,12 +34,16 @@ static std::uniform_int_distribution<uint64_t> UniformDist;
 
 namespace Guacamole {
 
-UUID::UUID() : m0(UniformDist(mt)), m1(UniformDist(mt)) {}
+UUID::UUID() : m0(UniformDist(mt)) {}
 
-UUID::UUID(uint64_t _0, uint64_t _1) : m0(_0), m1(_1) {}
+UUID::UUID(uint64_t _0) : m0(_0) {}
 
 bool UUID::operator==(const UUID& other) const {
-    return m0 == other.m0 && m1 == other.m1;
+    return m0 == other.m0;
+}
+
+UUID UUID::Null() {
+    return UUID(0);
 }
 
 }
