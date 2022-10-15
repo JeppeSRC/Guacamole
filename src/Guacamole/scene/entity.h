@@ -22,21 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
+#pragma once
 
-#include <stddef.h>
-#include <string>
-#include <vector>
-#include <memory.h>
-#include <filesystem>
+#include <Guacamole.h>
 
-#include <Guacamole/core/log.h>
-#include <vulkan/vulkan.h>
-#include <entt/entt.hpp>
+#include "scene.h"
+#include "components.h"
 
-#undef min
+namespace Guacamole {
 
-#include <spirv_cross/spirv_glsl.hpp>
+class Entity {
+public:
+    Entity(Scene* scene, entt::entity handle) : mScene(scene), mHandle(handle) {}
 
-VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
+    template<typename T, typename... Args>
+    T& AddComponent(Args&&... args) {
+        GM_ASSERT_MSG(!HasComponent<T>(), "Component already exist!");
+        return mScene->mRegistry.emplace<T>(mHandle, args...);
+    }
 
+    template<typename T>
+    bool HasComponent() {
+        return mScene->mRegistry.all_of<T>(mHandle);
+    }
+
+    template<typename T>
+    T& GetComponent() {
+        GM_ASSERT_MSG(HasComponent<T>(), "Component doesn't exist!");
+        return mScene->mRegistry.get<T>(mHandle);
+    }
+
+    template<typename T>
+    void RemoveCompoent() {
+        GM_ASSERT_MSG(HasComponent<T>(), "Component doesn't exist!");
+        mScene->mRegistry.remove<T>(mHandle);
+    }
+
+private:
+    entt::entity mHandle;
+    Scene* mScene;
+
+
+};
+
+}

@@ -22,21 +22,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
+#include <Guacamole.h>
 
-#include <stddef.h>
-#include <string>
-#include <vector>
-#include <memory.h>
-#include <filesystem>
+#include <glm/glm.hpp>
 
-#include <Guacamole/core/log.h>
-#include <vulkan/vulkan.h>
-#include <entt/entt.hpp>
+#include <Guacamole/vulkan/buffer.h>
 
-#undef min
+namespace Guacamole {
 
-#include <spirv_cross/spirv_glsl.hpp>
+struct Vertex {
+    glm::vec4 Position;
+    glm::vec4 Color;
+    glm::vec3 Normal;
+    glm::vec2 UV;
+};
 
-VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
+class Mesh {
+public:
+    ~Mesh();
 
+    static Mesh* LoadFromFile(const std::filesystem::path& path, bool immediate = false);
+    static Mesh* GenerateQuad(bool immediate = false);
+    static Mesh* GeneratePlane(bool immediate = false);
+
+    inline Buffer* GetVBO() const { return mVBO; }
+    inline Buffer* GetIBO() const { return mIBO; }
+    inline VkBuffer GetVBOHandle() const { return mVBO->GetHandle(); }
+    inline VkBuffer GetIBOHandle() const { return mIBO->GetHandle(); }
+
+private:
+    Mesh();
+
+    void CreateVBO(Vertex* data, uint64_t count);
+    void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
+
+    Buffer* mVBO;
+    Buffer* mIBO;
+    VkIndexType mIndexType;
+};
+
+}

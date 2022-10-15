@@ -22,21 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
+#include <Guacamole.h>
 
-#include <stddef.h>
-#include <string>
-#include <vector>
-#include <memory.h>
-#include <filesystem>
+#include "scene.h"
 
-#include <Guacamole/core/log.h>
-#include <vulkan/vulkan.h>
-#include <entt/entt.hpp>
+namespace Guacamole {
 
-#undef min
+Scene::Scene() {
 
-#include <spirv_cross/spirv_glsl.hpp>
+}
 
-VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
+Scene::~Scene() {
+    mRegistry.clear();
+}
 
+
+
+}
