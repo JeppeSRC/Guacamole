@@ -28,49 +28,50 @@ SOFTWARE.
 
 namespace Guacamole {
 
+Mesh::Mesh(const std::filesystem::path& file) 
+    : Asset(file, AssetType::Mesh), mVBO(nullptr), 
+      mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {}
+
 Mesh::~Mesh() {
     delete mVBO;
 }
 
-Mesh* Mesh::LoadFromFile(const std::filesystem::path& path, bool immediate) {
-    GM_ASSERT(false);
-    return nullptr;
-}
-Mesh* Mesh::GenerateQuad(bool immediate) {
-    GM_ASSERT(false);
-    return nullptr;
-}
-Mesh* Mesh::GeneratePlane(bool immediate) {
-    Vertex vertices[4] = {
-        {{-0.5, -0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {0, 0}},
-        {{ 0.5, -0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {1, 0}},
-        {{ 0.5,  0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {1, 1}},
-        {{-0.5,  0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {0, 1}}
-    };
-
-    uint16_t indices[6] = {
-        0, 1, 2, 2, 3, 0
-    };
-
-    Mesh* mesh = new Mesh;
-
-    mesh->CreateVBO(vertices, 4);
-    mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16);
-
-    return mesh;
+void Mesh::Load(bool immediate) {
+    LoadFromFile(mFilePath, immediate);
 }
 
-Mesh::Mesh() : mVBO(nullptr), mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {}
+void Mesh::Unload() {
+    delete mVBO;
+    delete mIBO;
+}
 
-void Mesh::CreateVBO(Vertex* data, uint64_t count) {
+void Mesh::Unmap() {
+    mVBO->Unmap();
+    mIBO->Unmap();
+}
+
+Mesh::Mesh() 
+    : Asset("", AssetType::Mesh), mVBO(nullptr), 
+      mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {
+
+    mLoaded = true;
+}
+
+void Mesh::CreateVBO(Vertex* data, uint64_t count, bool immediate) {
     GM_ASSERT(mVBO == nullptr);
 
     uint64_t size = count * sizeof(Vertex);
 
     mVBO = new Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
-    mVBO->WriteData(data, size);
+
+    if (immediate) {
+        mVBO->WriteDataImmediate(data, size);
+    } else {
+        mVBO->WriteData(data, size);
+    }
 }
-void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
+
+void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType, bool immediate) {
     GM_ASSERT(mIBO == nullptr);
 
     uint64_t size = count;
@@ -91,6 +92,42 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
 
     mIndexType = indexType;
     mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
-    mIBO->WriteData(data, size);
+    
+    if (immediate) {
+        mIBO->WriteDataImmediate(data, size);
+    } else {
+        mIBO->WriteData(data, size);
+    }
 }
+
+
+void Mesh::LoadFromFile(const std::filesystem::path& path, bool immediate) {
+    GM_ASSERT(false);
+}
+
+Mesh* Mesh::GenerateQuad(bool immediate) {
+    GM_ASSERT(false);
+    return nullptr;
+}
+
+Mesh* Mesh::GeneratePlane(bool immediate) {
+    Vertex vertices[4] = {
+        {{-0.5, -0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {0, 0}},
+        {{ 0.5, -0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {1, 0}},
+        {{ 0.5,  0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {1, 1}},
+        {{-0.5,  0.5, 0, 1}, {1, 1, 1, 1}, {0, 0, 1}, {0, 1}}
+    };
+
+    uint16_t indices[6] = {
+        0, 1, 2, 2, 3, 0
+    };
+
+    Mesh* mesh = new Mesh;
+
+    mesh->CreateVBO(vertices, 4, immediate);
+    mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16, immediate);
+
+    return mesh;
+}
+
 }

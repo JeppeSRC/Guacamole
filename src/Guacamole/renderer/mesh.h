@@ -27,6 +27,7 @@ SOFTWARE.
 #include <glm/glm.hpp>
 
 #include <Guacamole/vulkan/buffer.h>
+#include <Guacamole/asset/asset.h>
 
 namespace Guacamole {
 
@@ -37,28 +38,35 @@ struct Vertex {
     glm::vec2 UV;
 };
 
-class Mesh {
+class Mesh : public Asset {
 public:
+    Mesh(const std::filesystem::path& file);
     ~Mesh();
 
-    static Mesh* LoadFromFile(const std::filesystem::path& path, bool immediate = false);
-    static Mesh* GenerateQuad(bool immediate = false);
-    static Mesh* GeneratePlane(bool immediate = false);
+    void Load(bool immediate = false) override;
+    void Unload() override;
+    void Unmap() override;
 
     inline Buffer* GetVBO() const { return mVBO; }
     inline Buffer* GetIBO() const { return mIBO; }
     inline VkBuffer GetVBOHandle() const { return mVBO->GetHandle(); }
     inline VkBuffer GetIBOHandle() const { return mIBO->GetHandle(); }
+    inline VkIndexType GetIndexType() const { return mIndexType; }
 
 private:
     Mesh();
 
-    void CreateVBO(Vertex* data, uint64_t count);
-    void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
+    void CreateVBO(Vertex* data, uint64_t count, bool immediate = false);
+    void CreateIBO(void* data, uint64_t count, VkIndexType indexType, bool immediate = false);
+    void LoadFromFile(const std::filesystem::path& path, bool immediate = false);
 
     Buffer* mVBO;
     Buffer* mIBO;
     VkIndexType mIndexType;
+
+public:
+    static Mesh* GenerateQuad(bool immediate = false);
+    static Mesh* GeneratePlane(bool immediate = false);
 };
 
 }
