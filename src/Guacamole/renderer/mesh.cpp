@@ -77,10 +77,10 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
 
     switch (indexType) {
         case VK_INDEX_TYPE_UINT32:
-            count *= 4;
+            size *= 4;
             break;
         case VK_INDEX_TYPE_UINT16:
-            count *= 2;
+            size *= 2;
             break;
         case VK_INDEX_TYPE_UINT8_EXT:
             GM_VERIFY_MSG(false, "Unsupported VkIndexType");
@@ -89,6 +89,7 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
             GM_VERIFY_MSG(false, "Unsupported VkIndexType");
     }
 
+    mIndexType = indexType;
     mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
     mIBO->WriteData(data, size);
 }
