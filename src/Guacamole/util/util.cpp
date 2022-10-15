@@ -26,6 +26,12 @@ SOFTWARE.
 
 #include <fstream>
 
+// Apparently there's an issue with some SIMD intrinsics on GCC so 
+// SIMD is disabled in stb for the moment :(
+#ifdef GM_LINUX
+#define STBI_NO_SIMD
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 

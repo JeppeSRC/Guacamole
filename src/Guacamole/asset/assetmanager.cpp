@@ -27,6 +27,15 @@ SOFTWARE.
 #include "assetmanager.h"
 #include <Guacamole/vulkan/commandpoolmanager.h>
 
+namespace std {
+    template<>
+    struct hash<std::filesystem::path> {
+        size_t operator()(const std::filesystem::path& path) const {
+            return hash_value(path);
+        }
+    };
+}
+
 namespace Guacamole {
 
 bool AssetManager::mShouldStop;

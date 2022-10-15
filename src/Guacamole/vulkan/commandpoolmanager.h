@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <thread>
+
 #include "commandbuffer.h"
 
 namespace Guacamole {
