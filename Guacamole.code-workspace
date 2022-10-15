@@ -13,6 +13,7 @@
             "libs/entt/single_include",
             "libs/glfw/include",
             "libs/spdlog/include",
+            "libs/stb",
             "src"
         ],
         "C_Cpp.default.defines": [
