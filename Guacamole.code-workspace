@@ -18,6 +18,8 @@
         ],
         "C_Cpp.default.defines": [
             "GM_LINUX",
-        ]
+        ],
+        "C_Cpp.default.cppStandard": "c++17",
+        "C_Cpp.default.intelliSenseMode": "linux-gcc-x64"
     }
 }
