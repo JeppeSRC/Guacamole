@@ -54,20 +54,51 @@ const char* vkEnumToString(VkPhysicalDeviceType type) {
     return "(null)";
 }
 
+bool ReadFileInternal(const std::filesystem::path& file, uint64_t fileSize, uint64_t bytesToRead, uint64_t bufferSize, void* buffer) {
+    GM_ASSERT_MSG(bytesToRead <= fileSize, "bytesToRead must be smaller than fileSize");
+    GM_ASSERT_MSG(bytesToRead <= bufferSize, "bufferSize to small");
+
+    FILE* f = fopen(file.string().c_str(), "rb");
+
+    if (f == nullptr) {
+        GM_LOG_CRITICAL("Failed to open \"{}\" for reading", file.string().c_str());
+        return false;
+    }
+
+    if (fread(buffer, bytesToRead, 1, f) != 1) {
+        GM_LOG_CRITICAL("Failed to read {} bytes from \"{}\"", bytesToRead, file.string().c_str());
+        fclose(f);
+        return false;
+    }
+
+    fclose(f);
+
+    return true;
+}
 
 uint8_t* ReadFile(const std::filesystem::path& file, uint64_t* fileSize) {
     GM_ASSERT(fileSize);
+
+    if (!std::filesystem::exists(file)) {
+        GM_LOG_CRITICAL("File \"{}\" doesn't exist", file.string().c_str());
+        *fileSize = 0;
+        return nullptr;
+    }
 
     *fileSize = std::filesystem::file_size(file);
 
     uint8_t* data = new uint8_t[*fileSize];
 
-    if (!ReadFile(file, *fileSize, data)) {
-        delete data;
-        return nullptr;
+    bool res = ReadFileInternal(file, *fileSize, *fileSize, *fileSize, data);
+
+    if (res) {
+        return data;
     }
 
-    return data;
+    *fileSize = 0;
+    delete[] data;
+
+    return nullptr;
 }
 
 bool ReadFile(const std::filesystem::path& file, uint64_t bytesToRead, void* dstBuffer) {
@@ -79,17 +110,9 @@ bool ReadFile(const std::filesystem::path& file, uint64_t bytesToRead, void* dst
         return false;
     }
 
-    FILE* f = fopen(file.string().c_str(), "rb");
+    uint64_t fileSize = std::filesystem::file_size(file);
 
-    if (f == nullptr) {
-        GM_LOG_CRITICAL("Failed to open file \"{0}\"", file.string().c_str());
-        return false;
-    }
-
-    fread(dstBuffer, bytesToRead, 1, f);
-    fclose(f);
-
-    return true;
+    return ReadFileInternal(file, fileSize, bytesToRead, bytesToRead, dstBuffer);
 }
 
 VkFormat SPIRTypeToVkFormat(spirv_cross::SPIRType type) {
