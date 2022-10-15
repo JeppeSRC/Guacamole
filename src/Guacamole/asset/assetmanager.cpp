@@ -113,7 +113,7 @@ AssetHandle AssetManager::AddMemoryAsset(Asset* asset) {
 Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
     Asset* asset = nullptr;
     
-    auto& itr = mMemoryAssets.find(handle);
+    const auto& itr = mMemoryAssets.find(handle);
 
     if (itr != mMemoryAssets.end()) {
         asset = itr->second;
