@@ -33,17 +33,12 @@ SOFTWARE.
 #include <Guacamole/vulkan/descriptor.h>
 #include <Guacamole/vulkan/shader.h>
 #include <Guacamole/asset/assetmanager.h>
+#include <Guacamole/renderer/mesh.h>
 #include <time.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
 using namespace Guacamole;
-
-struct Vertex {
-    glm::vec3 Position;
-    glm::vec4 Color;
-    glm::vec2 TexCoord;
-};
 
 int main() {
     spdlog::set_level(spdlog::level::debug);
@@ -63,10 +58,10 @@ int main() {
     Swapchain::Init(&window);
 
     Vertex vertices[]{
-        {glm::vec3(-0.5, -0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(0, 0)},
-        {glm::vec3( 0.5, -0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(1, 0)},
-        {glm::vec3( 0.5,  0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(1, 1)},
-        {glm::vec3(-0.5,  0.5, 0), glm::vec4(1, 1, 1, 1), glm::vec2(0, 1)}
+        {glm::vec4(-0.5, -0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(0, 0)},
+        {glm::vec4( 0.5, -0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(1, 0)},
+        {glm::vec4( 0.5,  0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(1, 1)},
+        {glm::vec4(-0.5,  0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(0, 1)}
     };
 
     uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
@@ -93,7 +88,9 @@ int main() {
         tex.WriteDataImmediate(colors, sizeof(colors));
 
         AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
-        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("res/sheet.png"), true);
+        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("res/sheet.png"), false);
+        //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
+        AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane(true));
 
         BasicRenderpass pass;
 
@@ -104,7 +101,7 @@ int main() {
         gInfo.mWidth = spec.Width;
         gInfo.mHeight = spec.Height;
         gInfo.mVertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
-        gInfo.mVertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2} } });
+        gInfo.mVertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2, 3} } });
         gInfo.mPipelineLayout = &pipelineLayout;
         gInfo.mRenderpass = &pass;
         gInfo.mShader = &shader;
@@ -177,13 +174,15 @@ int main() {
 
             pass.Begin(cmd);
 
-            VkBuffer vboHandle = vbo.GetHandle();
-            VkBuffer iboHandle = ibo.GetHandle();
+            Mesh* mesh = AssetManager::GetAsset<Mesh>(objHandle);
+
+            VkBuffer vboHandle = mesh->GetVBOHandle();
+            VkBuffer iboHandle = mesh->GetIBOHandle();
 
             VkDeviceSize offset = 0;
             
             vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
-            vkCmdBindIndexBuffer(handle, iboHandle, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(handle, iboHandle, 0, mesh->GetIndexType());
             vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);
 
             vkCmdDrawIndexed(handle, 6, 1, 0, 0, 0);
