@@ -27,6 +27,8 @@ SOFTWARE.
 #include "assetmanager.h"
 #include <Guacamole/vulkan/commandpoolmanager.h>
 
+#if defined(GM_LINUX)
+
 namespace std {
     template<>
     struct hash<std::filesystem::path> {
@@ -35,6 +37,8 @@ namespace std {
         }
     };
 }
+
+#endif
 
 namespace Guacamole {
 
