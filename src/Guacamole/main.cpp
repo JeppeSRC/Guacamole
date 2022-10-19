@@ -58,10 +58,10 @@ int main() {
     Swapchain::Init(&window);
 
     Vertex vertices[]{
-        {glm::vec4(-0.5, -0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(0, 0)},
-        {glm::vec4( 0.5, -0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(1, 0)},
-        {glm::vec4( 0.5,  0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(1, 1)},
-        {glm::vec4(-0.5,  0.5, 0, 1), glm::vec4(1, 1, 1, 1), glm::vec3(0, 0, 1),glm::vec2(0, 1)}
+        {glm::vec4(-0.5, -0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(0, 0)},
+        {glm::vec4( 0.5, -0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(1, 0)},
+        {glm::vec4( 0.5,  0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(1, 1)},
+        {glm::vec4(-0.5,  0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(0, 1)}
     };
 
     uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
@@ -101,7 +101,7 @@ int main() {
         gInfo.mWidth = spec.Width;
         gInfo.mHeight = spec.Height;
         gInfo.mVertexInputBindings.push_back({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
-        gInfo.mVertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2, 3} } });
+        gInfo.mVertexInputAttributes = shader.GetVertexInputLayout({ {0, {0, 1, 2 } } });
         gInfo.mPipelineLayout = &pipelineLayout;
         gInfo.mRenderpass = &pass;
         gInfo.mShader = &shader;

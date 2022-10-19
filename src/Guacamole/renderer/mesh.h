@@ -33,7 +33,6 @@ namespace Guacamole {
 
 struct Vertex {
     glm::vec4 Position;
-    glm::vec4 Color;
     glm::vec3 Normal;
     glm::vec2 UV;
 };
