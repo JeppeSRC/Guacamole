@@ -26,14 +26,23 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/asset/asset.h>
+
 namespace Guacamole {
 
-class Scene {
+class Entity;
+class Scene : public Asset {
 public:
-    Scene();
+    Scene(const std::filesystem::path& path = "");
     ~Scene();
 
-private:
+    void OnUpdate(float ts);
+    void OnRender();
+
+    Entity CreateEntity(const std::string& name = "");
+
+
+protected:
     entt::registry mRegistry;
 
     friend class Entity;

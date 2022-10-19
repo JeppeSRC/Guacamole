@@ -26,20 +26,33 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <glm/glm.hpp>
+
 #include <Guacamole/core/uuid.h>
+#include <Guacamole/asset/asset.h>
 
 namespace Guacamole {
 
 struct IdComponent {
-    UUID uuid;
+    UUID mUUID;
 };
 
 struct TagComponent {
-    std::string tag;
+    std::string mTag;
 };
 
 struct MeshComponent {
+    AssetHandle mMesh;
+};
 
+struct SpriteComponent {
+    AssetHandle mTexture;
+};
+
+struct TransformComponent {
+    glm::vec3 mTranslation;
+    glm::vec3 mRotation;
+    glm::vec3 mScale;
 };
 
 }

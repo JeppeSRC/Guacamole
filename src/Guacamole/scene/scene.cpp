@@ -25,10 +25,11 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "scene.h"
+#include "entity.h"
 
 namespace Guacamole {
 
-Scene::Scene() {
+Scene::Scene(const std::filesystem::path& path) : Asset(path, AssetType::Scene){
 
 }
 
@@ -36,6 +37,26 @@ Scene::~Scene() {
     mRegistry.clear();
 }
 
+
+void Scene::OnUpdate(float ts) {
+
+}
+
+void Scene::OnRender() {
+    
+}
+
+Entity Scene::CreateEntity(const std::string& name) {
+    Entity ent(this, mRegistry.create());
+
+    ent.AddComponent<IdComponent>();
+
+    if (!name.empty()) {
+        ent.AddComponent<TagComponent>(name);
+    }
+
+    return ent;
+}
 
 
 }

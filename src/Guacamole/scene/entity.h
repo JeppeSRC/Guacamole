@@ -30,7 +30,7 @@ SOFTWARE.
 #include "components.h"
 
 namespace Guacamole {
-
+    
 class Entity {
 public:
     Entity(Scene* scene, entt::entity handle) : mScene(scene), mHandle(handle) {}
@@ -61,8 +61,6 @@ public:
 private:
     entt::entity mHandle;
     Scene* mScene;
-
-
 };
 
 }
