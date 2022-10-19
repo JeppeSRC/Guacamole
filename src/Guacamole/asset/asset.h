@@ -38,6 +38,7 @@ enum class AssetType {
     Mesh,
     VertexShader,
     FragmentShader,
+    Scene,
     Texture,
     Audio
 };
