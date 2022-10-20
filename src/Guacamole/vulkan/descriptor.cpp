@@ -131,15 +131,13 @@ DescriptorPool::~DescriptorPool() {
 }
 
 DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
-    DescriptorSet** sets = AllocateDescriptorSets(layout, 1);
-    DescriptorSet* ret = *sets;
-
-    delete[] sets;
+    std::vector<DescriptorSet*> sets = AllocateDescriptorSets(layout, 1);
+    DescriptorSet* ret = sets[0];
 
     return ret;
 }
 
-DescriptorSet** DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
+std::vector<DescriptorSet*> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
     VkDescriptorSetLayout tmp = layout->GetHandle();
 
     VkDescriptorSetAllocateInfo aInfo;
@@ -151,15 +149,15 @@ DescriptorSet** DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layo
     aInfo.pSetLayouts = &tmp;
 
     VkDescriptorSet* set = new VkDescriptorSet[num];
-    DescriptorSet** sets = new DescriptorSet*[num];
+    
+    std::vector<DescriptorSet*> sets;
+    sets.reserve(num);
 
     VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, set));
 
     for (uint32_t i = 0; i < num; i++) {
         sets[i] = new DescriptorSet(set[i], layout);
     }
-
-    delete[] set;
 
     return sets;
 }

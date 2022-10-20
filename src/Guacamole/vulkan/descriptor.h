@@ -74,7 +74,7 @@ public:
     ~DescriptorPool();
 
     DescriptorSet* AllocateDescriptorSet(DescriptorSetLayout* layout);
-    DescriptorSet** AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
+    std::vector<DescriptorSet*> AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
 
     inline VkDescriptorPool GetHandle() const { return mPoolHandle; }
 

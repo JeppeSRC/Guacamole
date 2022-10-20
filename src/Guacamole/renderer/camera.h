@@ -25,39 +25,26 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include "commandbuffer.h"
+
+#include <glm/glm.hpp>
+#include <glm/matrix.hpp>
+#include <glm/ext.hpp>
 
 namespace Guacamole {
 
-class Renderpass {
+class Camera {
 public:
-    virtual ~Renderpass();
+    Camera(const glm::mat4& projection = glm::mat4(1.0f));
+    ~Camera();
 
-    VkRenderPass GetHandle() const { return mRenderpassHandle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
-    virtual void End(const CommandBuffer* cmd) = 0;
+    inline const glm::mat4& GetProjection() const { return mProjectionMatrix; }
+    inline const glm::mat4& GetView() const { return mViewMatrix; }
+    inline void SetProjection(const glm::mat4& projection) {mProjectionMatrix = projection; }
 
-protected:
-    VkRenderPass mRenderpassHandle;
-    VkRenderPassBeginInfo mBeginInfo;
-
-    void Create(VkRenderPassCreateInfo* rInfo);
 private:
+    glm::mat4 mProjectionMatrix;
+    glm::mat4 mViewMatrix;
 
-};
-
-class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
-public:
-    BasicRenderpass();
-    ~BasicRenderpass();
-
-    void Begin(const CommandBuffer* cmd) override;
-    void End(const CommandBuffer* cmd) override;
-
-    VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
 };
 
 }

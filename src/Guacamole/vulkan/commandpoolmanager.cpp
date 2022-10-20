@@ -56,7 +56,7 @@ void CommandPoolManager::AllocateAssetCommandBuffers(std::thread::id threadId) {
     AllocateCopyCommandBuffers(threadId, 1);
 }
 
-CommandBuffer* CommandPoolManager::GetPrimaryRenderCommandBuffer() {
+CommandBuffer* CommandPoolManager::GetRenderCommandBuffer() {
     uint32_t imageIndex = Swapchain::GetCurrentImageIndex();
     GM_ASSERT(imageIndex!= ~0);
 

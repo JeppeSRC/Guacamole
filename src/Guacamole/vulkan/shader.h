@@ -68,7 +68,9 @@ public:
 
     std::vector<VkVertexInputAttributeDescription> GetVertexInputLayout(std::vector<std::pair<uint32_t, std::vector<uint32_t>>> locations) const;
     DescriptorSetLayout* GetDescriptorSetLayout(uint32_t set) const;
-    DescriptorSet** AllocateDescriptorSets(uint32_t set, uint32_t num);
+    std::vector<DescriptorSetLayout*> GetDescriptorSetLayouts() const;
+    std::vector<DescriptorSet*> AllocateDescriptorSets(uint32_t set, uint32_t num);
+    DescriptorSet* AllocateDescriptorSet(uint32_t set);
 
 private:
     std::vector<ShaderModule> mModules;

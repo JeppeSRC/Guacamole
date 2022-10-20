@@ -108,7 +108,7 @@ int main() {
         
         GraphicsPipeline gPipeline(gInfo);
 
-        DescriptorSet* set = *shader.AllocateDescriptorSets(0, 1);
+        DescriptorSet* set = shader.AllocateDescriptorSets(0, 1)[0];
         VkDescriptorSet setHandle = set->GetHandle();
 
         Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));

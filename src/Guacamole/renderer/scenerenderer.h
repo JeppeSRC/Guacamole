@@ -25,39 +25,40 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include "commandbuffer.h"
+
+#include "renderer.h"
+#include "mesh.h"
+#include "camera.h"
+
+#include <Guacamole/vulkan/descriptor.h>
 
 namespace Guacamole {
 
-class Renderpass {
+class SceneRenderer {
 public:
-    virtual ~Renderpass();
 
-    VkRenderPass GetHandle() const { return mRenderpassHandle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
-    virtual void End(const CommandBuffer* cmd) = 0;
-
-protected:
-    VkRenderPass mRenderpassHandle;
-    VkRenderPassBeginInfo mBeginInfo;
-
-    void Create(VkRenderPassCreateInfo* rInfo);
-private:
-
+struct SceneUniformData {
+    glm::mat4 mProjection;
+    glm::mat4 mView;
 };
 
-class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
 public:
-    BasicRenderpass();
-    ~BasicRenderpass();
+    SceneRenderer(uint32_t width, uint32_t height);
+    ~SceneRenderer();
 
-    void Begin(const CommandBuffer* cmd) override;
-    void End(const CommandBuffer* cmd) override;
+    void BeginScene(const Camera& camera);
+    void EndScene();
 
-    VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
+    void SubmitMesh(const Mesh* mesh, const DescriptorSet* set);
+
+private:
+    Shader* mShader;
+    PipelineLayout* mPipelineLayout;
+    Pipeline* mPipeline;
+    Renderpass* mRenderpass;
+
+    SceneUniformData mSceneUniformData;
+    DescriptorSet* mSceneSet;
 };
 
 }

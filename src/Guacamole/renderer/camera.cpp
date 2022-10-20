@@ -22,42 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
 
 #include <Guacamole.h>
-#include "commandbuffer.h"
+
+#include "camera.h"
 
 namespace Guacamole {
 
-class Renderpass {
-public:
-    virtual ~Renderpass();
+Camera::Camera(const glm::mat4& projection) : mProjectionMatrix(projection), mViewMatrix(glm::mat4(1.0f)) {
+    
+}
 
-    VkRenderPass GetHandle() const { return mRenderpassHandle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
-    virtual void End(const CommandBuffer* cmd) = 0;
+Camera::~Camera() {
 
-protected:
-    VkRenderPass mRenderpassHandle;
-    VkRenderPassBeginInfo mBeginInfo;
-
-    void Create(VkRenderPassCreateInfo* rInfo);
-private:
-
-};
-
-class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
-public:
-    BasicRenderpass();
-    ~BasicRenderpass();
-
-    void Begin(const CommandBuffer* cmd) override;
-    void End(const CommandBuffer* cmd) override;
-
-    VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
-};
+}
 
 }

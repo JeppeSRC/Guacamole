@@ -22,42 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include "renderer.h"
 
-#include <Guacamole.h>
-#include "commandbuffer.h"
+#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/renderpass.h>
 
 namespace Guacamole {
 
-class Renderpass {
-public:
-    virtual ~Renderpass();
+void Renderer::Init() {
 
-    VkRenderPass GetHandle() const { return mRenderpassHandle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
-    virtual void End(const CommandBuffer* cmd) = 0;
+}
 
-protected:
-    VkRenderPass mRenderpassHandle;
-    VkRenderPassBeginInfo mBeginInfo;
+void Renderer::Shutdown() {
 
-    void Create(VkRenderPassCreateInfo* rInfo);
-private:
+}
 
-};
+void Renderer::BeginFrame() {
 
-class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
-public:
-    BasicRenderpass();
-    ~BasicRenderpass();
+}
 
-    void Begin(const CommandBuffer* cmd) override;
-    void End(const CommandBuffer* cmd) override;
+void Renderer::EndFrame() {
 
-    VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
-};
+}
+
+void Renderer::BindPipeline(const CommandBuffer* cmdBuffer, const Pipeline* pipeline) {
+    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
+}
+
+void Renderer::BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
+    renderpass->Begin(cmdBuffer);
+}
 
 }

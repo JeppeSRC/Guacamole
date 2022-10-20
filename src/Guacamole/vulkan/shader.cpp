@@ -248,12 +248,22 @@ DescriptorSetLayout* Shader::GetDescriptorSetLayout(uint32_t set) const {
     return nullptr;
 }
 
-DescriptorSet** Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
-    DescriptorPool* pool = new DescriptorPool(num);
+std::vector<DescriptorSetLayout*> Shader::GetDescriptorSetLayouts() const {
+    std::vector<DescriptorSetLayout*> ret;
+
+    for (auto& [set, layout] : mDescriptorSetLayouts) {
+        ret.push_back(layout);
+    }
+
+    return ret;
+}
+
+DescriptorSet* Shader::AllocateDescriptorSet(uint32_t set) {
+    DescriptorPool* pool = new DescriptorPool(1);
 
     mDescriptorPools.push_back(pool);
 
-    return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
+    return pool->AllocateDescriptorSet(GetDescriptorSetLayout(set));
 }
 
 void Shader::ReflectStages() {

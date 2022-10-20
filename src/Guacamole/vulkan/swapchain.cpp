@@ -274,7 +274,7 @@ void Swapchain::WaitForAllCommandBufferFences() {
 }
 
 CommandBuffer* Swapchain::GetPrimaryCommandBuffer() {
-    return CommandPoolManager::GetPrimaryRenderCommandBuffer();
+    return CommandPoolManager::GetRenderCommandBuffer();
 }
 
 }

@@ -124,7 +124,7 @@ BasicRenderpass::~BasicRenderpass() {
     }
 }
 
-void BasicRenderpass::Begin(CommandBuffer* cmd) {
+void BasicRenderpass::Begin(const CommandBuffer* cmd) {
     VkClearValue clear = {};
 
     mBeginInfo.framebuffer = GetFramebufferHandle(Swapchain::GetCurrentImageIndex());
@@ -134,7 +134,7 @@ void BasicRenderpass::Begin(CommandBuffer* cmd) {
     vkCmdBeginRenderPass(cmd->GetHandle(), &mBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void BasicRenderpass::End(CommandBuffer* cmd) {
+void BasicRenderpass::End(const CommandBuffer* cmd) {
     vkCmdEndRenderPass(cmd->GetHandle());
 }
 

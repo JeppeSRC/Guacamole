@@ -38,7 +38,7 @@ public:
     static void AllocateCopyCommandBuffers(std::thread::id threadId, uint32_t count);
     static void AllocateAssetCommandBuffers(std::thread::id threadId);
 
-    static CommandBuffer* GetPrimaryRenderCommandBuffer();
+    static CommandBuffer* GetRenderCommandBuffer();
     static CommandBuffer* GetCopyCommandBuffer(uint32_t index = 0);
     
     static void WaitForRenderFences();

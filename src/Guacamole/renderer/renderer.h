@@ -22,42 +22,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+
 #pragma once
 
 #include <Guacamole.h>
-#include "commandbuffer.h"
 
-namespace Guacamole {
+#include <Guacamole/vulkan/pipeline.h>
+#include <Guacamole/vulkan/renderpass.h>
 
-class Renderpass {
+namespace Guacamole { 
+
+class Renderer {
 public:
-    virtual ~Renderpass();
+    static void Init();
+    static void Shutdown();
 
-    VkRenderPass GetHandle() const { return mRenderpassHandle; }
-    virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
-    virtual void End(const CommandBuffer* cmd) = 0;
+    static void BeginFrame();
+    static void EndFrame();
+    
+    static void BindPipeline(const CommandBuffer* cmdBuffer, const Pipeline* pipeline);
+    static void BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass);
 
-protected:
-    VkRenderPass mRenderpassHandle;
-    VkRenderPassBeginInfo mBeginInfo;
 
-    void Create(VkRenderPassCreateInfo* rInfo);
-private:
-
-};
-
-class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
-public:
-    BasicRenderpass();
-    ~BasicRenderpass();
-
-    void Begin(const CommandBuffer* cmd) override;
-    void End(const CommandBuffer* cmd) override;
-
-    VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
 };
 
 }

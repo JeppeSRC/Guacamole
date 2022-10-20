@@ -43,6 +43,7 @@ PipelineLayout::PipelineLayout(DescriptorSetLayout* layout) {
 
     VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
+
 PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts) : mLayoutHandle(VK_NULL_HANDLE) {
     VkPipelineLayoutCreateInfo lInfo;
 
