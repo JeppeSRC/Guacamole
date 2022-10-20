@@ -25,7 +25,15 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include <GLFW/glfw3.h>
+
+
+#if defined(GM_LINUX)
+
+#include <xcb/randr.h>
+
+#elif defined(GM_WINDOWS)
+
+#endif
 
 namespace Guacamole {
 
@@ -39,20 +47,41 @@ struct WindowSpec {
     std::string Title;
 };
 
+#if defined(GM_LINUX)
+
+#include <xcb/randr.h>
+
 class Window {
 public:
     Window(WindowSpec spec);
     ~Window();
 
-    inline GLFWwindow* GetHandle() const { return mWindowHandle; }
     inline const WindowSpec& GetSpec() const { return mSpec; }
-    inline bool ShouldClose() const { return glfwWindowShouldClose(mWindowHandle); }
+    inline bool ShouldClose() const { return false; }
 private:
     WindowSpec mSpec;
 
-    GLFWwindow* mWindowHandle;
-    GLFWmonitor** mMonitors;
 
+// Platform specific region
+#if defined(GM_LINUX)
+private:
+    xcb_connection_t* mConnection;
+    xcb_window_t mWindow;
+    xcb_visualid_t mVisualID;
+
+public:
+    xcb_connection_t* GetXCBConnection() const { return mConnection; }
+    xcb_window_t GetXCBWindow() const { return mWindow; }
+    xcb_visualid_t GetVisualID() const { return mVisualID; }
+
+#elif defined(GM_WINDOWS)
+
+#endif
 };
+
+#elif defined(GM_WINDOWS)
+
+#endif
+
 
 }

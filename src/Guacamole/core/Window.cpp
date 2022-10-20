@@ -26,25 +26,4 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Window::Window(WindowSpec spec) : mSpec(spec) {
-    int32_t count = 0;
-    mMonitors = glfwGetMonitors(&count);
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    mWindowHandle = glfwCreateWindow(mSpec.Width, mSpec.Height, mSpec.Title.c_str(), nullptr, nullptr);
-
-    GM_ASSERT(mWindowHandle);
-
-    if (mWindowHandle == nullptr) {
-        GM_LOG_CRITICAL("Failed to create window");
-        return;
-    }
-
-    GM_LOG_DEBUG("Window \"{0}\" created: {1}x{2}", spec.Title.c_str(), spec.Width, spec.Height);
-}
-
-Window::~Window() {
-    glfwDestroyWindow(mWindowHandle);
-}
-
 }
