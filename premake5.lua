@@ -85,7 +85,9 @@ project "Guacamole"
             "dl",
             "pthread",
             "xcb",
-            "xcb-randr"
+            "xcb-randr",
+            "xkbcommon",
+            "xkbcommon-x11"
         }
 
         removefiles {

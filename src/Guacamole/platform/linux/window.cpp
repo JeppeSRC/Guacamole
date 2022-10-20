@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <Guacamole/core/Window.h>
 #include <Guacamole/core/monitor.h>
+#include <xkbcommon/xkbcommon-x11.h>
 
 namespace Guacamole {
 
@@ -83,12 +84,28 @@ Window::Window(WindowSpec spec) : mSpec(spec) {
     }
 
     free(monRep);
-
     xcb_map_window(mConnection, mWindow);
     xcb_flush(mConnection);
+
+    mXkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    GM_VERIFY(mXkbContext);
+
+    GM_VERIFY(xkb_x11_setup_xkb_extension(mConnection, 1, 0, XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS, 0, 0, 0, 0) == 1);
+
+    mKeyboardID = xkb_x11_get_core_keyboard_device_id(mConnection);
+    GM_VERIFY(mKeyboardID != -1);
+
+    mKeymap = xkb_x11_keymap_new_from_device(mXkbContext, mConnection, mKeyboardID, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    GM_VERIFY(mKeymap);
+
+    mState = xkb_x11_state_new_from_device(mKeymap, mConnection, mKeyboardID);
+    GM_VERIFY(mState);
 }
 
 Window::~Window() {
+    xkb_state_unref(mState);
+    xkb_keymap_unref(mKeymap);
+    xkb_context_unref(mXkbContext);
     xcb_destroy_window(mConnection, mWindow);
     xcb_disconnect(mConnection);
 }

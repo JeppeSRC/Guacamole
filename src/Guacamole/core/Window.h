@@ -30,6 +30,7 @@ SOFTWARE.
 #if defined(GM_LINUX)
 
 #include <xcb/randr.h>
+#include <xkbcommon/xkbcommon.h>
 
 #elif defined(GM_WINDOWS)
 
@@ -46,10 +47,6 @@ struct WindowSpec {
 
     std::string Title;
 };
-
-#if defined(GM_LINUX)
-
-#include <xcb/randr.h>
 
 class Window {
 public:
@@ -68,6 +65,10 @@ private:
     xcb_connection_t* mConnection;
     xcb_window_t mWindow;
     xcb_visualid_t mVisualID;
+    xkb_context* mXkbContext;
+    int32_t mKeyboardID;
+    xkb_keymap* mKeymap;
+    xkb_state* mState;
 
 public:
     xcb_connection_t* GetXCBConnection() const { return mConnection; }
@@ -78,10 +79,6 @@ public:
 
 #endif
 };
-
-#elif defined(GM_WINDOWS)
-
-#endif
 
 
 }
