@@ -37,10 +37,52 @@ SOFTWARE.
 #include <time.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <Guacamole/core/application.h>
 
 using namespace Guacamole;
 
+class TestApp : public Application {
+public:
+    TestApp(ApplicationSpec& spec) : Application(spec) {}
+
+    void OnInit() override {
+        spdlog::set_level(spdlog::level::debug);
+
+        WindowSpec spec;
+
+        spec.Width = 1280;
+        spec.Height = 720;
+        spec.Windowed = true;
+        spec.Title = "Dope TItle";
+
+        Init(spec);
+    }
+
+    void OnUpdate(float ts) override {
+
+    }
+
+    void OnRender() override {
+
+    }
+
+    void OnShutdown() override {
+
+    }
+
+private:
+
+};
+
 int main() {
+    ApplicationSpec appSpec;
+
+    TestApp app(appSpec);
+
+    app.Run();
+
+    return 0;
+    
     spdlog::set_level(spdlog::level::debug);
 
     WindowSpec spec;
@@ -49,6 +91,7 @@ int main() {
     spec.Height = 720;
     spec.Windowed = true;
     spec.Title = "Dope TItle";
+    
     
     Guacamole::Window window(spec);
 
