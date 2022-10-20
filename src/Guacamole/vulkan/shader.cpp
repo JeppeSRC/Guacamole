@@ -258,6 +258,14 @@ std::vector<DescriptorSetLayout*> Shader::GetDescriptorSetLayouts() const {
     return ret;
 }
 
+std::vector<DescriptorSet*> Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
+    DescriptorPool* pool = new DescriptorPool(num);
+
+    mDescriptorPools.push_back(pool);
+
+    return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
+}
+
 DescriptorSet* Shader::AllocateDescriptorSet(uint32_t set) {
     DescriptorPool* pool = new DescriptorPool(1);
 
