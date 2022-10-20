@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/core/Window.h>
+
 namespace Guacamole {
 
 class PhysicalDevice {
@@ -34,7 +36,7 @@ public:
 
     static void EnumeratePhysicalDevices(VkInstance instance);
     // ATM this will select the first device with presentation support
-    static PhysicalDevice* SelectDevice();
+    static PhysicalDevice* SelectDevice(const Window* window);
 
 public:
     PhysicalDevice(VkPhysicalDevice device);
@@ -45,8 +47,8 @@ public:
     inline VkPhysicalDeviceMemoryProperties GetMemoryProperties() const { return mMemoryProperties; }
 
     uint32_t GetQueueIndex(VkQueueFlags queues) const;
-    bool GetDevicePresentationSupport() const;
-    bool GetQueuePresentationSupport(uint32_t queueIndex) const;
+    bool GetDevicePresentationSupport(const Window* window) const;
+    bool GetQueuePresentationSupport(const Window* window, uint32_t queueIndex) const;
     bool IsExtensionSupported(const char* extension) const;
     bool CheckImageFormat(VkFormat format, VkImageType imageType, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* prop) const;
 

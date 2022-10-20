@@ -22,21 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
+#pragma once
 
-#include <stddef.h>
-#include <string>
-#include <vector>
-#include <memory.h>
-#include <filesystem>
+#include <vulkan/vulkan.h>
 
-#include <Guacamole/core/log.h>
-#include <Guacamole/vulkan/platform.h>
-#include <entt/entt.hpp>
+#if defined(GM_LINUX) 
 
-#undef min
+#include <vulkan/vulkan_xcb.h>
 
-#include <spirv_cross/spirv_glsl.hpp>
+#elif defined(GM_WINDOWS)
 
-VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
+#include <vulkan/vulkan_win32.h>
 
+#endif

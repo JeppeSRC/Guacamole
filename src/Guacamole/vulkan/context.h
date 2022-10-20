@@ -32,7 +32,7 @@ namespace Guacamole {
 
 class Context {
 public:
-    static void Init();
+    static void Init(const Window* window);
     static void Shutdown();
 
     static VkInstance GetInstance() { return mInstance; }

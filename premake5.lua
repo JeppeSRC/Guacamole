@@ -32,7 +32,6 @@ workspace "Guacamole"
 include "deps.lua"
 
 group "deps"
-include "libs/glfw"
 
 project "spdlog"
         kind "StaticLib"
@@ -60,7 +59,6 @@ project "Guacamole"
     location "build/"
     cppdialect "C++17"
 
-    dependson "GLFW"
     dependson "spdlog"
 
     pchheader "Guacamole.h"
@@ -70,17 +68,29 @@ project "Guacamole"
         "SPDLOG_COMPILED_LIB"
     }
 
+    files {
+        "src/**.cpp",
+        "src/**.h"
+    }
+
     filter "system:linux" 
     
         defines {
             "GM_LINUX",
-            "VK_USE_PLATFORM_XLIB_KHR"
+            "VK_USE_PLATFORM_XCB_KHR",
         }
 
         links {
             "vulkan",
             "dl",
-            "pthread"
+            "pthread",
+            "xcb",
+            "xcb-randr"
+        }
+
+        removefiles {
+            "src/platform/windows/**.cpp",
+            "src/platform/android/**.cpp"
         }
 
     filter "system:windows"
@@ -94,13 +104,15 @@ project "Guacamole"
         links {
             "vulkan-1"
         }
+
+        removefiles {
+            "src/platform/linux/**.cpp",
+            "src/platform/android/**.cpp"
+        }
         
     filter {}
 
-    files {
-        "src/**.cpp",
-        "src/**.h"
-    }
+    
 
     includedirs {
         "src/",
@@ -117,8 +129,7 @@ project "Guacamole"
     }
 
     links {
-        "spdlog",
-        "GLFW"
+        "spdlog"
     }
 
     filter {"debug", "system:windows"}

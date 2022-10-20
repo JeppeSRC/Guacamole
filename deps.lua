@@ -12,7 +12,6 @@ print("VulkanSDK Lib Path: " .. LD_LIBRARY_PATH)
 IncludeDir = {}
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/include"
 IncludeDir["glm"] = "libs/glm"
-IncludeDir["glfw"] = "libs/glfw/include"
 IncludeDir["entt"] = "libs/entt/single_include"
 IncludeDir["spdlog"] = "libs/spdlog/include"
 IncludeDir["stb"] = "libs/stb"

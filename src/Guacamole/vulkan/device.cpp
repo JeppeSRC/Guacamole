@@ -22,11 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <Guacamole.h>
+
 #include "device.h"
+#include "context.h"
 
 #include <Guacamole/util/util.h>
-#include <GLFW/glfw3.h>
-#include "context.h"
 
 namespace Guacamole {
 
@@ -49,9 +49,9 @@ void PhysicalDevice::EnumeratePhysicalDevices(VkInstance instance) {
     delete devices;
 }
 
-PhysicalDevice* PhysicalDevice::SelectDevice() {
+PhysicalDevice* PhysicalDevice::SelectDevice(const Window* window) {
     for (PhysicalDevice* dev : mPhysicalDevices) {
-        if (dev->GetDevicePresentationSupport()) return dev;
+        if (dev->GetDevicePresentationSupport(window)) return dev;
     }
 
     GM_LOG_CRITICAL("No Physical device with presentation support exist");
@@ -102,16 +102,20 @@ uint32_t PhysicalDevice::GetQueueIndex(VkQueueFlags queues) const {
     return ~0;
 }
 
-bool PhysicalDevice::GetDevicePresentationSupport() const {
+bool PhysicalDevice::GetDevicePresentationSupport(const Window* window) const {
     uint32_t index = GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
 
     if (index == ~0) return false;
 
-    return GetQueuePresentationSupport(index);
+    return GetQueuePresentationSupport(window, index);
 }
 
-bool PhysicalDevice::GetQueuePresentationSupport(uint32_t queueIndex) const {
-    return glfwGetPhysicalDevicePresentationSupport(Context::GetInstance(), mDeviceHandle, queueIndex) == GLFW_TRUE;
+bool PhysicalDevice::GetQueuePresentationSupport(const Window* window, uint32_t queueIndex) const {
+#if defined(GM_LINUX)
+    return vkGetPhysicalDeviceXcbPresentationSupportKHR(mDeviceHandle, queueIndex, window->GetXCBConnection(), window->GetVisualID());
+#elif defined(GM_WINDOWS)
+
+#endif
 }
 
 bool PhysicalDevice::IsExtensionSupported(const char* extension) const {

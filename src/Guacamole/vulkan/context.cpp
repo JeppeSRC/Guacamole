@@ -21,11 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 #include <Guacamole.h>
 
 #include "context.h"
-
-#include <GLFW/glfw3.h>
 
 namespace Guacamole {
 
@@ -35,9 +34,7 @@ VkInstance Context::mInstance;
 PhysicalDevice* Context::mSelectedPhysDevice;
 Device* Context::mLogicalDevice;
 
-void Context::Init() {
-
-    glfwInit();
+void Context::Init(const Window* window) {
 
     uint32_t version = 0;
 
@@ -74,8 +71,8 @@ void Context::Init() {
         instanceInfo.ppEnabledLayerNames = nullptr;
     }
 
-    uint32_t count = 0;
-    const char** ext = glfwGetRequiredInstanceExtensions(&count);
+    uint32_t count = 2;
+    const char* ext[] = {"VK_KHR_surface", VK_KHR_XCB_SURFACE_EXTENSION_NAME };
 
     instanceInfo.enabledExtensionCount = count;
     instanceInfo.ppEnabledExtensionNames = ext;
@@ -85,10 +82,10 @@ void Context::Init() {
     PhysicalDevice::EnumeratePhysicalDevices(mInstance);
 
     for (PhysicalDevice* dev : PhysicalDevice::mPhysicalDevices)
-        dev->PrintDeviceInfo(true);
+        dev->PrintDeviceInfo(false);
 
 
-    mSelectedPhysDevice = PhysicalDevice::SelectDevice();
+    mSelectedPhysDevice = PhysicalDevice::SelectDevice(window);
 
     VkPhysicalDeviceFeatures features;
     memset(&features, 0, sizeof(VkPhysicalDeviceFeatures));

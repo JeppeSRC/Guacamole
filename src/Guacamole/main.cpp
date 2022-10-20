@@ -42,9 +42,6 @@ using namespace Guacamole;
 
 int main() {
     spdlog::set_level(spdlog::level::debug);
-    Context::Init();
-    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
-    AssetManager::Init();
 
     WindowSpec spec;
 
@@ -54,6 +51,10 @@ int main() {
     spec.Title = "Dope TItle";
     
     Guacamole::Window window(spec);
+
+    Context::Init(&window);
+    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
+    AssetManager::Init();
 
     Swapchain::Init(&window);
 
@@ -71,8 +72,8 @@ int main() {
         Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices), indices);
 
         Shader shader;
-        shader.AddModule("res/shader.vert", true, ShaderStage::Vertex);
-        shader.AddModule("res/shader.frag", true, ShaderStage::Fragment);
+        shader.AddModule("build/res/shader.vert", true, ShaderStage::Vertex);
+        shader.AddModule("build/res/shader.frag", true, ShaderStage::Fragment);
         shader.Compile();
 
         Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
@@ -88,7 +89,7 @@ int main() {
         tex.WriteDataImmediate(colors, sizeof(colors));
 
         AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
-        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("res/sheet.png"), false);
+        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("build/res/sheet.png"), false);
         //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
         AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane(true));
 
@@ -167,8 +168,6 @@ int main() {
             CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer();
 
             VkCommandBuffer handle = cmd->GetHandle();
-
-            glfwPollEvents();
 
             vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, gPipeline.GetHandle());
 

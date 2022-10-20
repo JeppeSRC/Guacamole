@@ -45,7 +45,22 @@ std::vector<VkImageView> Swapchain::mSwapchainImageViews;
 
 void Swapchain::Init(Window* window) {
 
-    VK(glfwCreateWindowSurface(Context::GetInstance(), window->GetHandle(), nullptr, &mSurfaceHandle));
+#if defined(GM_LINUX)
+    VkXcbSurfaceCreateInfoKHR surfaceInfo;
+
+    surfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+    surfaceInfo.pNext = nullptr;
+    surfaceInfo.flags = 0;
+    surfaceInfo.connection = window->GetXCBConnection();
+    surfaceInfo.window = window->GetXCBWindow();
+
+    VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
+
+#elif defined(GM_WINDOWS)
+
+
+
+#endif
 
     msInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     msInfo.pNext = nullptr;
