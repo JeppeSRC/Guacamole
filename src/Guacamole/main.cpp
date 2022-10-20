@@ -138,7 +138,7 @@ int main() {
         VkDescriptorImageInfo iInfo;
 
         iInfo.sampler = sampler.GetHandle();
-        iInfo.imageView = AssetManager::GetAsset<Texture>(texHandle)->GetImageViewHandle();
+        iInfo.imageView = AssetManager::GetAsset<Texture>(sheetHandle)->GetImageViewHandle();
         iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         wSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
