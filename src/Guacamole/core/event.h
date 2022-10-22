@@ -26,60 +26,68 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-
 #if defined(GM_LINUX)
 
-#include <xcb/randr.h>
-
-#elif defined(GM_WINDOWS)
+struct xkb_context;
+struct xkb_keymap;
+struct xkb_state;
 
 #endif
 
 namespace Guacamole {
 
-struct WindowSpec {
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t Refreshrate;
-
-    bool Windowed;
-
-    std::string Title;
+enum class EventType {
+    None,
+    KeyPressed, KeyReleased, 
+    MousePressed, MouseReleased, MouseMoved, MouseScrolled,
+    WindowResize, WindowMove, WindowClose, WindowMinimize, WindowMaximize, WindowFocus, WindowFocusLost
 };
 
-class Window {
+class Event {
 public:
-    Window(WindowSpec spec);
-    ~Window();
+    virtual EventType GetType() const = 0;
+};
 
-    void Process();
+class KeyPressedEvent : public Event {
+public:
+    KeyPressedEvent(uint32_t key) : mKey(key) {}
 
-    inline const WindowSpec& GetSpec() const { return mSpec; }
-    inline bool ShouldClose() const { return mShouldClose; }
+    inline EventType GetType() const override { return EventType::KeyPressed; }
+public:
+    uint32_t mKey;
+};
+
+class KeyReleasedEvent : public Event {
+public:
+    KeyReleasedEvent(uint32_t key) : mKey(key) {}
+
+    inline EventType GetType() const override { return EventType::KeyReleased; }
+
+public:
+    uint32_t mKey;
+};
+
+class Window;
+class EventManager {
+public:
+    static void Init(const Window* window);
+    static void ProcessEvents(Window* window);
+    static void Shutdown();
+
 private:
-    WindowSpec mSpec;
-    bool mShouldClose;
-
-
-// Platform specific region
 #if defined(GM_LINUX)
-private:
-    xcb_connection_t* mConnection;
-    xcb_window_t mWindow;
-    xcb_visualid_t mVisualID;
-    xcb_atom_t mWindowCloseAtom;
 
-public:
-    xcb_connection_t* GetXCBConnection() const { return mConnection; }
-    xcb_window_t GetXCBWindow() const { return mWindow; }
-    xcb_visualid_t GetVisualID() const { return mVisualID; }
-
-#elif defined(GM_WINDOWS)
+    static xkb_context* mXkbContext;
+    static int32_t mKeyboardID;
+    static xkb_keymap* mKeymap;
+    static xkb_state* mState;
 
 #endif
-
-friend class EventManager;
 };
 
+class EventListener {
+public:
+
+};
 
 }

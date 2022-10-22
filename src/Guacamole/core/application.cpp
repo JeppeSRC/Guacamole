@@ -46,7 +46,6 @@ void Application::Init(const WindowSpec& windowSpec) {
     Swapchain::Init(mWindow);
     CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
     AssetManager::Init();
-
 }
 
 void Application::Run() {
@@ -56,7 +55,10 @@ void Application::Run() {
 
     auto last = std::chrono::high_resolution_clock::now();
 
-    while (mRunning) {
+    while (!mWindow->ShouldClose()) {
+
+        mWindow->Process();
+
         auto now = std::chrono::high_resolution_clock::now();
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
         float delta = (float)duration / 1000.0f;
@@ -67,9 +69,15 @@ void Application::Run() {
     }
 
     OnShutdown();
+
+    AssetManager::Shutdown();
+    Swapchain::Shutdown();
+    CommandPoolManager::Shutdown();
+    Context::Shutdown();
+    delete mWindow;
 }
 
-Application::Application(ApplicationSpec& spec) : mSpec(spec), mRunning(false), mWindow(nullptr) {
+Application::Application(ApplicationSpec& spec) : mSpec(spec), mWindow(nullptr) {
 
 }
 

@@ -22,39 +22,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
-#include <Guacamole.h>
-
-#include "Window.h"
-
-namespace Guacamole {
-
-struct ApplicationSpec {
-    std::string mName;
-};
-
-class Application {
-public:
-    virtual ~Application();
-
-    void Init(const WindowSpec& windowSpec);
-    virtual void OnInit() = 0;
-    virtual void OnUpdate(float ts) = 0;
-    virtual void OnRender() = 0;
-    virtual void OnShutdown() = 0;
-
-    void Run();
-
-    inline Window* GetWindow() const { return mWindow; }
-
-protected:
-    Application(ApplicationSpec& spec);
-
-protected:
-    ApplicationSpec mSpec;
-    Window* mWindow;
-
-};
-
-}

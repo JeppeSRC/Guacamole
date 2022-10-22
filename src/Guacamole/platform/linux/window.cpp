@@ -26,7 +26,8 @@ SOFTWARE.
 
 #include <Guacamole/core/Window.h>
 #include <Guacamole/core/monitor.h>
-#include <xkbcommon/xkbcommon-x11.h>
+
+#include <Guacamole/core/event.h>
 
 namespace Guacamole {
 
@@ -45,7 +46,7 @@ const char* GetAtomName(xcb_connection_t* conn, xcb_atom_t atom) {
     return str;
 }
 
-Window::Window(WindowSpec spec) : mSpec(spec) {
+Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
     int32_t screenNum;
     mConnection = xcb_connect(nullptr, &screenNum);
 
@@ -62,12 +63,26 @@ Window::Window(WindowSpec spec) : mSpec(spec) {
     mWindow = xcb_generate_id(mConnection);
     mVisualID = screen->root_visual;
 
-    xcb_create_window(mConnection, 0, mWindow, screen->root, 0, 0, spec.Width, spec.Height, 10, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, 0 ,0);
+    uint32_t mask = XCB_CW_EVENT_MASK;
+    uint32_t events = XCB_EVENT_MASK_BUTTON_PRESS   | XCB_EVENT_MASK_BUTTON_RELEASE |
+                      XCB_EVENT_MASK_KEY_PRESS      | XCB_EVENT_MASK_KEY_RELEASE |
+                      XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_FOCUS_CHANGE |
+                      XCB_EVENT_MASK_EXPOSURE;
 
-    xcb_generic_error_t* error;
-    xcb_randr_get_monitors_cookie_t monCoc = xcb_randr_get_monitors(mConnection, mWindow, 0);
-    xcb_randr_get_monitors_reply_t* monRep = xcb_randr_get_monitors_reply(mConnection, monCoc, &error);
-    xcb_randr_monitor_info_iterator_t monItr = xcb_randr_get_monitors_monitors_iterator(monRep);
+    xcb_create_window(mConnection, 0, mWindow, screen->root, 0, 0, spec.Width, spec.Height, 10, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, mask ,&events);
+
+    xcb_intern_atom_cookie_t atomCookie = xcb_intern_atom(mConnection, 0, 16, "WM_DELETE_WINDOW");
+    xcb_intern_atom_reply_t* atomReply = xcb_intern_atom_reply(mConnection, atomCookie, nullptr);
+    xcb_intern_atom_cookie_t propCookie = xcb_intern_atom(mConnection, 0, 12, "WM_PROTOCOLS");
+    xcb_intern_atom_reply_t* propReply = xcb_intern_atom_reply(mConnection, propCookie, nullptr);
+
+    mWindowCloseAtom = atomReply->atom;
+
+    xcb_change_property(mConnection, XCB_PROP_MODE_REPLACE, mWindow, propReply->atom, 4, 32, 1, &mWindowCloseAtom);
+
+    xcb_randr_get_monitors_cookie_t monCookie = xcb_randr_get_monitors(mConnection, mWindow, 0);
+    xcb_randr_get_monitors_reply_t* monReply = xcb_randr_get_monitors_reply(mConnection, monCookie, nullptr);
+    xcb_randr_monitor_info_iterator_t monItr = xcb_randr_get_monitors_monitors_iterator(monReply);
 
     for (;monItr.rem; xcb_randr_monitor_info_next(&monItr)) {
         xcb_randr_monitor_info_t* info = monItr.data;
@@ -83,29 +98,21 @@ Window::Window(WindowSpec spec) : mSpec(spec) {
         Monitor::Add(mon);
     }
 
-    free(monRep);
+    free(monReply);
     xcb_map_window(mConnection, mWindow);
     xcb_flush(mConnection);
 
-    mXkbContext = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-    GM_VERIFY(mXkbContext);
+    mShouldClose = false;
 
-    GM_VERIFY(xkb_x11_setup_xkb_extension(mConnection, 1, 0, XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS, 0, 0, 0, 0) == 1);
+    EventManager::Init(this);
+}
 
-    mKeyboardID = xkb_x11_get_core_keyboard_device_id(mConnection);
-    GM_VERIFY(mKeyboardID != -1);
-
-    mKeymap = xkb_x11_keymap_new_from_device(mXkbContext, mConnection, mKeyboardID, XKB_KEYMAP_COMPILE_NO_FLAGS);
-    GM_VERIFY(mKeymap);
-
-    mState = xkb_x11_state_new_from_device(mKeymap, mConnection, mKeyboardID);
-    GM_VERIFY(mState);
+void Window::Process() {
+    EventManager::ProcessEvents(this);
 }
 
 Window::~Window() {
-    xkb_state_unref(mState);
-    xkb_keymap_unref(mKeymap);
-    xkb_context_unref(mXkbContext);
+    EventManager::Shutdown();
     xcb_destroy_window(mConnection, mWindow);
     xcb_disconnect(mConnection);
 }
