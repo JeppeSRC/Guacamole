@@ -30,6 +30,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/core/event.h>
 
 #include <chrono>
 
@@ -57,7 +58,7 @@ void Application::Run() {
 
     while (!mWindow->ShouldClose()) {
 
-        mWindow->Process();
+        EventManager::ProcessEvents(mWindow);
 
         auto now = std::chrono::high_resolution_clock::now();
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();

@@ -107,10 +107,6 @@ Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
     EventManager::Init(this);
 }
 
-void Window::Process() {
-    EventManager::ProcessEvents(this);
-}
-
 Window::~Window() {
     EventManager::Shutdown();
     xcb_destroy_window(mConnection, mWindow);

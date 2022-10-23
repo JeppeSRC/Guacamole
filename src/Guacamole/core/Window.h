@@ -52,8 +52,6 @@ public:
     Window(WindowSpec spec);
     ~Window();
 
-    void Process();
-
     inline const WindowSpec& GetSpec() const { return mSpec; }
     inline bool ShouldClose() const { return mShouldClose; }
 private:
