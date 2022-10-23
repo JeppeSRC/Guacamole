@@ -38,6 +38,7 @@ SOFTWARE.
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
+#include <Guacamole/util/timer.h>
 
 using namespace Guacamole;
 
@@ -71,27 +72,22 @@ public:
     }
 
     bool OnKeyPressed(KeyPressedEvent* e) override {
-        GM_LOG_DEBUG("Key pressed {}", e->mKey);
         return false;
     }
 
     bool OnKeyReleased(KeyReleasedEvent* e) override {
-        GM_LOG_DEBUG("Key released {}", e->mKey);
         return false;
     }
 
     bool OnButtonPressed(ButtonPressedEvent* e) override {
-        GM_LOG_DEBUG("Button pressed {}", e->mButton);
         return false;
     }
 
     bool OnButtonReleased(ButtonReleasedEvent* e) override {
-        GM_LOG_DEBUG("Button released {}", e->mButton);
         return false;
     }
 
     bool OnMouseMoved(MouseMovedEvent* e) override {
-        GM_LOG_DEBUG("Mouse moved {} {}", e->mDX, e->mDY);
         return false;
     }
 
