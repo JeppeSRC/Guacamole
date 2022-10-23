@@ -151,7 +151,7 @@ std::vector<DescriptorSet*> DescriptorPool::AllocateDescriptorSets(DescriptorSet
     VkDescriptorSet* set = new VkDescriptorSet[num];
     
     std::vector<DescriptorSet*> sets;
-    sets.reserve(num);
+    sets.resize(num);
 
     VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, set));
 
