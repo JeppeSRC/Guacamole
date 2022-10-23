@@ -91,8 +91,8 @@ project "Guacamole"
         }
 
         removefiles {
-            "src/platform/windows/**.cpp",
-            "src/platform/android/**.cpp"
+            "src/Guacamole/platform/windows/**.cpp",
+            "src/Guacamole/platform/android/**.cpp"
         }
 
     filter "system:windows"
@@ -108,8 +108,8 @@ project "Guacamole"
         }
 
         removefiles {
-            "src/platform/linux/**.cpp",
-            "src/platform/android/**.cpp"
+            "src/Guacamole/platform/linux/**.cpp",
+            "src/Guacamole/platform/android/**.cpp"
         }
         
     filter {}
