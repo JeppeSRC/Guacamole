@@ -27,6 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "Window.h"
+#include "event.h"
 
 namespace Guacamole {
 
@@ -38,18 +39,25 @@ class Application {
 public:
     virtual ~Application();
 
-    void Init(const WindowSpec& windowSpec);
-    virtual void OnInit() = 0;
-    virtual void OnUpdate(float ts) = 0;
-    virtual void OnRender() = 0;
-    virtual void OnShutdown() = 0;
-
     void Run();
 
     inline Window* GetWindow() const { return mWindow; }
 
 protected:
     Application(ApplicationSpec& spec);
+
+    void Init(const WindowSpec& windowSpec);
+    virtual void OnInit() = 0;
+    virtual void OnUpdate(float ts) = 0;
+    virtual void OnRender() = 0;
+    virtual void OnShutdown() = 0;
+
+    virtual bool OnKeyPressed(KeyPressedEvent* e) = 0;
+    virtual bool OnKeyReleased(KeyReleasedEvent* e) = 0;
+    virtual bool OnButtonPressed(ButtonPressedEvent* e) = 0;
+    virtual bool OnButtonReleased(ButtonReleasedEvent* e) = 0;
+
+    bool OnEvent(Event* e);
 
 protected:
     ApplicationSpec mSpec;

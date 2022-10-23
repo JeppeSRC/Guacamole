@@ -40,15 +40,6 @@ Application::~Application() {
 
 }
 
-void Application::Init(const WindowSpec& windowSpec) {
-    mWindow = new Window(windowSpec);
-
-    Context::Init(mWindow);
-    Swapchain::Init(mWindow);
-    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
-    AssetManager::Init();
-}
-
 void Application::Run() {
     OnInit();
 
@@ -80,6 +71,39 @@ void Application::Run() {
 
 Application::Application(ApplicationSpec& spec) : mSpec(spec), mWindow(nullptr) {
 
+}
+
+void Application::Init(const WindowSpec& windowSpec) {
+    mWindow = new Window(windowSpec);
+
+    Context::Init(mWindow);
+    Swapchain::Init(mWindow);
+    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
+    AssetManager::Init();
+
+    EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);
+    EventManager::AddListener(EventType::KeyReleased, this, &Application::OnEvent);
+    EventManager::AddListener(EventType::ButtonPressed, this, &Application::OnEvent);
+    EventManager::AddListener(EventType::ButtonReleased, this, &Application::OnEvent);
+}
+
+bool Application::OnEvent(Event* e) {
+    switch (e->GetType()) {
+        case EventType::KeyPressed:
+            return OnKeyPressed((KeyPressedEvent*)e);
+            break;
+        case EventType::KeyReleased:
+            return OnKeyReleased((KeyReleasedEvent*)e);
+            break;
+        case EventType::ButtonPressed:
+            return OnButtonPressed((ButtonPressedEvent*)e);
+            break;
+        case EventType::ButtonReleased:
+            return OnButtonReleased((ButtonReleasedEvent*)e);
+            break;
+    }
+
+    return false;
 }
 
 

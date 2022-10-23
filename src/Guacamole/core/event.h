@@ -39,7 +39,7 @@ namespace Guacamole {
 enum class EventType {
     None,
     KeyPressed, KeyReleased, 
-    MousePressed, MouseReleased, MouseMoved, MouseScrolled,
+    ButtonPressed, ButtonReleased, MouseMoved,
     WindowResize, WindowMove, WindowClose, WindowMinimize, WindowMaximize, WindowFocus, WindowFocusLost
 };
 
@@ -67,6 +67,47 @@ public:
     uint32_t mKey;
 };
 
+class ButtonPressedEvent : public Event {
+public:
+    ButtonPressedEvent(uint32_t button) : mButton(button) {}
+
+    inline EventType GetType() const override { return EventType::ButtonPressed; }
+public:
+    uint32_t mButton;
+};
+
+class ButtonReleasedEvent : public Event {
+public:
+    ButtonReleasedEvent(uint32_t button) : mButton(button) {}
+
+    inline EventType GetType() const override { return EventType::ButtonReleased; }
+
+public:
+    uint32_t mButton;
+};
+
+class MouseMovedEvent : public Event {
+public:
+    MouseMovedEvent(uint32_t dx, uint32_t dy) : mDX(dx), mDY(dy) {}
+
+    inline EventType GetType() const override { return EventType::MouseMoved; }
+
+public:
+    uint32_t mDX;
+    uint32_t mDY;
+};
+
+
+class EventListener {
+public:
+    EventListener(EventType type) : mType(type) {}
+
+    virtual bool OnEvent(Event* e) = 0;
+
+public:
+    EventType mType;
+};
+
 class Window;
 class EventManager {
 public:
@@ -74,7 +115,19 @@ public:
     static void ProcessEvents(Window* window);
     static void Shutdown();
 
+
+    template<typename T>
+    static void AddListener(EventType type, T* object, bool(T::*callback)(Event*)) {
+        mCallbacks.emplace_back(type, std::bind(callback, object, std::placeholders::_1));
+    }
+
+    static void AddListener(EventType type, bool(*callback)(Event*));
+
 private:
+    static void DispatchEvent(Event* e);
+private:
+    static std::vector<std::pair<EventType, std::function<bool(Event*)>>> mCallbacks;
+
 #if defined(GM_LINUX)
 
     static xkb_context* mXkbContext;
@@ -85,9 +138,6 @@ private:
 #endif
 };
 
-class EventListener {
-public:
 
-};
 
 }

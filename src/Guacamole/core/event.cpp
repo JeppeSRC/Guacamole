@@ -22,3 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <Guacamole.h>
+
+#include "event.h"
+
+namespace Guacamole {
+
+std::vector<std::pair<EventType, std::function<bool(Event*)>>> EventManager::mCallbacks;
+
+void EventManager::AddListener(EventType type, bool(*callback)(Event*)) {
+    mCallbacks.emplace_back(type, callback);
+}
+
+void EventManager::DispatchEvent(Event* e) {
+    for (auto [type, callback] : mCallbacks) {
+        if (type == e->GetType()) {
+             if (callback(e)) break;
+        }
+    }
+}
+}

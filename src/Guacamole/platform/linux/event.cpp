@@ -58,6 +58,8 @@ void EventManager::Init(const Window* window) {
     GM_VERIFY(mState);
 }
 
+//https://www.x.org/releases/current/doc/xproto/x11protocol.html#keysym_encoding
+
 void EventManager::ProcessEvents(Window* window) {
     xcb_connection_t* conn = window->GetXCBConnection();
     xcb_generic_event_t* e = nullptr;
@@ -68,6 +70,10 @@ void EventManager::ProcessEvents(Window* window) {
                 xcb_key_press_event_t* pressed = (xcb_key_press_event_t*)e;
                 xkb_keysym_t sym = xkb_state_key_get_one_sym(mState, pressed->detail);
                 
+                KeyPressedEvent evnt(sym);
+                
+                DispatchEvent(&evnt);
+
                 break;
             }
 
@@ -75,16 +81,30 @@ void EventManager::ProcessEvents(Window* window) {
                 xcb_key_release_event_t* released = (xcb_key_release_event_t*)e;
                 xkb_keysym_t sym = xkb_state_key_get_one_sym(mState, released->detail);
                 
+                KeyReleasedEvent evnt(sym);
+                
+                DispatchEvent(&evnt);
+
                 break;
             }
 
             case XCB_BUTTON_PRESS: {
                 xcb_button_press_event_t* pressed = (xcb_button_press_event_t*)e;
+
+                ButtonPressedEvent evnt(pressed->detail);
+
+                DispatchEvent(&evnt);
+
                 break;
             }
 
             case XCB_BUTTON_RELEASE: {
                 xcb_button_release_event_t* released = (xcb_button_release_event_t*)e;
+
+                ButtonPressedEvent evnt(released->detail);
+
+                DispatchEvent(&evnt);
+
                 break;
             }
 
@@ -108,5 +128,6 @@ void EventManager::Shutdown() {
     xkb_keymap_unref(mKeymap);
     xkb_context_unref(mXkbContext);
 }
+
 
 }
