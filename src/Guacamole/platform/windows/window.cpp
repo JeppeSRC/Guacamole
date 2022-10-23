@@ -22,68 +22,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
+#include <Guacamole/core/Window.h>
 
-#if defined(GM_LINUX)
-
-#include <xcb/randr.h>
-
-#elif defined(GM_WINDOWS)
-
-#include <Windows.h>
-
-#endif
+#include <Guacamole/core/event.h>
 
 namespace Guacamole {
 
-struct WindowSpec {
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t Refreshrate;
+Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
+    WNDCLASSEX wnd = {};
 
-    bool Windowed;
+    wnd.cbSize = sizeof(WNDCLASSEX);
+    wnd.hCursor = LoadCursor(0, IDC_ARROW);
+    wnd.hIcon = LoadIcon(0, IDI_WINLOGO);
+    wnd.lpfnWndProc = EventManager::WndProc;
+    wnd.lpszClassName = L"Guacamole";
+    wnd.style = CS_VREDRAW | CS_HREDRAW;
 
-    std::string Title;
-};
+    GM_VERIFY(RegisterClassEx(&wnd));
 
-class Window {
-public:
-    Window(WindowSpec spec);
-    ~Window();
+    RECT r = { 0, 0, (LONG)spec.Width, (LONG)spec.Height };
 
-    inline const WindowSpec& GetSpec() const { return mSpec; }
-    inline bool ShouldClose() const { return mShouldClose; }
-private:
-    WindowSpec mSpec;
-    bool mShouldClose;
+    AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, false);
 
+    mHWND = CreateWindow(L"Guacamole", L"spec.Title", WS_OVERLAPPEDWINDOW, 0, 0, r.right - r.left, r.bottom - r.top, 0, 0, 0, 0);
 
-// Platform specific region
-#if defined(GM_LINUX)
-private:
-    xcb_connection_t* mConnection;
-    xcb_window_t mWindow;
-    xcb_visualid_t mVisualID;
-    xcb_atom_t mWindowCloseAtom;
+    GM_VERIFY(mHWND);
 
-public:
-    xcb_connection_t* GetXCBConnection() const { return mConnection; }
-    xcb_window_t GetXCBWindow() const { return mWindow; }
-    xcb_visualid_t GetVisualID() const { return mVisualID; }
+    ShowWindow(mHWND, SW_SHOWNORMAL);
 
-#elif defined(GM_WINDOWS)
-private:
-    HWND mHWND;
+    mShouldClose = false;
 
-public:
-    HWND GetHWND() const { return mHWND; }
-#endif
+    EventManager::Init(this);
+}
 
-friend class EventManager;
-};
-
-
+Window::~Window() {
+    ShowWindow(mHWND, SW_HIDE);
+    DestroyWindow(mHWND);
+    UnregisterClass(L"Guacamole", 0);
+}
 }

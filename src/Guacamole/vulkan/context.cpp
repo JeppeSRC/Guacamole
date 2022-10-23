@@ -74,7 +74,11 @@ void Context::Init(const Window* window) {
     }
 
     uint32_t count = 2;
+#if defined(GM_LINUX)
     const char* ext[] = {"VK_KHR_surface", VK_KHR_XCB_SURFACE_EXTENSION_NAME };
+#elif defined(GM_WINDOWS)
+    const char* ext[] = { "VK_KHR_surface", VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+#endif
 
     instanceInfo.enabledExtensionCount = count;
     instanceInfo.ppEnabledExtensionNames = ext;

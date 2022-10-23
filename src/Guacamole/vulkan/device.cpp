@@ -114,7 +114,7 @@ bool PhysicalDevice::GetQueuePresentationSupport(const Window* window, uint32_t 
 #if defined(GM_LINUX)
     return vkGetPhysicalDeviceXcbPresentationSupportKHR(mDeviceHandle, queueIndex, window->GetXCBConnection(), window->GetVisualID());
 #elif defined(GM_WINDOWS)
-
+    return vkGetPhysicalDeviceWin32PresentationSupportKHR(mDeviceHandle, queueIndex);
 #endif
 }
 

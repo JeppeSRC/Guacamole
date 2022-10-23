@@ -130,11 +130,17 @@ private:
 
 #if defined(GM_LINUX)
 
+private:
     static xkb_context* mXkbContext;
     static int32_t mKeyboardID;
     static xkb_keymap* mKeymap;
     static xkb_state* mState;
 
+#elif defined(GM_WINDOWS)
+private:
+    static Window* mWindow;
+public:
+    static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
 #endif
 };
 

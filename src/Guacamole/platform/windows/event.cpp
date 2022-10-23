@@ -26,64 +26,44 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/core/event.h>
 
-#if defined(GM_LINUX)
-
-#include <xcb/randr.h>
-
-#elif defined(GM_WINDOWS)
-
-#include <Windows.h>
-
-#endif
+#include <Guacamole/core/Window.h>
 
 namespace Guacamole {
 
-struct WindowSpec {
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t Refreshrate;
+Window* EventManager::mWindow = nullptr;
 
-    bool Windowed;
-
-    std::string Title;
-};
-
-class Window {
-public:
-    Window(WindowSpec spec);
-    ~Window();
-
-    inline const WindowSpec& GetSpec() const { return mSpec; }
-    inline bool ShouldClose() const { return mShouldClose; }
-private:
-    WindowSpec mSpec;
-    bool mShouldClose;
+void EventManager::Init(const Window* window) {
+    mWindow = const_cast<Window*>(window); // Dirty solution for the moment
+}
 
 
-// Platform specific region
-#if defined(GM_LINUX)
-private:
-    xcb_connection_t* mConnection;
-    xcb_window_t mWindow;
-    xcb_visualid_t mVisualID;
-    xcb_atom_t mWindowCloseAtom;
 
-public:
-    xcb_connection_t* GetXCBConnection() const { return mConnection; }
-    xcb_window_t GetXCBWindow() const { return mWindow; }
-    xcb_visualid_t GetVisualID() const { return mVisualID; }
+void EventManager::ProcessEvents(Window* window) {
+    MSG msg;
 
-#elif defined(GM_WINDOWS)
-private:
-    HWND mHWND;
+    while (PeekMessage(&msg, window->GetHWND(), 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
 
-public:
-    HWND GetHWND() const { return mHWND; }
-#endif
+void EventManager::Shutdown() {
 
-friend class EventManager;
-};
+}
 
+LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
+
+    switch (msg) {
+        case WM_CLOSE: {
+            mWindow->mShouldClose = true;
+            break;
+        }
+    }
+
+
+    return DefWindowProc(hwnd, msg, w, l);
+}
 
 }

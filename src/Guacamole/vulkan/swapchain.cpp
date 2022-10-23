@@ -60,9 +60,15 @@ void Swapchain::Init(Window* window) {
     VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
 
 #elif defined(GM_WINDOWS)
+    VkWin32SurfaceCreateInfoKHR surfaceInfo;
 
+    surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    surfaceInfo.pNext = nullptr;
+    surfaceInfo.flags = 0;
+    surfaceInfo.hinstance = 0;
+    surfaceInfo.hwnd = window->GetHWND();
 
-
+    VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
 #endif
 
     msInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
