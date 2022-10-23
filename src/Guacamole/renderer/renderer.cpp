@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <Guacamole.h>
+
 #include "renderer.h"
 
 #include <Guacamole/vulkan/commandpoolmanager.h>
