@@ -56,6 +56,7 @@ protected:
     virtual bool OnKeyReleased(KeyReleasedEvent* e) = 0;
     virtual bool OnButtonPressed(ButtonPressedEvent* e) = 0;
     virtual bool OnButtonReleased(ButtonReleasedEvent* e) = 0;
+    virtual bool OnMouseMoved(MouseMovedEvent* e) = 0;
 
     bool OnEvent(Event* e);
 

@@ -85,6 +85,7 @@ void Application::Init(const WindowSpec& windowSpec) {
     EventManager::AddListener(EventType::KeyReleased, this, &Application::OnEvent);
     EventManager::AddListener(EventType::ButtonPressed, this, &Application::OnEvent);
     EventManager::AddListener(EventType::ButtonReleased, this, &Application::OnEvent);
+    EventManager::AddListener(EventType::MouseMoved, this, &Application::OnEvent);
 }
 
 bool Application::OnEvent(Event* e) {
@@ -100,6 +101,9 @@ bool Application::OnEvent(Event* e) {
             break;
         case EventType::ButtonReleased:
             return OnButtonReleased((ButtonReleasedEvent*)e);
+            break;
+        case EventType::MouseMoved:
+            return OnMouseMoved((MouseMovedEvent*)e);
             break;
     }
 

@@ -108,6 +108,15 @@ void EventManager::ProcessEvents(Window* window) {
                 break;
             }
 
+            case XCB_MOTION_NOTIFY: {
+                xcb_motion_notify_event_t* motion = (xcb_motion_notify_event_t*)e;
+
+                MouseMovedEvent evnt(motion->event_x, motion->event_y);
+
+                DispatchEvent(&evnt);
+                break;
+            }
+
             case XCB_CLIENT_MESSAGE: {
                 xcb_client_message_event_t* message = (xcb_client_message_event_t*)e;
 
