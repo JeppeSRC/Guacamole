@@ -60,6 +60,22 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
             mWindow->mShouldClose = true;
             break;
         }
+
+        case WM_KEYDOWN: {
+            KeyPressedEvent evnt((uint32_t)w);
+
+            DispatchEvent(&evnt);
+            break;
+        }
+
+        case WM_KEYUP: {
+            KeyReleasedEvent evnt((uint32_t)w);
+
+            DispatchEvent(&evnt);
+            break;
+        }
+
+        
     }
 
 
