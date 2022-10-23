@@ -26,8 +26,6 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <xcb/randr.h>
-
 namespace Guacamole {
 
 class Monitor {
