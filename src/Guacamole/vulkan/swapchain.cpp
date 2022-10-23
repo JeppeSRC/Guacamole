@@ -22,9 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <Guacamole.h>
+
 #include "swapchain.h"
 #include "context.h"
+
 #include <Guacamole/asset/assetmanager.h>
+#include <Guacamole/util/timer.h>
 
 namespace Guacamole {
 
@@ -44,7 +47,7 @@ std::vector<VkImage> Swapchain::mSwapchainImages;
 std::vector<VkImageView> Swapchain::mSwapchainImageViews;
 
 void Swapchain::Init(Window* window) {
-
+    ScopedTimer timer1("Swapchain::Init");
 #if defined(GM_LINUX)
     VkXcbSurfaceCreateInfoKHR surfaceInfo;
 

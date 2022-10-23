@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include "context.h"
 
+#include <Guacamole/util/timer.h>
+
 namespace Guacamole {
 
 std::vector<Context::InstanceLayer> Context::mInstanceLayers;
@@ -35,7 +37,7 @@ PhysicalDevice* Context::mSelectedPhysDevice;
 Device* Context::mLogicalDevice;
 
 void Context::Init(const Window* window) {
-
+    ScopedTimer timer1("Context::Init");
     uint32_t version = 0;
 
     vkEnumerateInstanceVersion(&version);
