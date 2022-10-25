@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "Window.h"
+#include "window.h"
 #include "event.h"
 
 namespace Guacamole {

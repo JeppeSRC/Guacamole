@@ -27,7 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <Guacamole/core/event.h>
-#include <Guacamole/core/Window.h>
+#include <Guacamole/core/window.h>
 
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>

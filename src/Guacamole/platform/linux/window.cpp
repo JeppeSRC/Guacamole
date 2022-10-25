@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/Window.h>
+#include <Guacamole/core/window.h>
 #include <Guacamole/core/monitor.h>
 
 #include <Guacamole/core/event.h>

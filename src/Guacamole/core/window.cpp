@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <Guacamole.h>
-#include "Window.h"
+#include "window.h"
 
 namespace Guacamole {
 
