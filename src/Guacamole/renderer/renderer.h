@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/vulkan/pipeline.h>
+#include <Guacamole/vulkan/pipeline/pipeline.h>
 #include <Guacamole/vulkan/renderpass.h>
 
 namespace Guacamole { 

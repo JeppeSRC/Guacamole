@@ -26,8 +26,8 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/event.h>
-#include <Guacamole/core/window.h>
+#include <Guacamole/core/video/event.h>
+#include <Guacamole/core/video/window.h>
 
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>

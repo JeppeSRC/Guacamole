@@ -30,7 +30,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/vulkan/commandpoolmanager.h>
-#include <Guacamole/core/event.h>
+#include <Guacamole/core/video/event.h>
 
 #include <chrono>
 

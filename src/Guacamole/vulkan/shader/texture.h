@@ -26,8 +26,9 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "buffer.h"
 #include "sampler.h"
+
+#include <Guacamole/vulkan/buffer.h>
 #include <Guacamole/asset/asset.h>
 
 namespace Guacamole {

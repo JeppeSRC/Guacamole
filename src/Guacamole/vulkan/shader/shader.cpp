@@ -23,11 +23,13 @@ SOFTWARE.
 */
 
 #include <Guacamole.h>
+
+#include "shader.h"
+
+#include <Guacamole/vulkan/context.h>
 #include <Guacamole/util/util.h>
 
 #include <shaderc/shaderc.hpp>
-#include "shader.h"
-#include "context.h"
 
 
 namespace Guacamole {

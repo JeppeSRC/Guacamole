@@ -24,13 +24,15 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <stb_image.h>
 
 #include "texture.h"
-#include "context.h"
-#include "swapchain.h"
-#include "commandpoolmanager.h"
+
+#include <Guacamole/vulkan/swapchain.h>
+#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/context.h>
 #include <Guacamole/util/util.h>
+
+#include <stb_image.h>
 
 
 namespace Guacamole {

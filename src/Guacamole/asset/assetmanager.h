@@ -28,8 +28,8 @@ SOFTWARE.
 
 #include "asset.h"
 
-#include "../core/uuid.h"
-#include "../vulkan/commandbuffer.h"
+#include <Guacamole/core/uuid.h>
+#include <Guacamole/vulkan/commandbuffer.h>
 
 #include <unordered_map>
 #include <thread>

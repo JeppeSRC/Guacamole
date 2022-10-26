@@ -25,7 +25,8 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "sampler.h"
-#include "context.h"
+
+#include <Guacamole/vulkan/context.h>
 
 namespace Guacamole {
 

@@ -25,7 +25,8 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include <Guacamole/core/window.h>
+
+#include <Guacamole/core/video/window.h>
 #include "commandpoolmanager.h"
 
 namespace Guacamole {

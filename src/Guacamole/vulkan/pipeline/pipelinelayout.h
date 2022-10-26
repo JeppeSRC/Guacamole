@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "descriptor.h"
+#include <Guacamole/vulkan/shader/descriptor.h>
 
 namespace Guacamole {
 

@@ -30,7 +30,7 @@ SOFTWARE.
 #include "mesh.h"
 #include "camera.h"
 
-#include <Guacamole/vulkan/descriptor.h>
+#include <Guacamole/vulkan/shader/descriptor.h>
 
 namespace Guacamole {
 

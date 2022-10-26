@@ -24,10 +24,10 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/window.h>
-#include <Guacamole/core/monitor.h>
+#include <Guacamole/core/video/window.h>
+#include <Guacamole/core/video/monitor.h>
 
-#include <Guacamole/core/event.h>
+#include <Guacamole/core/video/event.h>
 
 namespace Guacamole {
 

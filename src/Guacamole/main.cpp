@@ -27,11 +27,11 @@ SOFTWARE.
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/renderpass.h>
-#include <Guacamole/vulkan/pipeline.h>
+#include <Guacamole/vulkan/pipeline/pipeline.h>
 #include <Guacamole/vulkan/buffer.h>
-#include <Guacamole/vulkan/texture.h>
-#include <Guacamole/vulkan/descriptor.h>
-#include <Guacamole/vulkan/shader.h>
+#include <Guacamole/vulkan/shader/texture.h>
+#include <Guacamole/vulkan/shader/descriptor.h>
+#include <Guacamole/vulkan/shader/shader.h>
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/renderer/mesh.h>
 #include <time.h>

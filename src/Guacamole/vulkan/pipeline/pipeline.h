@@ -22,17 +22,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <Guacamole.h>
 
-#include <Guacamole/core/monitor.h>
-
+#include <Guacamole/vulkan/shader/shader.h>
+#include <Guacamole/vulkan/renderpass.h>
+#include <Guacamole/vulkan/pipeline/pipelinelayout.h>
 
 namespace Guacamole {
 
-std::vector<Monitor> Monitor::mMonitors;
+class Pipeline {
+public:
+    virtual ~Pipeline();
 
-void Monitor::Add(const Monitor& monitor) {
-    mMonitors.emplace_back(monitor);
-}
+    inline VkPipeline GetHandle() const { return mPipelineHandle; }
+protected:
+    VkPipeline mPipelineHandle;
+
+};
+
+struct GraphicsPipelineInfo {
+    uint32_t mWidth;
+    uint32_t mHeight;
+
+    std::vector<VkVertexInputBindingDescription> mVertexInputBindings;
+    std::vector<VkVertexInputAttributeDescription> mVertexInputAttributes;
+    PipelineLayout* mPipelineLayout;
+    Renderpass* mRenderpass;
+    
+    Shader* mShader;
+};
+
+class GraphicsPipeline : public Pipeline {
+public:
+    GraphicsPipeline(const GraphicsPipelineInfo& info);
+
+private:
+    GraphicsPipelineInfo mInfo;
+};
 
 }
