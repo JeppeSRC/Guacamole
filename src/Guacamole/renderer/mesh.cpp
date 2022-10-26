@@ -34,6 +34,7 @@ Mesh::Mesh(const std::filesystem::path& file)
 
 Mesh::~Mesh() {
     delete mVBO;
+    delete mIBO;
 }
 
 void Mesh::Load(bool immediate) {
