@@ -241,17 +241,15 @@ void Swapchain::Present() {
         info.pCommandBuffers = &asset.mCommandBuffer->GetHandle();
         info.signalSemaphoreCount = 0;
         info.pSignalSemaphores = nullptr;
-        //info.signalSemaphoreCount = 1;
-        //info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
+        info.signalSemaphoreCount = 1;
+        info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
 
-        //waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
-        //renderStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+        waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
+        renderStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
         VK(vkResetFences(Context::GetDeviceHandle(), 1, &asset.mCommandBuffer->GetFence()));
         VK(vkQueueSubmit(mGraphicsQueue, 1, &info, asset.mCommandBuffer->GetFence()));
     }
-
-    VK(vkQueueWaitIdle(mGraphicsQueue));
 
     for (AssetManager::FinishedAsset& asset : finishedAssets) {
         asset.mAsset->Unmap();
