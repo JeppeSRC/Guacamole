@@ -113,7 +113,7 @@ void Swapchain::Init(Window* window) {
     mSwapchainImages.resize(imageCount);
     VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
     
-    CommandPoolManager::AllocatePrimaryRenderCommandBuffers(std::this_thread::get_id(), imageCount);
+    CommandPoolManager::AllocatePrimaryRenderCommandBuffers(imageCount);
 
     VkImageViewCreateInfo iwInfo;
 
