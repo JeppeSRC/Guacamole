@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <glm/glm.hpp>
 
-#include <Guacamole/vulkan/buffer.h>
+#include <Guacamole/vulkan/buffer/buffer.h>
 #include <Guacamole/asset/asset.h>
 
 namespace Guacamole {

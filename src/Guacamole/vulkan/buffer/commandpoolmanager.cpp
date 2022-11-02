@@ -25,7 +25,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "commandpoolmanager.h"
-#include "swapchain.h"
+#include <Guacamole/vulkan/swapchain.h>
 
 namespace Guacamole {
 

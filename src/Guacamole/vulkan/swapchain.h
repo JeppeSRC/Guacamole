@@ -27,7 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <Guacamole/core/video/window.h>
-#include "commandpoolmanager.h"
+#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 
 namespace Guacamole {
 

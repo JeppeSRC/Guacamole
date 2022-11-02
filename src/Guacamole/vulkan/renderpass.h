@@ -25,7 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <Guacamole.h>
-#include "commandbuffer.h"
+#include <Guacamole/vulkan/buffer/commandbuffer.h>
 
 namespace Guacamole {
 

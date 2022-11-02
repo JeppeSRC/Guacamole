@@ -29,7 +29,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/asset/assetmanager.h>
-#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/core/video/event.h>
 
 #include <chrono>

@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include "renderer.h"
 
-#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/vulkan/renderpass.h>
 
 namespace Guacamole {

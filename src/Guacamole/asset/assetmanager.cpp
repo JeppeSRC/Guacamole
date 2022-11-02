@@ -25,7 +25,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "assetmanager.h"
-#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 
 #if defined(GM_LINUX)
 

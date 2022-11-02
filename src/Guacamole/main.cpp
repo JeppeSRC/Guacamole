@@ -28,7 +28,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/renderpass.h>
 #include <Guacamole/vulkan/pipeline/pipeline.h>
-#include <Guacamole/vulkan/buffer.h>
+#include <Guacamole/vulkan/buffer/buffer.h>
 #include <Guacamole/vulkan/shader/texture.h>
 #include <Guacamole/vulkan/shader/descriptor.h>
 #include <Guacamole/vulkan/shader/shader.h>

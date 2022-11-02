@@ -28,7 +28,7 @@ SOFTWARE.
 #include "texture.h"
 
 #include <Guacamole/vulkan/swapchain.h>
-#include <Guacamole/vulkan/commandpoolmanager.h>
+#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/util/util.h>
 

@@ -29,7 +29,7 @@ SOFTWARE.
 #include "asset.h"
 
 #include <Guacamole/core/uuid.h>
-#include <Guacamole/vulkan/commandbuffer.h>
+#include <Guacamole/vulkan/buffer/commandbuffer.h>
 
 #include <unordered_map>
 #include <thread>

@@ -24,8 +24,10 @@ SOFTWARE.
 
 
 #include <Guacamole.h>
+
 #include "commandbuffer.h"
-#include "context.h"
+
+#include <Guacamole/vulkan/context.h>
 
 namespace Guacamole {
 
