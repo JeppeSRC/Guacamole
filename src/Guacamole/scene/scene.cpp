@@ -59,4 +59,15 @@ Entity Scene::CreateEntity(const std::string& name) {
 }
 
 
+
+void Scene::Load(bool immediate) {
+    GM_ASSERT(false);
+}
+
+void Scene::Unload() {
+    GM_ASSERT(false);
+}
+
+
+
 }

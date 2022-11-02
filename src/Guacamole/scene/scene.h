@@ -41,6 +41,8 @@ public:
 
     Entity CreateEntity(const std::string& name = "");
 
+    void Load(bool immediate) override;
+    void Unload() override;
 
 protected:
     entt::registry mRegistry;
