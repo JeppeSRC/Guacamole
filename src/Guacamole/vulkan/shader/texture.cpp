@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/util/util.h>
+#include <Guacamole/vulkan/util.h>
 
 #include <stb_image.h>
 
@@ -41,8 +42,7 @@ namespace Guacamole {
 
 Texture::Texture(const std::filesystem::path& path) 
     : Asset(path, AssetType::Texture),
-    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), 
-      mMappedBufferHandle(VK_NULL_HANDLE), mMappedBufferMemory(VK_NULL_HANDLE), mMappedMemory(nullptr) {}
+    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE) {}
 
 void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout) {
     VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -88,7 +88,7 @@ void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageTyp
 
     aInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     aInfo.pNext = nullptr;
-    aInfo.allocationSize = mImageMemorySize = memReq.size;
+    aInfo.allocationSize = memReq.size;
     aInfo.memoryTypeIndex = Buffer::GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mImageMemory));
@@ -97,246 +97,88 @@ void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageTyp
 
 Texture::~Texture() {
     vkFreeMemory(Context::GetDeviceHandle(), mImageMemory, nullptr);
-    vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
     vkDestroyImage(Context::GetDeviceHandle(), mImageHandle, nullptr);
-    vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
     vkDestroyImageView(Context::GetDeviceHandle(), mImageViewHandle, nullptr);
 }
 
-void* Texture::Map() {
-    if (mMappedMemory) return mMappedMemory;
+void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, CommandBuffer* commandBuffer) {
 
-    if (mMappedBufferMemory == VK_NULL_HANDLE) {
-        VkBufferCreateInfo bInfo;
+    VkImageMemoryBarrier bar;
 
-        bInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bInfo.pNext = nullptr;
-        bInfo.flags = 0;
-        bInfo.size = mImageMemorySize;
-        bInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        bInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        bInfo.queueFamilyIndexCount = 0;
-        bInfo.pQueueFamilyIndices = nullptr;
+    bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    bar.pNext = nullptr;
+    //bar.srcAccessMask = 0;
+    //bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    bar.oldLayout = oldLayout;
+    bar.newLayout = newLayout;
+    bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.image = mImageHandle;
+    bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bar.subresourceRange.baseMipLevel = 0;
+    bar.subresourceRange.levelCount = 1;
+    bar.subresourceRange.baseArrayLayer = 0;
+    bar.subresourceRange.layerCount = 1;
 
-        VK(vkCreateBuffer(Context::GetDeviceHandle(), &bInfo, nullptr, &mMappedBufferHandle));
+    VkPipelineStageFlags src;
+    VkPipelineStageFlags dst;
 
-        VkMemoryRequirements memReq;
-        vkGetBufferMemoryRequirements(Context::GetDeviceHandle(), mMappedBufferHandle, &memReq);
-
-        VkMemoryAllocateInfo aInfo;
-
-        aInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        aInfo.pNext = nullptr;
-        aInfo.allocationSize = memReq.size;
-        aInfo.memoryTypeIndex = Buffer::GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mMappedBufferMemory));
-        VK(vkBindBufferMemory(Context::GetDeviceHandle(), mMappedBufferHandle, mMappedBufferMemory, 0));
-    }
-
-    VK(vkMapMemory(Context::GetDeviceHandle(), mMappedBufferMemory, 0, mImageMemorySize, 0, &mMappedMemory));
-
-    return mMappedMemory;
-}
-
-void Texture::Unmap() {
-    GM_ASSERT(mMappedMemory);
-
-    vkUnmapMemory(Context::GetDeviceHandle(), mMappedBufferMemory);
-    vkFreeMemory(Context::GetDeviceHandle(), mMappedBufferMemory, nullptr);
-    vkDestroyBuffer(Context::GetDeviceHandle(), mMappedBufferHandle, nullptr);
-
-    mMappedBufferMemory = VK_NULL_HANDLE;
-    mMappedBufferHandle = VK_NULL_HANDLE;
-
-    mMappedMemory = nullptr;
-}
-
-void Texture::WriteData(void* data, uint64_t size, uint64_t offset) {
-    void* mem = Map();
-
-    memcpy((uint8_t*)mem + offset, data, size);
-
-    StageCopy(false);
-}
-
-void Texture::WriteDataImmediate(void* data, uint64_t size, uint64_t offset) {
-    void* mem = Map();
-
-    memcpy((uint8_t*)mem + offset, data, size);
-
-    StageCopy(true);
-
-    Unmap();
-}
-
-void Texture::StageCopy(bool immediate) {
-    if (immediate) {
-        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(1);
-
-        cmd->Begin(true);
-
-        VkBufferImageCopy copy;
-
-        copy.bufferOffset = 0;
-        copy.bufferRowLength = 0;
-        copy.bufferImageHeight = 0;
-        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copy.imageSubresource.baseArrayLayer = 0;
-        copy.imageSubresource.layerCount = 1;
-        copy.imageSubresource.mipLevel = 0;
-        copy.imageOffset = {};
-        copy.imageExtent = mImageInfo.extent;
-
-        vkCmdCopyBufferToImage(cmd->GetHandle(), mMappedBufferHandle, mImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-        cmd->End();
-
-        VkSubmitInfo sInfo;
-
-        VkCommandBuffer Handle = cmd->GetHandle();
-
-        sInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        sInfo.pNext = nullptr;
-        sInfo.waitSemaphoreCount = 0;
-        sInfo.pWaitSemaphores = nullptr;
-        sInfo.pWaitDstStageMask = nullptr;
-        sInfo.commandBufferCount = 1;
-        sInfo.pCommandBuffers = &Handle;
-        sInfo.signalSemaphoreCount = 0;
-        sInfo.pSignalSemaphores = nullptr;
-
-        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
-        VK(vkQueueSubmit(Swapchain::GetGraphicsQueue(), 1, &sInfo, VK_NULL_HANDLE));
-        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
-
-    } else {
-        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
-
-        VkBufferImageCopy copy;
-
-        copy.bufferOffset = 0;
-        copy.bufferRowLength = 0;
-        copy.bufferImageHeight = 0;
-        copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copy.imageSubresource.baseArrayLayer = 0;
-        copy.imageSubresource.layerCount = 1;
-        copy.imageSubresource.mipLevel = 0;
-        copy.imageOffset = {};
-        copy.imageExtent = mImageInfo.extent;
-
-        vkCmdCopyBufferToImage(cmd->GetHandle(), mMappedBufferHandle, mImageHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-    }
-
-}
-
-void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate) {
-    if (immediate) {
-        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(1);
-
-        cmd->Begin(true);
-
-        VkImageMemoryBarrier bar;
-
-        bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        bar.pNext = nullptr;
-        bar.srcAccessMask = 0;
-        bar.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        bar.oldLayout = oldLayout;
-        bar.newLayout = newLayout;
-        bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        bar.image = mImageHandle;
-        bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        bar.subresourceRange.baseMipLevel = 0;
-        bar.subresourceRange.levelCount = 1;
-        bar.subresourceRange.baseArrayLayer = 0;
-        bar.subresourceRange.layerCount = 1;
-
-        vkCmdPipelineBarrier(cmd->GetHandle(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, 0, 0, 0, 1, &bar);
-
-        cmd->End();
-
-        VkSubmitInfo sInfo;
-
-        VkCommandBuffer Handle = cmd->GetHandle();
-
-        sInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        sInfo.pNext = nullptr;
-        sInfo.waitSemaphoreCount = 0;
-        sInfo.pWaitSemaphores = nullptr;
-        sInfo.pWaitDstStageMask = nullptr;
-        sInfo.commandBufferCount = 1;
-        sInfo.pCommandBuffers = &Handle;
-        sInfo.signalSemaphoreCount = 0;
-        sInfo.pSignalSemaphores = nullptr;
-
-        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
-        VK(vkQueueSubmit(Swapchain::GetGraphicsQueue(), 1, &sInfo, VK_NULL_HANDLE));
-        VK(vkQueueWaitIdle(Swapchain::GetGraphicsQueue()));
-
-    } else {
-        CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer(0);
-
-        VkImageMemoryBarrier bar;
-
-        bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        bar.pNext = nullptr;
-        //bar.srcAccessMask = 0;
-        //bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        bar.oldLayout = oldLayout;
-        bar.newLayout = newLayout;
-        bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        bar.image = mImageHandle;
-        bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        bar.subresourceRange.baseMipLevel = 0;
-        bar.subresourceRange.levelCount = 1;
-        bar.subresourceRange.baseArrayLayer = 0;
-        bar.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags src, dst;
-
-        if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-            bar.srcAccessMask = 0;
-            bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
+    switch (oldLayout) {
+        case VK_IMAGE_LAYOUT_UNDEFINED:
             src = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
+            bar.srcAccessMask = 0;
+            break;
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
             src = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        }
-
-        vkCmdPipelineBarrier(cmd->GetHandle(), src, dst, 0, 0, 0, 0, 0, 1, &bar);
-
+            bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            src = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            bar.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            break;
+        default:
+            GM_ASSERT_MSG(false, "Transition not implemented");
+            break;
     }
+
+    switch (newLayout) {
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            dst = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            break;
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            dst = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            break;
+        default:
+            GM_ASSERT_MSG(false, "Transition not implemented");
+            break;
+    }
+
+    vkCmdPipelineBarrier(commandBuffer->GetHandle(), src, dst, 0, 0, 0, 0, 0, 1, &bar);
+    
 }
 
-
+uint64_t Texture::GetImageBufferSize() const {
+    return GetWidth() * GetHeight() * GetFormatSize(mImageInfo.format);
+}
 
 
 void Texture2D::CreateImageView(VkFormat format) {
-    VkImageViewCreateInfo imageViewInfo;
+    mViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    mViewInfo.pNext = nullptr;
+    mViewInfo.flags = 0;
+    mViewInfo.image = mImageHandle;
+    mViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    mViewInfo.format = format;
+    mViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    mViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    mViewInfo.subresourceRange.baseMipLevel = 0;
+    mViewInfo.subresourceRange.levelCount = 1;
+    mViewInfo.subresourceRange.baseArrayLayer = 0;
+    mViewInfo.subresourceRange.layerCount = 1;
 
-    imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    imageViewInfo.pNext = nullptr;
-    imageViewInfo.flags = 0;
-    imageViewInfo.image = mImageHandle;
-    imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    imageViewInfo.format = format;
-    imageViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-    imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    imageViewInfo.subresourceRange.baseMipLevel = 0;
-    imageViewInfo.subresourceRange.levelCount = 1;
-    imageViewInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewInfo.subresourceRange.layerCount = 1;
-
-    VK(vkCreateImageView(Context::GetDeviceHandle(), &imageViewInfo, nullptr, &mImageViewHandle));
+    VK(vkCreateImageView(Context::GetDeviceHandle(), &mViewInfo, nullptr, &mImageViewHandle));
 }
 
 Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) : Texture("") {
@@ -348,12 +190,6 @@ Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) : Texture
 
 Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
 
-}
-
-void Texture2D::StageCopy(bool immediate) {
-    Transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, immediate);
-    Texture::StageCopy(immediate);
-    Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, immediate);
 }
 
 void Texture2D::Load(bool immediate) {
@@ -387,9 +223,9 @@ void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate
     CreateImageView(VK_FORMAT_R8G8B8A8_UNORM);
 
     if (immediate) {
-        WriteDataImmediate(pixels, width * height * 4);
+        //WriteDataImmediate(pixels, width * height * 4);
     } else {
-        WriteData(pixels, width * height * 4);
+        //WriteData(pixels, width * height * 4);
     }
 
     free(pixels);

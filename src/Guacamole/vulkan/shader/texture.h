@@ -43,31 +43,24 @@ protected:
 public:
     virtual ~Texture();
 
-    void* Map();
-    void Unmap() override;
-    void WriteData(void* data, uint64_t size, uint64_t offset = 0);
-    void WriteDataImmediate(void* data, uint64_t size, uint64_t offset = 0);
-    virtual void StageCopy(bool immediate);
-
-    void Transition(VkImageLayout oldLayout, VkImageLayout newLayout, bool immediate);
+    void Transition(VkImageLayout oldLayout, VkImageLayout newLayout, CommandBuffer* commandBuffer);
+    uint64_t GetImageBufferSize() const;
 
     inline uint32_t GetWidth() const { return mImageInfo.extent.width; }
     inline uint32_t GetHeight() const { return mImageInfo.extent.height; }
 
     inline VkImage GetImageHandle() const { return mImageHandle; }
     inline VkImageView GetImageViewHandle() const { return mImageViewHandle; }
+
+    inline const VkImageCreateInfo& GetImageInfo() const { return mImageInfo; }
+    inline const VkImageViewCreateInfo& GetViewInfo() const { return mViewInfo; }
 protected:
     VkImage mImageHandle;
     VkDeviceMemory mImageMemory;
     VkImageView mImageViewHandle;
 
     VkImageCreateInfo mImageInfo;
-
-    uint64_t mImageMemorySize;
-    void* mMappedMemory;
-
-    VkBuffer mMappedBufferHandle;
-    VkDeviceMemory mMappedBufferMemory;
+    VkImageViewCreateInfo mViewInfo;
 };
 
 class Texture2D : public Texture {
@@ -75,7 +68,6 @@ public:
     Texture2D(uint32_t width, uint32_t height, VkFormat format);
     Texture2D(const std::filesystem::path& path);
 
-    void StageCopy(bool immediate) override;
     void Load(bool immediate) override;
     void Unload() override;
 
