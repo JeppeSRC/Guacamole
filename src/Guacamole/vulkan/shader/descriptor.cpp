@@ -114,14 +114,21 @@ uint32_t DescriptorSetLayout::GetUniformBufferMemberOffset(uint32_t binding, uin
 
 
 DescriptorPool::DescriptorPool(uint32_t maxSets) {
+    VkDescriptorPoolSize poolSizes[10];
+
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = 1000;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = 1000;
+
     VkDescriptorPoolCreateInfo pInfo;
 
     pInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pInfo.pNext = nullptr;
     pInfo.flags = 0;
     pInfo.maxSets = maxSets;
-    pInfo.poolSizeCount = 0;
-    pInfo.pPoolSizes = nullptr;
+    pInfo.poolSizeCount = 2;
+    pInfo.pPoolSizes = poolSizes;
 
     VK(vkCreateDescriptorPool(Context::GetDeviceHandle(), &pInfo, nullptr, &mPoolHandle));
 }
