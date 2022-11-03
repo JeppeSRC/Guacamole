@@ -32,6 +32,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/util/util.h>
 #include <Guacamole/vulkan/util.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
 #include <stb_image.h>
 
@@ -222,11 +223,7 @@ void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate
     CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { (uint32_t)width, (uint32_t)height, 1 }, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
     CreateImageView(VK_FORMAT_R8G8B8A8_UNORM);
 
-    if (immediate) {
-        //WriteDataImmediate(pixels, width * height * 4);
-    } else {
-        //WriteData(pixels, width * height * 4);
-    }
+    memcpy(StagingBuffer::GetStagingBuffer()->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this), data, width * height * 4);
 
     free(pixels);
 }
