@@ -138,7 +138,8 @@ int main() {
         Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices));
         Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices));
 
-
+        memcpy(staging->Allocate(sizeof(vertices), &vbo), vertices, sizeof(vertices));
+        memcpy(staging->Allocate(sizeof(indices), &ibo), indices, sizeof(indices));
 
         Shader shader;
         shader.AddModule("build/res/shader.vert", true, ShaderStage::Vertex);
@@ -155,16 +156,12 @@ int main() {
             }
         }
 
-        //memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
-        
+        memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
 
         //AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
         AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("build/res/sheet.png"), false);
         //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
         AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane());
-
-        memcpy(staging->Allocate(sizeof(vertices), &vbo), vertices, sizeof(vertices));
-        memcpy(staging->Allocate(sizeof(indices), &ibo), indices, sizeof(indices));
 
         BasicRenderpass pass;
 
@@ -236,8 +233,6 @@ int main() {
                 staging->Reset();
                 staging->Begin();
             }
-
-            //memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
 
             EventManager::ProcessEvents(&window);
             auto start = std::chrono::high_resolution_clock::now();
