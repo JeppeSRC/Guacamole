@@ -55,17 +55,17 @@ public:
 private:
     Mesh();
 
-    void CreateVBO(Vertex* data, uint64_t count, bool immediate = false);
-    void CreateIBO(void* data, uint64_t count, VkIndexType indexType, bool immediate = false);
-    void LoadFromFile(const std::filesystem::path& path, bool immediate = false);
+    void CreateVBO(Vertex* data, uint64_t count);
+    void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
+    void LoadFromFile(const std::filesystem::path& path);
 
     Buffer* mVBO;
     Buffer* mIBO;
     VkIndexType mIndexType;
 
 public:
-    static Mesh* GenerateQuad(bool immediate = false);
-    static Mesh* GeneratePlane(bool immediate = false);
+    static Mesh* GenerateQuad();
+    static Mesh* GeneratePlane();
 };
 
 }

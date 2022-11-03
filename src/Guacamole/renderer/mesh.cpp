@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include "mesh.h"
 
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
+
 namespace Guacamole {
 
 Mesh::Mesh(const std::filesystem::path& file) 
@@ -38,7 +40,7 @@ Mesh::~Mesh() {
 }
 
 void Mesh::Load(bool immediate) {
-    LoadFromFile(mFilePath, immediate);
+    LoadFromFile(mFilePath);
 }
 
 void Mesh::Unload() {
@@ -58,21 +60,17 @@ Mesh::Mesh()
     mLoaded = true;
 }
 
-void Mesh::CreateVBO(Vertex* data, uint64_t count, bool immediate) {
+void Mesh::CreateVBO(Vertex* data, uint64_t count) {
     GM_ASSERT(mVBO == nullptr);
 
     uint64_t size = count * sizeof(Vertex);
 
     mVBO = new Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
 
-    if (immediate) {
-        mVBO->WriteDataImmediate(data, size);
-    } else {
-        mVBO->WriteData(data, size);
-    }
+    memcpy(StagingBuffer::GetStagingBuffer()->Allocate(size, mVBO), data, size);
 }
 
-void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType, bool immediate) {
+void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     GM_ASSERT(mIBO == nullptr);
 
     uint64_t size = count;
@@ -93,25 +91,21 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType, bool imm
 
     mIndexType = indexType;
     mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
-    
-    if (immediate) {
-        mIBO->WriteDataImmediate(data, size);
-    } else {
-        mIBO->WriteData(data, size);
-    }
+
+    memcpy(StagingBuffer::GetStagingBuffer()->Allocate(size, mIBO), data, size);    
 }
 
 
-void Mesh::LoadFromFile(const std::filesystem::path& path, bool immediate) {
+void Mesh::LoadFromFile(const std::filesystem::path& path) {
     GM_ASSERT(false);
 }
 
-Mesh* Mesh::GenerateQuad(bool immediate) {
+Mesh* Mesh::GenerateQuad() {
     GM_ASSERT(false);
     return nullptr;
 }
 
-Mesh* Mesh::GeneratePlane(bool immediate) {
+Mesh* Mesh::GeneratePlane() {
     Vertex vertices[4] = {
         {{-0.5, -0.5, 0, 1}, {0, 0, 1}, {0, 0}},
         {{ 0.5, -0.5, 0, 1}, {0, 0, 1}, {1, 0}},
@@ -125,8 +119,8 @@ Mesh* Mesh::GeneratePlane(bool immediate) {
 
     Mesh* mesh = new Mesh;
 
-    mesh->CreateVBO(vertices, 4, immediate);
-    mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16, immediate);
+    mesh->CreateVBO(vertices, 4);
+    mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16);
 
     return mesh;
 }
