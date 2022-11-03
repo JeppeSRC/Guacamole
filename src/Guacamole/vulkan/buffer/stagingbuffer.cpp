@@ -80,7 +80,7 @@ void* StagingBuffer::AllocateImage(VkImageLayout oldLayout, VkImageLayout newLay
 
     VkBufferImageCopy copy;
 
-    copy.bufferOffset = 0;
+    copy.bufferOffset = mAllocated;
     copy.bufferImageHeight = 0;
     copy.bufferRowLength = 0;
     copy.imageSubresource.aspectMask = viewInfo.subresourceRange.aspectMask;
