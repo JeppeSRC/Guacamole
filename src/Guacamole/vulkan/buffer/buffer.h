@@ -32,12 +32,13 @@ class Buffer {
 protected:
     VkBuffer mBufferHandle;
     VkDeviceMemory mBufferMemory;
+    VkMemoryPropertyFlags mBufferFlags;
 
     uint64_t mBufferSize;
     void* mMappedMemory;
 
 public:
-    Buffer(VkBufferUsageFlags usage, uint64_t size);
+    Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     virtual ~Buffer();
 
     void* Map();

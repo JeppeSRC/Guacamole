@@ -31,8 +31,8 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size) : 
-    mBufferSize(size), mMappedMemory(nullptr) {
+Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags) : 
+    mBufferSize(size), mMappedMemory(nullptr), mBufferFlags(flags) {
 
     VkBufferCreateInfo bInfo;
 
@@ -55,7 +55,7 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size) :
     aInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     aInfo.pNext = nullptr;
     aInfo.allocationSize = memReq.size;
-    aInfo.memoryTypeIndex = GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);;
+    aInfo.memoryTypeIndex = GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, flags);
 
     VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mBufferMemory));
     VK(vkBindBufferMemory(Context::GetDeviceHandle(), mBufferHandle, mBufferMemory, 0));
@@ -67,12 +67,16 @@ Buffer::~Buffer() {
 }
 
 void* Buffer::Map() {
+    GM_ASSERT_MSG(mBufferFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "Buffer must've been created with VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT to be mappable");
     if (mMappedMemory) return mMappedMemory;
 
     VK(vkMapMemory(Context::GetDeviceHandle(), mBufferMemory, 0, mBufferSize, 0, &mMappedMemory));
+
+    return mMappedMemory;
 }
 
 void Buffer::Unmap() {
+    GM_ASSERT_MSG(mBufferFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "Buffer must've been created with VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT to be mappable");
     vkUnmapMemory(Context::GetDeviceHandle(), mBufferMemory);
 }
 
