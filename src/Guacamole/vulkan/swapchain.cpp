@@ -28,6 +28,7 @@ SOFTWARE.
 
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/util/timer.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
 namespace Guacamole {
 
@@ -75,8 +76,8 @@ void Swapchain::Init(Window* window) {
     msInfo.pNext = nullptr;
     msInfo.flags = 0;
     msInfo.surface = mSurfaceHandle;
-    msInfo.minImageCount = 2;
-    
+    msInfo.minImageCount = Context::GetPhysicalDevice()->GetSurfaceCapabilities(mSurfaceHandle).minImageCount;
+
     uint32_t formatCount = 0;
 
     VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), mSurfaceHandle, &formatCount, nullptr));
@@ -85,8 +86,8 @@ void Swapchain::Init(Window* window) {
 
 
     //TODO: fix
-    msInfo.imageFormat = surfaceFormats[1].format;
-    msInfo.imageColorSpace = surfaceFormats[1].colorSpace;
+    msInfo.imageFormat = surfaceFormats[0].format;
+    msInfo.imageColorSpace = surfaceFormats[0].colorSpace;
 
     delete surfaceFormats;
 
@@ -206,14 +207,10 @@ void Swapchain::Shutdown() {
 }
 
 void Swapchain::Begin() {
-    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), mSwapchainHandle, ~0, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
+    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), mSwapchainHandle, 10000, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
+    GM_ASSERT(mCurrentImageIndex != ~0);
 
     CommandBuffer* cmd = GetPrimaryCommandBuffer();
-    CommandBuffer* aux = CommandPoolManager::GetCopyCommandBuffer();
-    
-    // This is temporary
-    aux->WaitForFence();
-    aux->Begin(true);
 
     cmd->WaitForFence();
     cmd->Begin(true);
@@ -255,7 +252,7 @@ void Swapchain::Present() {
         asset.mAsset->Unmap();
     }
 
-    CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
+    CommandBuffer* cmd = StagingBuffer::GetStagingBuffer()->GetCommandBuffer();
 
     if (cmd->IsUsed()) {
         cmd->End();
@@ -269,7 +266,7 @@ void Swapchain::Present() {
 
         mRenderSubmitInfo.waitSemaphoreCount++;
     }
-
+    
     cmd = GetPrimaryCommandBuffer();
     cmd->End();
    
@@ -281,10 +278,8 @@ void Swapchain::Present() {
     VK(vkResetFences(Context::GetDeviceHandle(), 1, &cmd->GetFence()));
     VK(vkQueueSubmit(mGraphicsQueue, 1, &mRenderSubmitInfo, cmd->GetFence()));
 
-    VkResult result;
-
     mPresentInfo.pImageIndices = &mCurrentImageIndex;
-    mPresentInfo.pResults = &result;
+    mPresentInfo.pResults = nullptr;
 
     VK(vkQueuePresentKHR(mGraphicsQueue, &mPresentInfo));
 

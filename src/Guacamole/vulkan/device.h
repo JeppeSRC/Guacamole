@@ -51,6 +51,7 @@ public:
     bool GetQueuePresentationSupport(const Window* window, uint32_t queueIndex) const;
     bool IsExtensionSupported(const char* extension) const;
     bool CheckImageFormat(VkFormat format, VkImageType imageType, VkImageTiling tiling, VkImageUsageFlags usage, VkImageFormatProperties* prop) const;
+    VkSurfaceCapabilitiesKHR GetSurfaceCapabilities(VkSurfaceKHR surface) const;
 
     void PrintDeviceInfo(bool withExtensions) const;
 

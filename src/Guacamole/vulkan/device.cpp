@@ -144,6 +144,13 @@ bool PhysicalDevice::CheckImageFormat(VkFormat format, VkImageType imageType, Vk
     return false;
 }
 
+VkSurfaceCapabilitiesKHR PhysicalDevice::GetSurfaceCapabilities(VkSurfaceKHR surface) const {
+    VkSurfaceCapabilitiesKHR cap;
+
+    VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDeviceHandle, surface, &cap));
+
+    return cap;
+}
 
 void PhysicalDevice::PrintDeviceInfo(bool withExtensions) const {
     GM_LOG_DEBUG("Physical Device ({4}): {5} {0} {1}.{2}.{3}", 
