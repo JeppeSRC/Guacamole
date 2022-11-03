@@ -154,9 +154,7 @@ std::vector<AssetManager::FinishedAsset> AssetManager::GetFinishedAssets() {
 }
 
 void AssetManager::QueueWorker() {
-    CommandPoolManager::AllocateAssetCommandBuffers(std::this_thread::get_id());
-
-    CommandBuffer* cmd = CommandPoolManager::GetCopyCommandBuffer();
+    CommandBuffer* cmd = CommandPoolManager::AllocateAuxCommandBuffer(std::this_thread::get_id(), true);
 
     while (!mShouldStop) {
         mQueueMutex.lock();

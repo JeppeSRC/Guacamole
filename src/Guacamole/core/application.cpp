@@ -78,7 +78,6 @@ void Application::Init(const WindowSpec& windowSpec) {
 
     Context::Init(mWindow);
     Swapchain::Init(mWindow);
-    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
     AssetManager::Init();
 
     EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);

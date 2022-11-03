@@ -33,7 +33,7 @@ CommandPoolManager::Pool CommandPoolManager::mRenderCommandPool;
 std::unordered_map<std::thread::id, CommandPoolManager::Pool> CommandPoolManager::mAuxCommandPools;
 
 void CommandPoolManager::AllocatePrimaryRenderCommandBuffers(uint32_t imageCount) {
-    GM_ASSERT_MSG(mRenderCommandPool.mPool, "Primary render command buffers already allocated");
+    GM_ASSERT_MSG(mRenderCommandPool.mPool == nullptr, "Primary render command buffers already allocated");
     mRenderCommandPool.mPool = new CommandPool;
     mRenderCommandPool.mCommandBuffers = mRenderCommandPool.mPool->AllocateCommandBuffers(imageCount, true);
 }
