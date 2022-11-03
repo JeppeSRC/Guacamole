@@ -56,7 +56,7 @@ protected:
 public:
     virtual ~Asset();
 
-    virtual void Load(bool immediate) = 0;
+    virtual void Load() = 0;
     virtual void Unload() = 0;
     virtual void Unmap() {}
 

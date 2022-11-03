@@ -193,10 +193,10 @@ Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
 
 }
 
-void Texture2D::Load(bool immediate) {
+void Texture2D::Load() {
     GM_ASSERT_MSG(mLoaded == false, "Texture already loaded");
 
-    LoadImageFromFile(mFilePath, immediate);
+    LoadImageFromFile(mFilePath);
 
     mLoaded = true;
 }
@@ -205,7 +205,7 @@ void Texture2D::Unload() {
     mLoaded = false;
 }
 
-void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate) {
+void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size) {
     GM_ASSERT(data);
     GM_ASSERT(size);
 
@@ -228,7 +228,7 @@ void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate
     free(pixels);
 }
 
-void Texture2D::LoadImageFromFile(const std::filesystem::path& path, bool immediate) {
+void Texture2D::LoadImageFromFile(const std::filesystem::path& path) {
     GM_ASSERT(path.empty() == false);
 
     uint64_t fileSize = 0;
@@ -237,7 +237,7 @@ void Texture2D::LoadImageFromFile(const std::filesystem::path& path, bool immedi
 
     if (data == nullptr) return;
 
-    LoadImageFromMemory(data, fileSize, immediate);
+    LoadImageFromMemory(data, fileSize);
     delete data;
 }
 

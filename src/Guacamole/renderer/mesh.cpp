@@ -39,7 +39,7 @@ Mesh::~Mesh() {
     delete mIBO;
 }
 
-void Mesh::Load(bool immediate) {
+void Mesh::Load() {
     LoadFromFile(mFilePath);
 }
 

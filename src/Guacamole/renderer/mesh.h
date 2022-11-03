@@ -42,7 +42,7 @@ public:
     Mesh(const std::filesystem::path& file);
     ~Mesh();
 
-    void Load(bool immediate = false) override;
+    void Load() override;
     void Unload() override;
     void Unmap() override;
 

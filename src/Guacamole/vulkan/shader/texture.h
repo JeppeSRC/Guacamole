@@ -68,11 +68,11 @@ public:
     Texture2D(uint32_t width, uint32_t height, VkFormat format);
     Texture2D(const std::filesystem::path& path);
 
-    void Load(bool immediate) override;
+    void Load() override;
     void Unload() override;
 
-    void LoadImageFromMemory(uint8_t* data, uint64_t size, bool immediate = false);
-    void LoadImageFromFile(const std::filesystem::path& path, bool immediate = false);
+    void LoadImageFromMemory(uint8_t* data, uint64_t size);
+    void LoadImageFromFile(const std::filesystem::path& path);
 private:
     void CreateImageView(VkFormat format);
     

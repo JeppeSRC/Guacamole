@@ -92,7 +92,7 @@ AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
         mQueueMutex.unlock();
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Added To Queue!", asset->GetPathAsString().c_str(), handle);
     } else {
-        asset->Load(true);
+        asset->Load();
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
     }
 
@@ -195,7 +195,7 @@ void AssetManager::LoadAssetFunction(Asset* asset) {
 
     GM_LOG_DEBUG("Loading asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
 
-    asset->Load(false);
+    asset->Load();
 
     if (asset->IsLoaded()) {
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);

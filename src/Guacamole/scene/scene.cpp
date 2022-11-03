@@ -60,7 +60,7 @@ Entity Scene::CreateEntity(const std::string& name) {
 
 
 
-void Scene::Load(bool immediate) {
+void Scene::Load() {
     GM_ASSERT(false);
 }
 
