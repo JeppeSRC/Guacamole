@@ -25,9 +25,11 @@ SOFTWARE.
 
 #include "Guacamole.h"
 
+#include <Guacamole/vulkan/util.h>
+
 VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line) {
     if (res != VK_SUCCESS) {
-        GM_LOG_WARNING("[Vulkan] Error {0} from {1}: ", res, callingFunc);
+        GM_LOG_WARNING("[Vulkan] Error {0} from {1}: ", Guacamole::GetVkResultString(res), callingFunc);
         GM_LOG_WARNING("[Vulkan]\tFile: {0}", file);
         GM_LOG_WARNING("[Vulkan]\tFunction: {0}", func);
         GM_LOG_WARNING("[Vulkan]\tLine: {0}", line);
