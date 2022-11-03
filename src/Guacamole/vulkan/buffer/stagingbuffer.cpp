@@ -27,6 +27,8 @@ SOFTWARE.
 #include "stagingbuffer.h"
 #include "commandpoolmanager.h"
 
+#include <Guacamole/vulkan/util.h>
+
 namespace Guacamole {
 
 StagingBuffer::StagingBuffer(uint64_t size, CommandBuffer* commandBuffer) 
@@ -73,6 +75,12 @@ void* StagingBuffer::Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffs
 void* StagingBuffer::AllocateImage(VkImageLayout oldLayout, VkImageLayout newLayout, Texture* texture, uint32_t mip) {
     uint64_t size = texture->GetImageBufferSize();
     GM_ASSERT_MSG(size + mAllocated <= GetSize(), "Buffer size exceeded");
+
+    uint64_t texelSize = GetFormatSize(texture->GetViewInfo().format);
+    uint64_t mask = ~15ULL;
+    
+    // Align to 16 bytes to make sure it's always a multiple of texel size
+    mAllocated = (mAllocated + texelSize) & mask;
 
     uint8_t* mem = mMemory + mAllocated;
 
