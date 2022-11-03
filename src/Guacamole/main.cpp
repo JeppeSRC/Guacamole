@@ -39,6 +39,7 @@ SOFTWARE.
 #include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
 #include <Guacamole/util/timer.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
 using namespace Guacamole;
 
@@ -96,13 +97,13 @@ private:
 };
 
 int main() {
-    ApplicationSpec appSpec;
+   /* ApplicationSpec appSpec;
 
     TestApp app(appSpec);
 
     app.Run();
 
-    return 0;
+    return 0;*/
     
     spdlog::set_level(spdlog::level::debug);
 
@@ -117,10 +118,12 @@ int main() {
     Guacamole::Window window(spec);
 
     Context::Init(&window);
-    CommandPoolManager::AllocateCopyCommandBuffers(std::this_thread::get_id(), 2);
     AssetManager::Init();
-
     Swapchain::Init(&window);
+    StagingBuffer::AllocateStagingBuffer(std::this_thread::get_id(), 50000000);
+
+    StagingBuffer* staging = StagingBuffer::GetStagingBuffer();
+    staging->Begin(false);
 
     Vertex vertices[]{
         {glm::vec4(-0.5, -0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(0, 0)},
@@ -132,8 +135,10 @@ int main() {
     uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
 
     {
-        Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices), vertices);
-        Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices), indices);
+        Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices));
+        Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices));
+
+
 
         Shader shader;
         shader.AddModule("build/res/shader.vert", true, ShaderStage::Vertex);
@@ -146,16 +151,20 @@ int main() {
 
         for (uint32_t y = 0; y < 100; y++) {
             for (uint32_t x = 0; x < 100; x++) {
-                colors[y * 100 + x] = glm::vec4((float)x / 100.0f, 0, (float)y / 100.0f, 1);
+                colors[y * 100 + x] = glm::vec4(1, 1, 1, 1);//glm::vec4((float)x / 100.0f, 0, (float)y / 100.0f, 1);
             }
         }
 
-        tex.WriteDataImmediate(colors, sizeof(colors));
+        //memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
+        
 
-        AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
+        //AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
         AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("build/res/sheet.png"), false);
         //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
-        AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane(true));
+        AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane());
+
+        memcpy(staging->Allocate(sizeof(vertices), &vbo), vertices, sizeof(vertices));
+        memcpy(staging->Allocate(sizeof(indices), &ibo), indices, sizeof(indices));
 
         BasicRenderpass pass;
 
@@ -177,6 +186,10 @@ int main() {
         VkDescriptorSet setHandle = set->GetHandle();
 
         Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));
+
+        glm::vec4 color(1, 1, 1, 1);
+
+        memcpy(staging->Allocate(sizeof(color), &uniform), &color, sizeof(color));
 
         BasicSampler sampler;
 
@@ -218,15 +231,15 @@ int main() {
         
         vkUpdateDescriptorSets(Context::GetDeviceHandle(), 2, wSet, 0, nullptr);
 
-        void* mem = uniform.Map();
-
-        glm::vec4 color(1, 1, 1, 1);
-
-        memcpy(mem, &color, sizeof(glm::vec4));
-
-        uniform.StageCopy(true);
-
         while (!window.ShouldClose()) {
+            if (!staging->GetCommandBuffer()->IsUsed()) {
+                staging->Reset();
+                staging->Begin();
+            }
+
+            //memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
+
+            EventManager::ProcessEvents(&window);
             auto start = std::chrono::high_resolution_clock::now();
             Swapchain::Begin();
             CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer();
@@ -239,10 +252,9 @@ int main() {
 
             Mesh* mesh = AssetManager::GetAsset<Mesh>(objHandle);
 
+            VkDeviceSize offset = 0;
             VkBuffer vboHandle = mesh->GetVBOHandle();
             VkBuffer iboHandle = mesh->GetIBOHandle();
-
-            VkDeviceSize offset = 0;
             
             vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
             vkCmdBindIndexBuffer(handle, iboHandle, 0, mesh->GetIndexType());
@@ -266,6 +278,7 @@ int main() {
     }
 
     AssetManager::Shutdown();
+    StagingBuffer::FreeBuffers();
     Swapchain::Shutdown();
     CommandPoolManager::Shutdown();
     Context::Shutdown();
