@@ -37,6 +37,8 @@ SOFTWARE.
 #include <time.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
@@ -147,21 +149,22 @@ int main() {
         shader.Compile();
 
         Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
-
+        
         glm::vec4 colors[100 * 100];
 
         for (uint32_t y = 0; y < 100; y++) {
             for (uint32_t x = 0; x < 100; x++) {
-                colors[y * 100 + x] = glm::vec4(1, 1, 1, 1);//glm::vec4((float)x / 100.0f, 0, (float)y / 100.0f, 1);
+                colors[y * 100 + x] = glm::vec4((float)x / 100.0f, 0, (float)y / 100.0f, 1);
             }
         }
 
         memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
 
-        //AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex);
         AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("build/res/sheet.png"), false);
+        AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex, false);
         //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
-        AssetHandle objHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane());
+        AssetHandle planeHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane());
+        AssetHandle quadHandle = AssetManager::AddMemoryAsset(Mesh::GenerateQuad());
 
         BasicRenderpass pass;
 
@@ -183,10 +186,23 @@ int main() {
         VkDescriptorSet setHandle = set->GetHandle();
 
         Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));
+        Buffer uniform2(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(2));
 
+        glm::mat4 matrix(1.0f);
         glm::vec4 color(1, 1, 1, 1);
 
+        struct {
+            glm::mat4 Model;
+            glm::mat4 View;
+            glm::mat4 Projection;
+        } mvp;
+
+        mvp.Model = glm::rotate(glm::mat4(1.0f), -1.5f, glm::vec3(1, 0, 0));
+        mvp.View = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -4));
+        mvp.Projection = glm::perspective(70.0f, 16.0f / 9.0f, 0.0001f, 100.0f);
+
         memcpy(staging->Allocate(sizeof(color), &uniform), &color, sizeof(color));
+        memcpy(staging->Allocate(sizeof(mvp), &uniform2), &mvp, sizeof(mvp));
 
         BasicSampler sampler;
 
@@ -194,9 +210,15 @@ int main() {
 
         bInfo.buffer = uniform.GetHandle();
         bInfo.offset = 0;
-        bInfo.range = uniform.GetSize();
+        bInfo.range = sizeof(color);
 
-        VkWriteDescriptorSet wSet[2];
+        VkDescriptorBufferInfo bInfo2;
+
+        bInfo2.buffer = uniform2.GetHandle();
+        bInfo2.offset = 0;
+        bInfo2.range = sizeof(matrix);
+
+        VkWriteDescriptorSet wSet[3];
 
         wSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wSet[0].pNext = nullptr;
@@ -208,6 +230,17 @@ int main() {
         wSet[0].pImageInfo = nullptr;
         wSet[0].pBufferInfo = &bInfo;
         wSet[0].pTexelBufferView = nullptr;
+
+        wSet[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wSet[2].pNext = nullptr;
+        wSet[2].dstSet = setHandle;
+        wSet[2].dstBinding = 2;
+        wSet[2].dstArrayElement = 0;
+        wSet[2].descriptorCount = 1;
+        wSet[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        wSet[2].pImageInfo = nullptr;
+        wSet[2].pBufferInfo = &bInfo2;
+        wSet[2].pTexelBufferView = nullptr;
 
         VkDescriptorImageInfo iInfo;
 
@@ -226,7 +259,7 @@ int main() {
         wSet[1].pBufferInfo = nullptr;
         wSet[1].pTexelBufferView = nullptr;
         
-        vkUpdateDescriptorSets(Context::GetDeviceHandle(), 2, wSet, 0, nullptr);
+        vkUpdateDescriptorSets(Context::GetDeviceHandle(), 3, wSet, 0, nullptr);
 
         while (!window.ShouldClose()) {
             if (!staging->GetCommandBuffer()->IsUsed()) {
@@ -245,7 +278,7 @@ int main() {
 
             pass.Begin(cmd);
 
-            Mesh* mesh = AssetManager::GetAsset<Mesh>(objHandle);
+            Mesh* mesh = AssetManager::GetAsset<Mesh>(quadHandle);
 
             VkDeviceSize offset = 0;
             VkBuffer vboHandle = mesh->GetVBOHandle();
@@ -255,7 +288,7 @@ int main() {
             vkCmdBindIndexBuffer(handle, iboHandle, 0, mesh->GetIndexType());
             vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);
 
-            vkCmdDrawIndexed(handle, 6, 1, 0, 0, 0);
+            vkCmdDrawIndexed(handle, mesh->GetIndexCount(), 1, 0, 0, 0);
 
             pass.End(cmd);
 
