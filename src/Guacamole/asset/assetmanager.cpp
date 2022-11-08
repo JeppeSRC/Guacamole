@@ -46,8 +46,7 @@ bool AssetManager::mShouldStop;
 std::thread AssetManager::mLoaderThread;
 std::mutex AssetManager::mQueueMutex;
 std::mutex AssetManager::mCommandBufferMutex;
-std::unordered_map<AssetHandle, Asset*> AssetManager::mLoadedAssets;
-std::unordered_map<AssetHandle, Asset*> AssetManager::mMemoryAssets;
+std::unordered_map<AssetHandle, Asset*> AssetManager::mAssets;
 std::vector<AssetManager::FinishedAsset> AssetManager::mFinishedCommandBuffers;
 std::vector<Asset*> AssetManager::mAssetQueue;
 
@@ -62,8 +61,12 @@ void AssetManager::Shutdown() {
     mShouldStop = true;
     mLoaderThread.join();
 
-    for (auto [path, asset] : mLoadedAssets) {
-        delete asset;
+    for (auto [handle, asset] : mAssets) {
+        if (asset->mFlags & AssetFlag_MemoryAsset) {
+            if (asset->mFlags & AssetFlag_OwnsMemory) delete asset;
+        } else {
+            delete asset;
+        }
     }
 }
 
@@ -82,7 +85,7 @@ AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
         return tmp;
     }
 
-    mLoadedAssets[handle] = asset;
+    mAssets[handle] = asset;
     
     GM_LOG_DEBUG("Added asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
 
@@ -99,15 +102,21 @@ AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
     return handle;
 }
 
-AssetHandle AssetManager::AddMemoryAsset(Asset* asset) {
+AssetHandle AssetManager::AddMemoryAsset(Asset* asset, bool takeOwnershipOfMemory) {
     AssetHandle handle = asset->mHandle;
 
-    if ((mMemoryAssets.find(handle) != mMemoryAssets.end()) || mLoadedAssets.find(handle) != mLoadedAssets.end()) {
+    if (mAssets.find(handle) != mAssets.end()) {
         GM_LOG_CRITICAL("Asset \"AssetHandle: 0x{:08x}\" already exist!", handle);
         return AssetHandle::Null();
     }
 
-    mMemoryAssets[handle] = asset;
+    mAssets[handle] = asset;
+
+    asset->mFlags |= AssetFlag_MemoryAsset;
+
+    if (takeOwnershipOfMemory) {
+        asset->mFlags |= AssetFlag_OwnsMemory;
+    }
 
     GM_LOG_DEBUG("Added Asset \"AssetHandle: {:08x}\"", handle);
 
@@ -115,15 +124,13 @@ AssetHandle AssetManager::AddMemoryAsset(Asset* asset) {
 }
 
 Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
-    Asset* asset = nullptr;
-    
-    const auto& itr = mMemoryAssets.find(handle);
+    const auto& itr = mAssets.find(handle);
 
-    if (itr != mMemoryAssets.end()) {
-        asset = itr->second;
-    } else {
-        asset = mLoadedAssets.at(handle);
+    if (itr == mAssets.end()) {
+        return nullptr;
     }
+
+    Asset* asset = itr->second;
 
     while (!asset->IsLoaded()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -133,11 +140,11 @@ Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
 }
 
 bool AssetManager::IsAssetLoaded(AssetHandle handle) {
-    return mLoadedAssets.at(handle)->IsLoaded();
+    return mAssets.at(handle)->IsLoaded();
 }
 
 AssetHandle AssetManager::GetAssetHandleFromPath(const std::filesystem::path& path) {
-    for (auto [handle, asset] : mLoadedAssets) {
+    for (auto [handle, asset] : mAssets) {
         if (asset->mFilePath == path) return handle;
     }
 

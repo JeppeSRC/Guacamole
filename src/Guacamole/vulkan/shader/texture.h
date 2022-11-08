@@ -75,6 +75,7 @@ public:
     void LoadImageFromFile(const std::filesystem::path& path);
 private:
     void CreateImageView(VkFormat format);
+    void LoadImageInternal(uint8_t* data, uint64_t size);
     
 };
 

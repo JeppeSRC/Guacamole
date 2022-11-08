@@ -57,7 +57,7 @@ Mesh::Mesh()
     : Asset("", AssetType::Mesh), mVBO(nullptr), 
       mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {
 
-    mLoaded = true;
+    mFlags |= AssetFlag_Loaded;
 }
 
 void Mesh::CreateVBO(Vertex* data, uint64_t count) {
@@ -121,6 +121,8 @@ Mesh* Mesh::GeneratePlane() {
 
     mesh->CreateVBO(vertices, 4);
     mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16);
+
+    mesh->mFlags |= AssetFlag_Loaded;
 
     return mesh;
 }

@@ -45,12 +45,18 @@ enum class AssetType {
 
 using AssetHandle = UUID;
 
+enum AssetFlags {
+    AssetFlag_Loaded = 0x01, // asset is loaded
+    AssetFlag_MemoryAsset = 0x02, // asset is loaded from memory
+    AssetFlag_OwnsMemory = 0x04 // asset owns and controls memory (asset manager will free the memory)
+};
+
 class Asset {
 protected:
     AssetHandle mHandle;
     std::filesystem::path mFilePath;
-    bool mLoaded;
     AssetType mType;
+    uint32_t mFlags;
 
     Asset(const std::filesystem::path& filePath, AssetType type);
 public:
@@ -63,7 +69,9 @@ public:
     inline AssetHandle GetHandle() const { return mHandle; }
     inline const std::filesystem::path& GetPath() const { return mFilePath; }
     inline std::string GetPathAsString() const { return mFilePath.string(); }
-    inline bool IsLoaded() const { return mLoaded; }
+    inline bool IsLoaded() const { return mFlags & AssetFlag_Loaded; }
+    inline AssetType GetType() const { return mType; }
+    inline uint32_t GetFlags() const { return mFlags; }
 
 private:
     friend class AssetManager;

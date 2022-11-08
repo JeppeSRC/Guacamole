@@ -59,7 +59,7 @@ public:
     static void Init();
     static void Shutdown();
     static AssetHandle AddAsset(Asset* asset, bool asyncLoad);
-    static AssetHandle AddMemoryAsset(Asset* asset);
+    static AssetHandle AddMemoryAsset(Asset* asset, bool takeOwnershipOfMemory = true);
 
     template<typename T = Asset>
     static T* GetAsset(AssetHandle handle) { return (T*)GetAssetInternal(handle); }
@@ -78,8 +78,7 @@ private:
     static std::thread mLoaderThread;
     static std::mutex mQueueMutex;
     static std::mutex mCommandBufferMutex;
-    static std::unordered_map<AssetHandle, Asset*> mLoadedAssets;
-    static std::unordered_map<AssetHandle, Asset*> mMemoryAssets;
+    static std::unordered_map<AssetHandle, Asset*> mAssets;
     static std::vector<FinishedAsset> mFinishedCommandBuffers;
     static std::vector<Asset*> mAssetQueue;
 };

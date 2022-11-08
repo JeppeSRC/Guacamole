@@ -186,7 +186,7 @@ Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) : Texture
     CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
     CreateImageView(format);
 
-    mLoaded = true;
+    mFlags |= AssetFlag_Loaded;
 }
 
 Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
@@ -194,18 +194,41 @@ Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
 }
 
 void Texture2D::Load() {
-    GM_ASSERT_MSG(mLoaded == false, "Texture already loaded");
+    GM_ASSERT_MSG(!(mFlags & AssetFlag_Loaded), "Texture already loaded");
 
     LoadImageFromFile(mFilePath);
-
-    mLoaded = true;
 }
 
 void Texture2D::Unload() {
-    mLoaded = false;
+    mFlags &= ~AssetFlag_Loaded;
 }
 
 void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size) {
+    GM_ASSERT(data);
+    GM_ASSERT(size);
+
+    LoadImageInternal(data, size);
+
+    mFlags |= AssetFlag_Loaded;
+}
+
+void Texture2D::LoadImageFromFile(const std::filesystem::path& path) {
+    GM_ASSERT(path.empty() == false);
+
+    uint64_t fileSize = 0;
+
+    uint8_t* data = Util::ReadFile(path, &fileSize);
+
+    if (data == nullptr) return;
+
+    LoadImageInternal(data, fileSize);
+
+    mFlags |= AssetFlag_Loaded;
+
+    delete data;
+}
+
+void Texture2D::LoadImageInternal(uint8_t* data, uint64_t size) {
     GM_ASSERT(data);
     GM_ASSERT(size);
 
@@ -228,17 +251,5 @@ void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size) {
     free(pixels);
 }
 
-void Texture2D::LoadImageFromFile(const std::filesystem::path& path) {
-    GM_ASSERT(path.empty() == false);
-
-    uint64_t fileSize = 0;
-
-    uint8_t* data = Util::ReadFile(path, &fileSize);
-
-    if (data == nullptr) return;
-
-    LoadImageFromMemory(data, fileSize);
-    delete data;
-}
 
 }
