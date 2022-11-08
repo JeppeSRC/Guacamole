@@ -51,6 +51,7 @@ public:
     inline VkBuffer GetVBOHandle() const { return mVBO->GetHandle(); }
     inline VkBuffer GetIBOHandle() const { return mIBO->GetHandle(); }
     inline VkIndexType GetIndexType() const { return mIndexType; }
+    inline uint32_t GetIndexCount() const { return mIndexCount; }
 
 private:
     Mesh();
@@ -62,6 +63,7 @@ private:
     Buffer* mVBO;
     Buffer* mIBO;
     VkIndexType mIndexType;
+    uint32_t mIndexCount;
 
 public:
     static Mesh* GenerateQuad();

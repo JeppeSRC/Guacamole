@@ -90,6 +90,7 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     }
 
     mIndexType = indexType;
+    mIndexCount = count;
     mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
 
     memcpy(StagingBuffer::GetStagingBuffer()->Allocate(size, mIBO), data, size);    
