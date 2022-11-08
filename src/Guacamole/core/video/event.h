@@ -97,6 +97,16 @@ public:
     uint32_t mDY;
 };
 
+class WindowResizeEvent : public Event {
+public:
+    WindowResizeEvent(uint16_t width, uint16_t height) : mWidth(width), mHeight(height) {}
+
+    inline EventType GetType() const override { return EventType::WindowResize; }
+public:
+    uint16_t mWidth;
+    uint16_t mHeight;
+};
+
 
 class EventListener {
 public:
