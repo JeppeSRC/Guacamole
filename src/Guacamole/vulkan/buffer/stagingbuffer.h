@@ -57,7 +57,7 @@ private:
 public:
     // This is called once pre thread
     static void AllocateStagingBuffer(std::thread::id id, uint64_t size);
-    static void FreeBuffers();
+    static void Shutdown();
     static StagingBuffer* GetStagingBuffer() { return mStagingBuffers[std::this_thread::get_id()]; }
 
 private:

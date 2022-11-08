@@ -122,7 +122,7 @@ void StagingBuffer::AllocateStagingBuffer(std::thread::id id, uint64_t size) {
     mStagingBuffers.emplace(id, new StagingBuffer(size));
 }
 
-void StagingBuffer::FreeBuffers() {
+void StagingBuffer::Shutdown() {
     for (auto [id, buf] : mStagingBuffers) {
         buf->GetCommandBuffer()->WaitForFence();
         delete buf;
