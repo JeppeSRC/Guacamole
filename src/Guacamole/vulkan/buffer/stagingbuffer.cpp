@@ -56,6 +56,7 @@ void StagingBuffer::Begin(bool wait) {
 
 void* StagingBuffer::Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffset) {
     GM_ASSERT_MSG(size + mAllocated <= GetSize(), "Buffer size exceeded");
+    GM_ASSERT_MSG((bufferOffset + size) <= buffer->GetSize(), "Offset + size larager than buffer size");
 
     uint8_t* mem = mMemory + mAllocated;
 
