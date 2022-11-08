@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/core/video/event.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
 #include <chrono>
 
@@ -62,6 +63,8 @@ void Application::Run() {
 
     OnShutdown();
 
+    
+    StagingBuffer::Shutdown();
     AssetManager::Shutdown();
     Swapchain::Shutdown();
     CommandPoolManager::Shutdown();
@@ -85,6 +88,8 @@ void Application::Init(const WindowSpec& windowSpec) {
     EventManager::AddListener(EventType::ButtonPressed, this, &Application::OnEvent);
     EventManager::AddListener(EventType::ButtonReleased, this, &Application::OnEvent);
     EventManager::AddListener(EventType::MouseMoved, this, &Application::OnEvent);
+
+    StagingBuffer::AllocateStagingBuffer(std::this_thread::get_id(), 1000000);
 }
 
 bool Application::OnEvent(Event* e) {
