@@ -49,8 +49,8 @@ public:
 
     inline Buffer* GetVBO() const { return mVBO; }
     inline Buffer* GetIBO() const { return mIBO; }
-    inline VkBuffer GetVBOHandle() const { return mVBO->GetHandle(); }
-    inline VkBuffer GetIBOHandle() const { return mIBO->GetHandle(); }
+    inline const VkBuffer& GetVBOHandle() const { return mVBO->GetHandle(); }
+    inline const VkBuffer& GetIBOHandle() const { return mIBO->GetHandle(); }
     inline VkIndexType GetIndexType() const { return mIndexType; }
     inline uint32_t GetIndexCount() const { return mIndexCount; }
 

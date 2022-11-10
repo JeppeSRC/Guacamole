@@ -29,6 +29,8 @@ SOFTWARE.
 #include <Guacamole/core/video/window.h>
 #include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 
+#define SWAPCHAIN_AUX_SEMAPHORES 8
+
 namespace Guacamole {
 
 class Swapchain {
@@ -62,7 +64,7 @@ private:
     static VkSemaphore mRenderSubmitSemaphore;
     static VkSemaphore mCopySubmitSemaphore;
     static VkSemaphore mAssetSemaphores;
-    static VkSemaphore mAuxSemaphores[8];
+    static VkSemaphore mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
    
     static VkSubmitInfo mCopySubmitInfo;
     static VkSubmitInfo mRenderSubmitInfo;

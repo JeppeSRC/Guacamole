@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Guacamole/vulkan/shader/shader.h>
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/renderer/mesh.h>
+#include <Guacamole/scene/scene.h>
+#include <Guacamole/scene/entity.h>
 #include <time.h>
 #include <glm/glm.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
 #include <Guacamole/util/timer.h>
@@ -60,14 +60,16 @@ public:
         spec.Title = "Dope TItle";
 
         Init(spec);
+
+        mScene = new Scene;
     }
 
     void OnUpdate(float ts) override {
-
+        mScene->OnUpdate(ts);
     }
 
     void OnRender() override {
-
+        mScene->OnRender();
     }
 
     void OnShutdown() override {
@@ -95,17 +97,19 @@ public:
     }
 
 private:
-
+    Scene* mScene;
 };
 
 int main() {
-   /* ApplicationSpec appSpec;
+#if 0
+    ApplicationSpec appSpec;
 
     TestApp app(appSpec);
 
     app.Run();
 
-    return 0;*/
+    return 0;
+#endif
     
     spdlog::set_level(spdlog::level::debug);
 
@@ -122,27 +126,12 @@ int main() {
     Context::Init(&window);
     AssetManager::Init();
     Swapchain::Init(&window);
-    StagingBuffer::AllocateStagingBuffer(std::this_thread::get_id(), 50000000);
+    StagingManager::AllocateCommonStagingBuffer(std::this_thread::get_id(), 50000000);
 
-    StagingBuffer* staging = StagingBuffer::GetStagingBuffer();
-    staging->Begin(false);
-
-    Vertex vertices[]{
-        {glm::vec4(-0.5, -0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(0, 0)},
-        {glm::vec4( 0.5, -0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(1, 0)},
-        {glm::vec4( 0.5,  0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(1, 1)},
-        {glm::vec4(-0.5,  0.5, 0, 1), glm::vec3(0, 0, 1),glm::vec2(0, 1)}
-    };
-
-    uint32_t indices[]{ 0, 1, 2, 2, 3, 0 };
+    StagingBuffer* staging = StagingManager::GetCommonStagingBuffer();
+    staging->Begin();
 
     {
-        Buffer vbo(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices));
-        Buffer ibo(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices));
-
-        memcpy(staging->Allocate(sizeof(vertices), &vbo), vertices, sizeof(vertices));
-        memcpy(staging->Allocate(sizeof(indices), &ibo), indices, sizeof(indices));
-
         Shader shader;
         shader.AddModule("build/res/shader.vert", true, ShaderStage::Vertex);
         shader.AddModule("build/res/shader.frag", true, ShaderStage::Fragment);
@@ -306,7 +295,7 @@ int main() {
     }
 
     AssetManager::Shutdown();
-    StagingBuffer::FreeBuffers();
+    StagingManager::Shutdown();
     Swapchain::Shutdown();
     CommandPoolManager::Shutdown();
     Context::Shutdown();

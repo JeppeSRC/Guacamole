@@ -49,7 +49,6 @@ void Application::Run() {
     auto last = std::chrono::high_resolution_clock::now();
 
     while (!mWindow->ShouldClose()) {
-
         EventManager::ProcessEvents(mWindow);
 
         auto now = std::chrono::high_resolution_clock::now();
@@ -59,6 +58,8 @@ void Application::Run() {
         OnUpdate(delta);
 
         OnRender();
+
+        Swapchain::Present();
     }
 
     OnShutdown();

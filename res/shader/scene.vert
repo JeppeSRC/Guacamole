@@ -12,8 +12,12 @@ layout (binding = 0, set = 0) uniform SceneData {
     mat4 mView;
 } uSceneData;
 
+layout (binding = 0, set = 1) uniform ModelData {
+    mat4 mModel;
+} uModelData;
+
 void main() {
 
-    gl_Position = mProjection * mView * vec4(iPosition, 1);
+    gl_Position = uSceneData.mProjection * uSceneData.mView * uModelData.mModel * vec4(iPosition, 1);
 }
 

@@ -27,9 +27,13 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <glm/glm.hpp>
+#include <glm/matrix.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <Guacamole/core/uuid.h>
 #include <Guacamole/asset/asset.h>
+#include <Guacamole/renderer/camera.h>
 
 namespace Guacamole {
 
@@ -53,6 +57,38 @@ struct TransformComponent {
     glm::vec3 mTranslation;
     glm::vec3 mRotation;
     glm::vec3 mScale;
+
+    glm::mat4 GetTransform() const {
+        return glm::translate(glm::mat4(1.0f), mTranslation) *
+               glm::toMat4(glm::quat(mRotation)) *
+               glm::scale(glm::mat4(1.0f), mScale);
+    }
+};
+
+struct CameraComponent {
+    Camera mCamera;
+    
+    bool mPrimary;
+
+    float mFov;
+    float mAspect;
+    float mNear;
+    float mFar;
+
+    void GenerateProjection() {
+        mCamera.SetProjection(glm::perspective(mFov, mAspect, mNear, mFar));
+    }
+
+    void SetView(const TransformComponent& transform) {
+        glm::mat4 view = glm::translate(glm::mat4(1.0f), -transform.mTranslation) *
+                         glm::toMat4(glm::quat(transform.mRotation)) * 
+                         glm::scale(glm::mat4(1.0f), transform.mScale);
+                         
+    }
+};
+
+struct MaterialComponent {
+    AssetHandle mMaterial;
 };
 
 }

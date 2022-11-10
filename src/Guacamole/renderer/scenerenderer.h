@@ -31,34 +31,60 @@ SOFTWARE.
 #include "camera.h"
 
 #include <Guacamole/vulkan/shader/descriptor.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/vulkan/buffer/buffer.h>
 
 namespace Guacamole {
 
-class SceneRenderer {
-public:
+
 
 struct SceneUniformData {
-    glm::mat4 mProjection;
-    glm::mat4 mView;
+    SceneUniformData() : 
+        mUniformBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                        sizeof(Data), 
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {}
+
+    Buffer mUniformBuffer;
+    DescriptorSet* mSceneSet;
+
+    struct Data {
+        glm::mat4 mProjection;
+        glm::mat4 mView;
+    } *mData;
 };
 
+struct SceneMaterialData {
+    glm::vec4 mColor;
+};
+
+struct SceneModelData {
+    glm::mat4 mModelMatrix;
+};
+
+class Scene;
+class SceneRenderer {
 public:
     SceneRenderer(uint32_t width, uint32_t height);
     ~SceneRenderer();
 
+    void Begin(Scene* scene);
     void BeginScene(const Camera& camera);
     void EndScene();
+    void End();
 
-    void SubmitMesh(const Mesh* mesh, const DescriptorSet* set);
+    void SubmitMesh(const Mesh* mesh, const DescriptorSet* modelSet, const DescriptorSet* materialSet);
 
+    inline StagingBuffer* GetStagingBuffer() { return &mStagingBuffer; }
 private:
     Shader* mShader;
     PipelineLayout* mPipelineLayout;
     Pipeline* mPipeline;
     Renderpass* mRenderpass;
 
+    StagingBuffer mStagingBuffer;
     SceneUniformData mSceneUniformData;
-    DescriptorSet* mSceneSet;
+
+    Scene* mScene;
 };
 
 }

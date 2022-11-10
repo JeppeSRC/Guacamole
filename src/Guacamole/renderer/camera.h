@@ -34,14 +34,15 @@ namespace Guacamole {
 
 class Camera {
 public:
-    Camera(const glm::mat4& projection = glm::mat4(1.0f));
+    Camera();
     ~Camera();
 
     inline const glm::mat4& GetProjection() const { return mProjectionMatrix; }
     inline const glm::mat4& GetView() const { return mViewMatrix; }
-    inline void SetProjection(const glm::mat4& projection) {mProjectionMatrix = projection; }
+    inline void SetProjection(const glm::mat4& projection) { mProjectionMatrix = projection; }
+    inline void SetView(const glm::mat4& view) { mViewMatrix = view; }
 
-private:
+protected:
     glm::mat4 mProjectionMatrix;
     glm::mat4 mViewMatrix;
 

@@ -29,7 +29,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Camera::Camera(const glm::mat4& projection) : mProjectionMatrix(projection), mViewMatrix(glm::mat4(1.0f)) {
+Camera::Camera() : mProjectionMatrix(1.0f), mViewMatrix(1.0f) {
     
 }
 

@@ -60,7 +60,7 @@ public:
     DescriptorSet(VkDescriptorSet Handle, DescriptorSetLayout* layout);
     ~DescriptorSet();
 
-    inline VkDescriptorSet GetHandle() const { return mDescriptorSetHandle; }
+    inline const VkDescriptorSet& GetHandle() const { return mDescriptorSetHandle; }
     inline DescriptorSetLayout* GetLayout() const { return mLayout; }
 private:
     VkDescriptorSet mDescriptorSetHandle;

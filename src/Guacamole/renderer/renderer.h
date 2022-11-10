@@ -42,6 +42,7 @@ public:
     
     static void BindPipeline(const CommandBuffer* cmdBuffer, const Pipeline* pipeline);
     static void BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass);
+    static void EndRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass);
 
 
 };

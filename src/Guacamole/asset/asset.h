@@ -40,7 +40,8 @@ enum class AssetType {
     FragmentShader,
     Scene,
     Texture,
-    Audio
+    Audio,
+    Material
 };
 
 using AssetHandle = UUID;

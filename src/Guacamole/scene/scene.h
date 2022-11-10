@@ -27,6 +27,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <Guacamole/asset/asset.h>
+#include <Guacamole/renderer/scenerenderer.h>
 
 namespace Guacamole {
 
@@ -36,8 +37,10 @@ public:
     Scene(const std::filesystem::path& path = "");
     ~Scene();
 
+    void BeginScene();
     void OnUpdate(float ts);
     void OnRender();
+    void EndScene();
 
     Entity CreateEntity(const std::string& name = "");
 
@@ -46,6 +49,7 @@ public:
 
 protected:
     entt::registry mRegistry;
+    SceneRenderer* mRenderer;
 
     friend class Entity;
 };

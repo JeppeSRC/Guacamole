@@ -45,7 +45,7 @@ public:
     void* Map();
     void Unmap();
 
-    inline VkBuffer GetHandle() const { return mBufferHandle; }
+    inline const VkBuffer& GetHandle() const { return mBufferHandle; }
     inline uint64_t GetSize() const { return mBufferSize; }
 
 public:

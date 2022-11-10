@@ -30,6 +30,8 @@ SOFTWARE.
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
+
+
 namespace Guacamole {
 
 VkSwapchainCreateInfoKHR Swapchain::msInfo;
@@ -40,7 +42,7 @@ uint32_t Swapchain::mCurrentImageIndex = ~0;
 VkSemaphore Swapchain::mImageSemaphore;
 VkSemaphore Swapchain::mRenderSubmitSemaphore;
 VkSemaphore Swapchain::mCopySubmitSemaphore;
-VkSemaphore Swapchain::mAuxSemaphores[8];
+VkSemaphore Swapchain::mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
 VkSubmitInfo Swapchain::mCopySubmitInfo;
 VkSubmitInfo Swapchain::mRenderSubmitInfo;
 VkPresentInfoKHR Swapchain::mPresentInfo;
@@ -154,7 +156,7 @@ void Swapchain::Init(Window* window) {
     VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mRenderSubmitSemaphore));
     VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mCopySubmitSemaphore));
 
-    for (uint32_t i = 0; i < 8; i++) {
+    for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
         VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mAuxSemaphores[i]));
     }
 
@@ -194,7 +196,7 @@ void Swapchain::Shutdown() {
     vkDestroySemaphore(Context::GetDeviceHandle(), mRenderSubmitSemaphore, nullptr);
     vkDestroySemaphore(Context::GetDeviceHandle(), mCopySubmitSemaphore, nullptr);
 
-    for (uint32_t i = 0; i < 8; i++) {
+    for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
         vkDestroySemaphore(Context::GetDeviceHandle(), mAuxSemaphores[i], nullptr);
     }
 
@@ -227,6 +229,7 @@ void Swapchain::Present() {
     uint32_t semaphoreIndex = 0;
     
     for (AssetManager::FinishedAsset& asset : finishedAssets) {
+        GM_ASSERT(SWAPCHAIN_AUX_SEMAPHORES > semaphoreIndex);
         VkSubmitInfo info;
 
         info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -236,8 +239,6 @@ void Swapchain::Present() {
         info.pWaitDstStageMask = nullptr;
         info.commandBufferCount = 1;
         info.pCommandBuffers = &asset.mCommandBuffer->GetHandle();
-        info.signalSemaphoreCount = 0;
-        info.pSignalSemaphores = nullptr;
         info.signalSemaphoreCount = 1;
         info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
 
@@ -248,11 +249,34 @@ void Swapchain::Present() {
         VK(vkQueueSubmit(mGraphicsQueue, 1, &info, asset.mCommandBuffer->GetFence()));
     }
 
-    for (AssetManager::FinishedAsset& asset : finishedAssets) {
-        asset.mAsset->Unmap();
+    std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
+
+    for (StagingBufferSubmitInfo& buf : stagingBuffers) {
+        GM_ASSERT(SWAPCHAIN_AUX_SEMAPHORES > semaphoreIndex);
+        VkSubmitInfo info;
+
+        CommandBuffer* bufCmd = buf.mStagingBuffer->GetCommandBuffer();
+        bufCmd->End();
+
+        info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        info.pNext = nullptr;
+        info.waitSemaphoreCount = 0;
+        info.pWaitSemaphores = nullptr;
+        info.pWaitDstStageMask = nullptr;
+        info.commandBufferCount = 1;
+        info.pCommandBuffers = &bufCmd->GetHandle();
+        info.signalSemaphoreCount = 1;
+        info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
+
+        waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
+        renderStageFlags.push_back(buf.mStageFlags);
+
+        VK(vkResetFences(Context::GetDeviceHandle(), 1, &bufCmd->GetFence()));
+        VK(vkQueueSubmit(mGraphicsQueue, 1, &info, bufCmd->GetFence()));
     }
 
-    CommandBuffer* cmd = StagingBuffer::GetStagingBuffer()->GetCommandBuffer();
+    // Fix when more threads are used
+    CommandBuffer* cmd = StagingManager::GetCommonStagingBuffer()->GetCommandBuffer();
 
     if (cmd->IsUsed()) {
         cmd->End();

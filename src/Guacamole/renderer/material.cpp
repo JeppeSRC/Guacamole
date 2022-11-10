@@ -24,39 +24,10 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "renderer.h"
-
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
-#include <Guacamole/vulkan/renderpass.h>
+#include "material.h"
 
 namespace Guacamole {
 
-void Renderer::Init() {
-
-}
-
-void Renderer::Shutdown() {
-
-}
-
-void Renderer::BeginFrame() {
-
-}
-
-void Renderer::EndFrame() {
-
-}
-
-void Renderer::BindPipeline(const CommandBuffer* cmdBuffer, const Pipeline* pipeline) {
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
-}
-
-void Renderer::BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
-    renderpass->Begin(cmdBuffer);
-}
-
-void Renderer::EndRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
-    renderpass->End(cmdBuffer);
-}
+Material::Material(glm::vec4 albedo, AssetHandle texture) : Asset("", AssetType::Material), mAlbedo(albedo), mTextureHandle(texture) {}
 
 }

@@ -22,41 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <Guacamole.h>
 
-#include "renderer.h"
+#include <glm/glm.hpp>
 
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
-#include <Guacamole/vulkan/renderpass.h>
+#include <Guacamole/asset/asset.h>
 
 namespace Guacamole {
 
-void Renderer::Init() {
+class Material : public Asset {
+public:
+    Material(glm::vec4 albedo, AssetHandle texture = AssetHandle::Null());
 
-}
-
-void Renderer::Shutdown() {
-
-}
-
-void Renderer::BeginFrame() {
-
-}
-
-void Renderer::EndFrame() {
-
-}
-
-void Renderer::BindPipeline(const CommandBuffer* cmdBuffer, const Pipeline* pipeline) {
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
-}
-
-void Renderer::BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
-    renderpass->Begin(cmdBuffer);
-}
-
-void Renderer::EndRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
-    renderpass->End(cmdBuffer);
-}
+    AssetHandle mTextureHandle;
+    glm::vec4 mAlbedo;
+};
 
 }

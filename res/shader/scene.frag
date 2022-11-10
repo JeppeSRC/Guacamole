@@ -5,8 +5,12 @@ layout (location = 1) in vec2 iUV;
 
 layout (location = 0) out vec4 oColor;
 
-layout (binding = 0, set = 1) uniform sampler2D uTexture;
+layout (binding = 0, set = 2) uniform sampler2D uTexture;
+
+layout (binding = 1, set = 2) uniform MaterialData {
+    vec4 mColor;
+} uMaterialData;
 
 void main() {
-    oColor = texture(uTexture, iUV);
+    oColor = uMaterialData.mColor * texture(uTexture, iUV);
 }
