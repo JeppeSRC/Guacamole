@@ -62,7 +62,7 @@ void Mesh::CreateVBO(Vertex* data, uint64_t count) {
 
     mVBO = new Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
 
-    memcpy(StagingBuffer::GetStagingBuffer()->Allocate(size, mVBO), data, size);
+    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mVBO), data, size);
 }
 
 void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
@@ -88,7 +88,7 @@ void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     mIndexCount = count;
     mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
 
-    memcpy(StagingBuffer::GetStagingBuffer()->Allocate(size, mIBO), data, size);    
+    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mIBO), data, size);    
 }
 
 

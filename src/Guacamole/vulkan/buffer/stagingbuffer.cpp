@@ -49,8 +49,8 @@ StagingBuffer::~StagingBuffer() {
     mBuffer.Unmap();
 }
 
-void StagingBuffer::Begin(bool wait) {
-    if (wait) mCommandBuffer->WaitForFence();
+void StagingBuffer::Begin() {
+    mCommandBuffer->WaitForFence();
     mCommandBuffer->Begin(true);
 }
 
@@ -112,23 +112,44 @@ void StagingBuffer::Reset() {
     mAllocated = 0;
 }
 
-std::unordered_map<std::thread::id, StagingBuffer*> StagingBuffer::mStagingBuffers;
+std::unordered_map<std::thread::id, StagingBuffer*> StagingManager::mCommonStagingBuffers;
+std::vector<StagingBufferSubmitInfo> StagingManager::mSubmittedStagingBuffers;
 
-void StagingBuffer::AllocateStagingBuffer(std::thread::id id, uint64_t size) {
-    auto it = mStagingBuffers.find(id);
+void StagingManager::AllocateCommonStagingBuffer(std::thread::id id, uint64_t size) {
+    auto it = mCommonStagingBuffers.find(id);
 
-    GM_ASSERT_MSG(it == mStagingBuffers.end(), "This may onle be done once per thread");
+    GM_ASSERT_MSG(it == mCommonStagingBuffers.end(), "This may onle be done once per thread");
 
-    mStagingBuffers.emplace(id, new StagingBuffer(size));
+    mCommonStagingBuffers.emplace(id, new StagingBuffer(size));
 }
 
-void StagingBuffer::Shutdown() {
-    for (auto [id, buf] : mStagingBuffers) {
+void StagingManager::Shutdown() {
+    for (auto [id, buf] : mCommonStagingBuffers) {
         buf->GetCommandBuffer()->WaitForFence();
         delete buf;
     }
 
-    mStagingBuffers.clear();
+    mCommonStagingBuffers.clear();
+}
+
+void StagingManager::SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags) {
+    GM_ASSERT(buffer->IsUsed());
+    GM_ASSERT(stageFlags != 0);
+
+    StagingBufferSubmitInfo& buf = mSubmittedStagingBuffers.emplace_back();
+
+    buf.mStagingBuffer = buffer;
+    buf.mStageFlags = stageFlags;
+
+    buffer->Reset();
+}
+
+std::vector<StagingBufferSubmitInfo> StagingManager::GetSubmittedStagingBuffers(bool clear) {
+    std::vector<StagingBufferSubmitInfo> ret = mSubmittedStagingBuffers;
+
+    if (clear) mSubmittedStagingBuffers.clear();
+
+    return ret;
 }
 
 }

@@ -39,11 +39,14 @@ public:
     StagingBuffer(uint64_t mSize, CommandBuffer* commandBuffer = nullptr);
     ~StagingBuffer();
 
-    void Begin(bool waitFence = true);
+    void Begin();
     void* Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffset = 0);
     void* AllocateImage(VkImageLayout oldLayout, VkImageLayout newLayout, Texture* texture, uint32_t mip = 0);
     void Reset();
 
+    inline void SetCommandBuffer(CommandBuffer* cmd) { mCommandBuffer = cmd; }
+
+    inline bool IsUsed() const { return mAllocated != 0; }
     inline uint64_t GetAllocated() const { return mAllocated; }
     inline const Buffer* GetBuffer() const { return &mBuffer; }
     inline uint64_t GetSize() const { return mBuffer.GetSize(); }
@@ -54,15 +57,29 @@ private:
     uint8_t* mMemory;
     CommandBuffer* mCommandBuffer;
 
+};
+
+struct StagingBufferSubmitInfo {
+    StagingBuffer* mStagingBuffer;
+    VkPipelineStageFlags mStageFlags;
+};
+
+class StagingManager {
 public:
-    // This is called once pre thread
-    static void AllocateStagingBuffer(std::thread::id id, uint64_t size);
+    // Called once per thread if the common buffer is used on that thread
+    static void AllocateCommonStagingBuffer(std::thread::id id, uint64_t size);
     static void Shutdown();
-    static StagingBuffer* GetStagingBuffer() { return mStagingBuffers[std::this_thread::get_id()]; }
+
+    static void SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags);
+    static std::vector<StagingBufferSubmitInfo> GetSubmittedStagingBuffers(bool clear = true);
+    static StagingBuffer* GetCommonStagingBuffer() { return mCommonStagingBuffers[std::this_thread::get_id()]; }
+
 
 private:
-    static std::unordered_map<std::thread::id, StagingBuffer*> mStagingBuffers;
+    static std::unordered_map<std::thread::id, StagingBuffer*> mCommonStagingBuffers;
+    static std::vector<StagingBufferSubmitInfo> mSubmittedStagingBuffers;
 
+    
 };
 
 }
