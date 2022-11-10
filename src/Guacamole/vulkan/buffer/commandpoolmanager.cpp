@@ -65,7 +65,7 @@ CommandBuffer* CommandPoolManager::GetRenderCommandBuffer() {
     return mRenderCommandPool.mCommandBuffers[imageIndex];
 }
 
-CommandBuffer* CommandPoolManager::GetCopyCommandBuffer(uint32_t index) {
+CommandBuffer* CommandPoolManager::GetAuxCommandBuffer(uint32_t index) {
     std::thread::id threadId = std::this_thread::get_id();
 
     return mAuxCommandPools[threadId].mCommandBuffers[index];

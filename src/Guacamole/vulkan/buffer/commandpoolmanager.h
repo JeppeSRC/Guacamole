@@ -38,7 +38,7 @@ public:
     static CommandBuffer* AllocateAuxCommandBuffer(std::thread::id threadId, bool primary);
 
     static CommandBuffer* GetRenderCommandBuffer();
-    static CommandBuffer* GetCopyCommandBuffer(uint32_t index = 0);
+    static CommandBuffer* GetAuxCommandBuffer(uint32_t index = 0);
     
     static void WaitForRenderFences();
 
