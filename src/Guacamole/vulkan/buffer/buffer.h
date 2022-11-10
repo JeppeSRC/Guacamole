@@ -39,6 +39,7 @@ protected:
 
 public:
     Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    Buffer(Buffer&& other);
     virtual ~Buffer();
 
     void* Map();

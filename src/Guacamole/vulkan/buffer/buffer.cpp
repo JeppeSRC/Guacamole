@@ -61,6 +61,14 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags fl
     VK(vkBindBufferMemory(Context::GetDeviceHandle(), mBufferHandle, mBufferMemory, 0));
 }
 
+Buffer::Buffer(Buffer&& other) : 
+    mBufferHandle(other.mBufferHandle), mBufferMemory(other.mBufferMemory), mBufferFlags(other.mBufferFlags),
+    mBufferSize(other.mBufferSize), mMappedMemory(other.mMappedMemory) 
+{
+    other.mBufferHandle = VK_NULL_HANDLE;
+    other.mMappedMemory = VK_NULL_HANDLE;
+}
+
 Buffer::~Buffer() {
     vkFreeMemory(Context::GetDeviceHandle(), mBufferMemory, nullptr);
     vkDestroyBuffer(Context::GetDeviceHandle(), mBufferHandle, nullptr);
