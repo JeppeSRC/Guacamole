@@ -37,4 +37,12 @@ Asset::~Asset() {
   
 }
 
+void Asset::Load() {
+    GM_ASSERT_MSG(false, "Asset::Load not implemented");
+} 
+
+void Asset::Unload() {
+    GM_ASSERT_MSG(false, "Asset::Unload not implemented");
+}
+
 }

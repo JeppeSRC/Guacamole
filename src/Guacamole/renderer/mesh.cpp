@@ -48,11 +48,6 @@ void Mesh::Unload() {
     delete mIBO;
 }
 
-void Mesh::Unmap() {
-    mVBO->Unmap();
-    mIBO->Unmap();
-}
-
 Mesh::Mesh() 
     : Asset("", AssetType::Mesh), mVBO(nullptr), 
       mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {

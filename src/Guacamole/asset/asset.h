@@ -62,9 +62,8 @@ protected:
 public:
     virtual ~Asset();
 
-    virtual void Load() = 0;
-    virtual void Unload() = 0;
-    virtual void Unmap() {}
+    virtual void Load();
+    virtual void Unload();
 
     inline AssetHandle GetHandle() const { return mHandle; }
     inline const std::filesystem::path& GetPath() const { return mFilePath; }

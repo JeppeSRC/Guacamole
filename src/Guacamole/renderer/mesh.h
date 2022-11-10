@@ -46,7 +46,6 @@ public:
 
     void Load() override;
     void Unload() override;
-    void Unmap() override;
 
     inline Buffer* GetVBO() const { return mVBO; }
     inline Buffer* GetIBO() const { return mIBO; }
