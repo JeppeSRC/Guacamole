@@ -234,7 +234,7 @@ std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std:
         }
     }
 
-    return result;;
+    return result;
 }
 
 DescriptorSetLayout* Shader::GetDescriptorSetLayout(uint32_t set) const {
