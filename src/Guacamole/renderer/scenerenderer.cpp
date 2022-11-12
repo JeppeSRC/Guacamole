@@ -39,7 +39,7 @@ SceneRenderer::SceneRenderer(uint32_t width, uint32_t height) : mStagingBuffer(1
     mShader->AddModule("res/shader/scene.frag", true, ShaderStage::Fragment);
     mShader->Compile();
 
-    mPipelineLayout = new PipelineLayout(mShader->GetDescriptorSetLayouts());
+    mPipelineLayout = new PipelineLayout(mShader->GetDescriptorSetLayouts(), mShader->GetPushConstants());
 
     mRenderpass = new BasicRenderpass;
 

@@ -29,7 +29,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/context.h>
 
 namespace Guacamole {
-PipelineLayout::PipelineLayout(DescriptorSetLayout* layout) {
+PipelineLayout::PipelineLayout(DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants) {
     VkDescriptorSetLayout l = layout->GetHandle();
 
     VkPipelineLayoutCreateInfo lInfo;
@@ -39,13 +39,13 @@ PipelineLayout::PipelineLayout(DescriptorSetLayout* layout) {
     lInfo.flags = 0;
     lInfo.setLayoutCount = 1;
     lInfo.pSetLayouts = &l;
-    lInfo.pushConstantRangeCount = 0;
-    lInfo.pPushConstantRanges = nullptr;
+    lInfo.pushConstantRangeCount = (uint32_t)pushConstants.size();
+    lInfo.pPushConstantRanges = pushConstants.data();
 
     VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
 
-PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts) : mLayoutHandle(VK_NULL_HANDLE) {
+PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants) : mLayoutHandle(VK_NULL_HANDLE) {
     VkPipelineLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -60,8 +60,8 @@ PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts)
     }
 
     lInfo.pSetLayouts = tmp.data();
-    lInfo.pushConstantRangeCount = 0;
-    lInfo.pPushConstantRanges = nullptr;
+    lInfo.pushConstantRangeCount = (uint32_t)pushConstants.size();
+    lInfo.pPushConstantRanges = pushConstants.data();nullptr;
 
     VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
 }

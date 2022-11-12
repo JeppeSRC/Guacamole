@@ -32,8 +32,8 @@ namespace Guacamole {
 
 class PipelineLayout {
 public:
-    PipelineLayout(DescriptorSetLayout* layout);
-    PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts);
+    PipelineLayout(DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants);
+    PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants);
     ~PipelineLayout();
 
     inline VkPipelineLayout GetHandle() const { return mLayoutHandle; }

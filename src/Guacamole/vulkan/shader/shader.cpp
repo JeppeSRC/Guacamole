@@ -329,6 +329,13 @@ void Shader::ReflectStages() {
 
             mSampledImages.emplace_back(compiler.get_name(image.id), shader.mStage, set, binding, count, type.image);
         }
+
+        for (auto& push : resources.push_constant_buffers) {
+            spirv_cross::SPIRType type = compiler.get_type(push.type_id);
+            uint32_t size = compiler.get_declared_struct_size(type);
+
+            mPushConstants.push_back({ShaderStageToVkShaderStage(shader.mStage), 0, size});
+        }
     }
 }
 
@@ -381,7 +388,6 @@ void Shader::CreateDescriptorSetLayouts() {
     if (sets.empty()) {
         mDescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
     }
-
 
     uint32_t index = 0;
     for (auto& [set, binding] : sets) {

@@ -157,7 +157,7 @@ int main() {
 
         BasicRenderpass pass;
 
-        PipelineLayout pipelineLayout(shader.GetDescriptorSetLayout(0));
+        PipelineLayout pipelineLayout(shader.GetDescriptorSetLayout(0), shader.GetPushConstants());
 
         GraphicsPipelineInfo gInfo;
 
