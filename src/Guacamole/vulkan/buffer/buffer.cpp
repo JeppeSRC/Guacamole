@@ -31,15 +31,13 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags) : 
-    mBufferSize(size), mMappedMemory(nullptr), mBufferFlags(flags) {
-
+void Buffer::Create(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags) {
     VkBufferCreateInfo bInfo;
 
     bInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bInfo.pNext = nullptr;
     bInfo.flags = 0;
-    bInfo.size = size;
+    bInfo.size = mBufferSize = size;
     bInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     bInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bInfo.queueFamilyIndexCount = 0;
@@ -59,6 +57,17 @@ Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags fl
 
     VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mBufferMemory));
     VK(vkBindBufferMemory(Context::GetDeviceHandle(), mBufferHandle, mBufferMemory, 0));
+}
+
+Buffer::Buffer(VkMemoryPropertyFlags flags) : mBufferSize(0), mMappedMemory(nullptr), mBufferFlags(flags) {
+
+}
+
+Buffer::Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags) : 
+    mBufferSize(size), mMappedMemory(nullptr), mBufferFlags(flags) {
+
+    Create(usage, size, flags);
+    
 }
 
 Buffer::Buffer(Buffer&& other) : 
@@ -96,6 +105,26 @@ uint32_t Buffer::GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, ui
     GM_ASSERT(false)
 
     return ~0;
+}
+
+IndexBuffer::IndexBuffer(uint32_t count, VkIndexType type) : Buffer(), mCount(count), mIndexType(type) {
+    uint64_t size = count;
+
+    switch (type) {
+        case VK_INDEX_TYPE_UINT32:
+            size *= 4;
+            break;
+        case VK_INDEX_TYPE_UINT16:
+            size *= 2;
+            break;
+        case VK_INDEX_TYPE_UINT8_EXT:
+            GM_VERIFY_MSG(false, "Unsupported VkIndexType");
+            break;
+        default:
+            GM_VERIFY_MSG(false, "Unsupported VkIndexType");
+    }
+
+    Create(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size, mBufferFlags);
 }
 
 }

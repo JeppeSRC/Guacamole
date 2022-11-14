@@ -36,8 +36,11 @@ protected:
 
     uint64_t mBufferSize;
     void* mMappedMemory;
+    
+    void Create(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 public:
+    Buffer(VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Buffer(Buffer&& other);
     virtual ~Buffer();
@@ -52,6 +55,25 @@ public:
     static uint32_t GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, uint32_t type, VkMemoryPropertyFlags flags);
 };
 
+class UniformBuffer : public Buffer {
+public:
+    UniformBuffer(uint64_t size) : Buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, size) {}
+};
 
+class IndexBuffer : public Buffer {
+public:
+    IndexBuffer(uint32_t count, VkIndexType type);
+
+    inline uint32_t GetCount() const { return mCount; }
+    inline VkIndexType GetIndexType() const { return mIndexType; }
+private:
+    uint32_t mCount;
+    VkIndexType mIndexType;
+};
+
+class VertexBuffer : public Buffer {
+public:
+    VertexBuffer(uint64_t size) : Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size) {}
+};
 
 }

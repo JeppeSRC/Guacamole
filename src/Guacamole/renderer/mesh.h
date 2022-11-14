@@ -47,12 +47,12 @@ public:
     void Load() override;
     void Unload() override;
 
-    inline Buffer* GetVBO() const { return mVBO; }
-    inline Buffer* GetIBO() const { return mIBO; }
+    inline VertexBuffer* GetVBO() const { return mVBO; }
+    inline IndexBuffer* GetIBO() const { return mIBO; }
     inline const VkBuffer& GetVBOHandle() const { return mVBO->GetHandle(); }
     inline const VkBuffer& GetIBOHandle() const { return mIBO->GetHandle(); }
-    inline VkIndexType GetIndexType() const { return mIndexType; }
-    inline uint32_t GetIndexCount() const { return mIndexCount; }
+    inline VkIndexType GetIndexType() const { return mIBO->GetIndexType(); }
+    inline uint32_t GetIndexCount() const { return mIBO->GetCount(); }
 
 private:
     Mesh();
@@ -61,10 +61,8 @@ private:
     void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
     void LoadFromFile(const std::filesystem::path& path);
 
-    Buffer* mVBO;
-    Buffer* mIBO;
-    VkIndexType mIndexType;
-    uint32_t mIndexCount;
+    VertexBuffer* mVBO;
+    IndexBuffer* mIBO;
 
 public:
     static Mesh* GenerateQuad();

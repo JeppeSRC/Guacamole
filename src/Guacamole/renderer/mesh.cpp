@@ -32,7 +32,7 @@ namespace Guacamole {
 
 Mesh::Mesh(const std::filesystem::path& file) 
     : Asset(file, AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {}
+      mIBO(nullptr) {}
 
 Mesh::~Mesh() {
     delete mVBO;
@@ -50,7 +50,7 @@ void Mesh::Unload() {
 
 Mesh::Mesh() 
     : Asset("", AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr), mIndexType(VK_INDEX_TYPE_NONE_KHR) {
+      mIBO(nullptr) {
 
     mFlags |= AssetFlag_Loaded;
 }
@@ -60,7 +60,7 @@ void Mesh::CreateVBO(Vertex* data, uint64_t count) {
 
     uint64_t size = count * sizeof(Vertex);
 
-    mVBO = new Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size);
+    mVBO = new VertexBuffer(size);
 
     memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mVBO), data, size);
 }
@@ -68,27 +68,11 @@ void Mesh::CreateVBO(Vertex* data, uint64_t count) {
 void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     GM_ASSERT(mIBO == nullptr);
 
-    uint64_t size = count;
+    mIBO = new IndexBuffer(count, indexType);
 
-    switch (indexType) {
-        case VK_INDEX_TYPE_UINT32:
-            size *= 4;
-            break;
-        case VK_INDEX_TYPE_UINT16:
-            size *= 2;
-            break;
-        case VK_INDEX_TYPE_UINT8_EXT:
-            GM_VERIFY_MSG(false, "Unsupported VkIndexType");
-            break;
-        default:
-            GM_VERIFY_MSG(false, "Unsupported VkIndexType");
-    }
+    uint64_t size = mIBO->GetSize();
 
-    mIndexType = indexType;
-    mIndexCount = count;
-    mIBO = new Buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, size);
-
-    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mIBO), data, size);    
+    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mIBO), data, size);
 }
 
 
