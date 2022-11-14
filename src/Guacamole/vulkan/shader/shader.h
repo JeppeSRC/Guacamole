@@ -30,7 +30,6 @@ SOFTWARE.
 
 namespace Guacamole {
 
-
 class Shader {
 public:
     class ShaderModule {
@@ -70,8 +69,8 @@ public:
     DescriptorSetLayout* GetDescriptorSetLayout(uint32_t set) const;
     const std::vector<VkPushConstantRange>& GetPushConstants() const { return mPushConstants; }
     std::vector<DescriptorSetLayout*> GetDescriptorSetLayouts() const;
-    std::vector<DescriptorSet*> AllocateDescriptorSets(uint32_t set, uint32_t num);
-    DescriptorSet* AllocateDescriptorSet(uint32_t set);
+    std::vector<DescriptorSet> AllocateDescriptorSets(uint32_t set, uint32_t num);
+    DescriptorSet AllocateDescriptorSet(uint32_t set);
 
 private:
     std::vector<ShaderModule> mModules;

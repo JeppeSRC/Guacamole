@@ -260,7 +260,7 @@ std::vector<DescriptorSetLayout*> Shader::GetDescriptorSetLayouts() const {
     return ret;
 }
 
-std::vector<DescriptorSet*> Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
+std::vector<DescriptorSet> Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
     DescriptorPool* pool = new DescriptorPool(num);
 
     mDescriptorPools.push_back(pool);
@@ -268,7 +268,7 @@ std::vector<DescriptorSet*> Shader::AllocateDescriptorSets(uint32_t set, uint32_
     return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
 }
 
-DescriptorSet* Shader::AllocateDescriptorSet(uint32_t set) {
+DescriptorSet Shader::AllocateDescriptorSet(uint32_t set) {
     DescriptorPool* pool = new DescriptorPool(1);
 
     mDescriptorPools.push_back(pool);
@@ -288,7 +288,7 @@ void Shader::ReflectStages() {
 
             mStageInputs.emplace_back(location, type);
         }
-
+        
         for (auto& uniform : resources.uniform_buffers) {
             uint32_t set = compiler.get_decoration(uniform.id, spv::DecorationDescriptorSet);
             uint32_t binding = compiler.get_decoration(uniform.id, spv::DecorationBinding);
@@ -302,13 +302,14 @@ void Shader::ReflectStages() {
 
             uint32_t index = 0;
             uint32_t offset = 0;
-            for (spirv_cross::TypeID id : type.member_types) {
+            for (uint64_t i = 0; i < type.member_types.size(); i++) {
+                spirv_cross::TypeID id = type.member_types[i];
                 spirv_cross::SPIRType memberType = compiler.get_type(id);
                 UniformBufferType::Member member;
 
                 uint32_t memberSize = (uint32_t)compiler.get_declared_struct_member_size(type, index++);
 
-                member.Name = compiler.get_name(id);
+                member.Name = compiler.get_member_name(id, i);
                 member.Size = memberSize;
                 member.Offset = offset;
 

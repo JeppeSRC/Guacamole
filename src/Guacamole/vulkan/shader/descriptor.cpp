@@ -137,14 +137,14 @@ DescriptorPool::~DescriptorPool() {
     vkDestroyDescriptorPool(Context::GetDeviceHandle(), mPoolHandle, nullptr);
 }
 
-DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
-    std::vector<DescriptorSet*> sets = AllocateDescriptorSets(layout, 1);
-    DescriptorSet* ret = sets[0];
+DescriptorSet DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
+    std::vector<DescriptorSet> sets = AllocateDescriptorSets(layout, 1);
+    DescriptorSet ret = sets[0];
 
     return ret;
 }
 
-std::vector<DescriptorSet*> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
+std::vector<DescriptorSet> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
     VkDescriptorSetLayout tmp = layout->GetHandle();
 
     VkDescriptorSetAllocateInfo aInfo;
@@ -157,13 +157,12 @@ std::vector<DescriptorSet*> DescriptorPool::AllocateDescriptorSets(DescriptorSet
 
     VkDescriptorSet* set = new VkDescriptorSet[num];
     
-    std::vector<DescriptorSet*> sets;
-    sets.resize(num);
+    std::vector<DescriptorSet> sets;
 
     VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, set));
 
     for (uint32_t i = 0; i < num; i++) {
-        sets[i] = new DescriptorSet(set[i], layout);
+        sets.emplace_back(set[i], layout);
     }
 
     return sets;

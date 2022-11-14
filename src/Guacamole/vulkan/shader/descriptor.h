@@ -73,8 +73,8 @@ public:
     DescriptorPool(uint32_t maxSets);
     ~DescriptorPool();
 
-    DescriptorSet* AllocateDescriptorSet(DescriptorSetLayout* layout);
-    std::vector<DescriptorSet*> AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
+    DescriptorSet AllocateDescriptorSet(DescriptorSetLayout* layout);
+    std::vector<DescriptorSet> AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
 
     inline VkDescriptorPool GetHandle() const { return mPoolHandle; }
 
