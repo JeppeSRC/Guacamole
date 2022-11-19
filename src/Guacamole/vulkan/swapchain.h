@@ -26,52 +26,71 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include "util.h"
+
 #include <Guacamole/core/video/window.h>
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
+#include <Guacamole/vulkan/swapchain.h>
+#include <Guacamole/vulkan/device.h>
 
 #define SWAPCHAIN_AUX_SEMAPHORES 8
 
 namespace Guacamole {
 
+struct SwapchainSpec {
+    Window* mWindow;
+    Device* mDevice;
+
+    std::vector<VkSurfaceFormatKHR> mPreferredFormats;
+    std::vector<VkPresentModeKHR> mPreferredPresentModes;
+};
+
+class CommandBuffer;
+struct SwapchainPresentInfo {
+    CommandBuffer* mCommandBuffer;
+};
+
 class Swapchain {
+private:
+    Swapchain(const SwapchainSpec& spec);
 public:
-    static void Init(Window* window);
-    static void Shutdown();
+    ~Swapchain();
 
-    static void Begin();
-    static void Present();
-    static void WaitForAllCommandBufferFences();
-
-    static CommandBuffer* GetPrimaryCommandBuffer();
-
-    static VkFormat GetFormat() { return msInfo.imageFormat; }
-    static VkExtent2D GetExtent() { return msInfo.imageExtent; }
-    static VkQueue GetGraphicsQueue() { return mGraphicsQueue; }
-
-    static std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
-    static uint32_t GetCurrentImageIndex() { return mCurrentImageIndex; }
+    void Begin();
+    void Present(SwapchainPresentInfo* presentInfo);
+    VkFormat GetFormat() { return msInfo.imageFormat; }
+    VkExtent2D GetExtent() { return msInfo.imageExtent; }
+    std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
+    uint32_t GetCurrentImageIndex() { return mCurrentImageIndex; }
+    uint32_t GetFramesInFlight() { return mSwapchainImages.size(); }
 
 private:
-    static VkSwapchainCreateInfoKHR msInfo;
+    Window* mWindow;
+    Device* mDevice;
+    VkSwapchainCreateInfoKHR msInfo;
+    VkSwapchainKHR mSwapchainHandle;
 
-    static VkSwapchainKHR mSwapchainHandle;
-    static VkSurfaceKHR mSurfaceHandle;
+    VkSurfaceKHR mSurfaceHandle;
 
-    static VkQueue mGraphicsQueue;
+    uint32_t mCurrentImageIndex;
 
-    static uint32_t mCurrentImageIndex;
-    static VkSemaphore mImageSemaphore;
-    static VkSemaphore mRenderSubmitSemaphore;
-    static VkSemaphore mCopySubmitSemaphore;
-    static VkSemaphore mAssetSemaphores;
-    static VkSemaphore mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
-   
-    static VkSubmitInfo mCopySubmitInfo;
-    static VkSubmitInfo mRenderSubmitInfo;
-    static VkPresentInfoKHR mPresentInfo;
+    VkSemaphore mImageSemaphore;
+    VkSemaphore mRenderSubmitSemaphore;
 
-    static std::vector<VkImage> mSwapchainImages;
-    static std::vector<VkImageView> mSwapchainImageViews;
+    CircularSemaphorePool mSemaphores;
+
+    VkSemaphore mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
+    VkSubmitInfo mRenderSubmitInfo;
+    VkPresentInfoKHR mPresentInfo;
+    std::vector<VkImage> mSwapchainImages;
+    std::vector<VkImageView> mSwapchainImageViews;
+
+public:
+    static Swapchain* CreateNew(const SwapchainSpec& spec);
+    static void DestroySwapchain(Swapchain* swapchain);
+    static void Shutdown();
+
+private:
+    static std::vector<Swapchain*> mSwapchains;
 };
 
 }

@@ -26,40 +26,23 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "physicaldevice.h"
+#include "buffer.h"
 
 namespace Guacamole {
 
-class Device {
+class UniformBufferSet {
 public:
-enum  {
-    FeatureTimelineSemaphore = 0x01,
-    FeatureAnisotropicSampling = 0x02
-};
+    UniformBufferSet(Device* device, uint32_t framesInFlight);
+    ~UniformBufferSet();
 
-public:
-    Device(PhysicalDevice* physicalDevice);
-    ~Device();
-
-    void WaitQueueIdle() const;
-
-    inline VkDevice GetHandle() const { return mDeviceHandle; }
-    inline PhysicalDevice* GetParent() const { return mParent; }
-    inline uint64_t GetFeatures() const { return mEnabledFeatures; }
-    inline VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
+    void Create(uint32_t binding, uint64_t size);
+    UniformBuffer* Get(uint32_t frame, uint32_t binding);
 
 private:
-    VkDevice mDeviceHandle;
+    uint32_t mFrames;
+    std::map<uint32_t, std::map<uint32_t, UniformBuffer>> mUniformBuffers;
 
-    uint32_t mGraphicsQueueIndex;
-    VkQueue mGraphicsQueue;
-    //VkQueue mTransferQueue;
-    //uint32_t mTransferQueueIndex;
-
-    PhysicalDevice* mParent;
-
-    uint64_t mEnabledFeatures;
-
+    Device* mDevice;
 };
 
 }

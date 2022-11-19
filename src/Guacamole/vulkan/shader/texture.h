@@ -34,9 +34,10 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class Texture : public Asset {
 protected:
-    Texture(const std::filesystem::path& path);
+    Texture(Device* device, const std::filesystem::path& path);
 
     void CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout);
 
@@ -61,12 +62,14 @@ protected:
 
     VkImageCreateInfo mImageInfo;
     VkImageViewCreateInfo mViewInfo;
+
+    Device* mDevice;
 };
 
 class Texture2D : public Texture {
 public:
-    Texture2D(uint32_t width, uint32_t height, VkFormat format);
-    Texture2D(const std::filesystem::path& path);
+    Texture2D(Device* device,uint32_t width, uint32_t height, VkFormat format);
+    Texture2D(Device* device,const std::filesystem::path& path);
 
     void Load() override;
     void Unload() override;

@@ -31,27 +31,33 @@ SOFTWARE.
 namespace Guacamole {
 
 std::vector<Context::InstanceLayer> Context::mInstanceLayers;
+std::vector<PhysicalDevice*> Context::mPhysicalDevices;
+std::vector<Device*> Context::mDevices;
 
 VkInstance Context::mInstance;
-PhysicalDevice* Context::mSelectedPhysDevice;
-Device* Context::mLogicalDevice;
 
-void Context::Init(const Window* window) {
+void Context::Init(const ContextSpec& spec) {
     ScopedTimer timer1("Context::Init");
     uint32_t version = 0;
 
     vkEnumerateInstanceVersion(&version);
 
-    GM_ASSERT(VK_API_VERSION_MAJOR(version) == 1 && VK_API_VERSION_MINOR(version) == 3);
+    uint32_t minVersion = GM_VK_MIN_VERSION;
 
+    uint32_t a = VK_API_VERSION_VARIANT(version);
+    uint32_t major = VK_API_VERSION_MAJOR(version);
+    uint32_t minor = VK_API_VERSION_MINOR(version);
+
+    GM_ASSERT(version >= minVersion);
+    
     EnumerateLayersAndExtensions();
 
     VkApplicationInfo appInfo;
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pNext = nullptr;
-    appInfo.apiVersion = VK_API_VERSION_1_3;
-    appInfo.pApplicationName = "AppName";
+    appInfo.apiVersion = version;
+    appInfo.pApplicationName = spec.applicationName.c_str();
     appInfo.engineVersion = 0;
     appInfo.pEngineName = "Guacamole";
 
@@ -85,28 +91,69 @@ void Context::Init(const Window* window) {
 
     VK(vkCreateInstance(&instanceInfo, nullptr, &mInstance));
 
-    PhysicalDevice::EnumeratePhysicalDevices(mInstance);
-
-    for (PhysicalDevice* dev : PhysicalDevice::mPhysicalDevices)
-        dev->PrintDeviceInfo(false);
-
-
-    mSelectedPhysDevice = PhysicalDevice::SelectDevice(window);
-
-    VkPhysicalDeviceFeatures features;
-    memset(&features, 0, sizeof(VkPhysicalDeviceFeatures));
-
-    features.fillModeNonSolid = true;
-    features.wideLines = true;
-    features.samplerAnisotropy = true;
-
-    mLogicalDevice = new Device(mSelectedPhysDevice, features);
+    EnumeratePhysicalDevices();
 }
 
 
 void Context::Shutdown() {
-    delete mLogicalDevice;
+    for (Device* device : mDevices) {
+        GM_LOG_DEBUG("[Context] Destroyed device \"{}\"", device->GetParent()->GetProperties().deviceName);
+        delete device;
+    }
+
+    mDevices.clear();
+
     vkDestroyInstance(mInstance, nullptr);
+}
+
+Device* Context::CreateDevice(uint32_t deviceIndex) {
+    GM_VERIFY_MSG(deviceIndex < mPhysicalDevices.size(), "Invalid device index");
+
+    for (Device* device : mDevices) {
+        PhysicalDevice* dev = device->GetParent();
+
+        if (dev->GetDeviceIndex() == deviceIndex) {
+            GM_LOG_CRITICAL("[Context] Logical device has already been created on \"{}\"", dev->GetProperties().deviceName);
+            GM_VERIFY(false);
+        }
+    }
+
+    Device* device = new Device(mPhysicalDevices[deviceIndex]);
+    mDevices.push_back(device);
+
+    return device;
+}
+
+Device* Context::CreateDevice(const Window* window) {
+    GM_ASSERT(window);
+
+    PhysicalDevice* dev = GetFirstSupportedPhysicalDevice(window);
+    GM_VERIFY(dev);
+
+    return CreateDevice(dev->GetDeviceIndex());
+}
+
+void Context::DestroyDevice(Device* device) {
+    for (uint32_t i = 0; i < mDevices.size(); i++) {
+        if (mDevices[i] == device) {
+            GM_LOG_DEBUG("[Context] Destroyed device \"{}\"", device->GetParent()->GetProperties().deviceName);
+            delete device;
+            mDevices.erase(mDevices.begin()+i);
+            return;
+        }
+    }
+
+    GM_ASSERT(false);
+}
+
+PhysicalDevice* Context::GetFirstSupportedPhysicalDevice(const Window* window) {
+    for (PhysicalDevice* dev : mPhysicalDevices) {
+        if (dev->GetDevicePresentationSupport(window)) return dev;
+    }
+
+    GM_LOG_CRITICAL("No Physical device with presentation support exist");
+
+    return nullptr;
 }
 
 void Context::EnumerateLayersAndExtensions() {
@@ -194,6 +241,22 @@ uint32_t Context::IsLayerExtensionSupported(const char* layerName, const char* e
     }
 
     return 0;
+}
+
+void Context::EnumeratePhysicalDevices() {
+    GM_ASSERT(mInstance != nullptr)
+
+    uint32_t num = 0;
+
+    VK(vkEnumeratePhysicalDevices(mInstance, &num, nullptr));
+    VkPhysicalDevice* devices = new VkPhysicalDevice[num];
+    VK(vkEnumeratePhysicalDevices(mInstance, &num, devices));
+
+    for (uint32_t i = 0; i < num; i++) {
+        mPhysicalDevices.push_back(new PhysicalDevice(devices[i]));
+    }
+
+    delete devices;
 }
 
 }

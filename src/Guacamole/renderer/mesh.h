@@ -39,9 +39,10 @@ struct Vertex {
     glm::vec2 UV;
 };
 
+class Device;
 class Mesh : public Asset {
 public:
-    Mesh(const std::filesystem::path& file);
+    Mesh(Device* device, const std::filesystem::path& file);
     ~Mesh();
 
     void Load() override;
@@ -55,7 +56,7 @@ public:
     inline uint32_t GetIndexCount() const { return mIBO->GetCount(); }
 
 private:
-    Mesh();
+    Mesh(Device* device);
 
     void CreateVBO(Vertex* data, uint64_t count);
     void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
@@ -63,10 +64,11 @@ private:
 
     VertexBuffer* mVBO;
     IndexBuffer* mIBO;
+    Device* mDevice;
 
 public:
-    static Mesh* GenerateQuad();
-    static Mesh* GeneratePlane();
+    static Mesh* GenerateQuad(Device* device);
+    static Mesh* GeneratePlane(Device* device);
 };
 
 }

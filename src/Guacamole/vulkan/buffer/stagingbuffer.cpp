@@ -25,24 +25,18 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "stagingbuffer.h"
-#include "commandpoolmanager.h"
 
 #include <Guacamole/vulkan/util.h>
 
 namespace Guacamole {
 
-StagingBuffer::StagingBuffer(uint64_t size, CommandBuffer* commandBuffer) 
+StagingBuffer::StagingBuffer(Device* device, uint64_t size, CommandBuffer* commandBuffer) 
     : mAllocated(0),
-      mBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+      mBuffer(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
       mCommandBuffer(commandBuffer) 
 {
 
     mMemory = (uint8_t*)mBuffer.Map();
-
-    if (mCommandBuffer == nullptr) {
-        mCommandBuffer = CommandPoolManager::AllocateAuxCommandBuffer(std::this_thread::get_id(), true);
-    }
-
 }
 
 StagingBuffer::~StagingBuffer() {
@@ -112,21 +106,25 @@ void StagingBuffer::Reset() {
     mAllocated = 0;
 }
 
-std::unordered_map<std::thread::id, StagingBuffer*> StagingManager::mCommonStagingBuffers;
+std::unordered_map<std::thread::id, std::pair<StagingBuffer*, CommandPool*>> StagingManager::mCommonStagingBuffers;
 std::vector<StagingBufferSubmitInfo> StagingManager::mSubmittedStagingBuffers;
 
-void StagingManager::AllocateCommonStagingBuffer(std::thread::id id, uint64_t size) {
+void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size) {
     auto it = mCommonStagingBuffers.find(id);
 
     GM_ASSERT_MSG(it == mCommonStagingBuffers.end(), "This may onle be done once per thread");
 
-    mCommonStagingBuffers.emplace(id, new StagingBuffer(size));
+    CommandPool* pool = new CommandPool(device);
+
+    mCommonStagingBuffers[id] = {new StagingBuffer(device, size, pool->AllocateCommandBuffers(1, true)[0]), pool};
 }
 
 void StagingManager::Shutdown() {
     for (auto [id, buf] : mCommonStagingBuffers) {
-        buf->GetCommandBuffer()->WaitForFence();
-        delete buf;
+        buf.first->GetCommandBuffer()->WaitForFence();
+        delete buf.first->GetCommandBuffer();
+        delete buf.first;
+        delete buf.second;
     }
 
     mCommonStagingBuffers.clear();

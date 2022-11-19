@@ -32,14 +32,17 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class Pipeline {
 public:
     virtual ~Pipeline();
 
     inline VkPipeline GetHandle() const { return mPipelineHandle; }
 protected:
-    VkPipeline mPipelineHandle;
+    Pipeline(Device* device) : mDevice(device) {}
 
+    VkPipeline mPipelineHandle;
+    Device* mDevice;
 };
 
 struct GraphicsPipelineInfo {
@@ -56,7 +59,7 @@ struct GraphicsPipelineInfo {
 
 class GraphicsPipeline : public Pipeline {
 public:
-    GraphicsPipeline(const GraphicsPipelineInfo& info);
+    GraphicsPipeline(Device* device, const GraphicsPipelineInfo& info);
 
 private:
     GraphicsPipelineInfo mInfo;

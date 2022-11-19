@@ -27,9 +27,7 @@ SOFTWARE.
 
 #include "texture.h"
 
-#include <Guacamole/vulkan/swapchain.h>
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/device.h>
 #include <Guacamole/util/util.h>
 #include <Guacamole/vulkan/util.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
@@ -39,22 +37,20 @@ SOFTWARE.
 
 namespace Guacamole {
 
-
-
-Texture::Texture(const std::filesystem::path& path) 
+Texture::Texture(Device* device, const std::filesystem::path& path) 
     : Asset(path, AssetType::Texture),
-    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE) {}
+    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), mDevice(device) {}
 
 void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout) {
     VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
     VkImageFormatProperties prop;
 
-    bool supported = Context::GetPhysicalDevice()->CheckImageFormat(format, imageType, tiling, usage, &prop);
+    bool supported = mDevice->GetParent()->CheckImageFormat(format, imageType, tiling, usage, &prop);
 
     if (!supported) {
         tiling = VK_IMAGE_TILING_LINEAR;
         
-        supported = Context::GetPhysicalDevice()->CheckImageFormat(format, imageType, tiling, usage, &prop);
+        supported = mDevice->GetParent()->CheckImageFormat(format, imageType, tiling, usage, &prop);
 
         if (supported) {
             GM_LOG_WARNING("Image format supported with linear tiling");
@@ -80,26 +76,26 @@ void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageTyp
     mImageInfo.pQueueFamilyIndices = nullptr;
     mImageInfo.initialLayout = initialLayout;
 
-    VK(vkCreateImage(Context::GetDeviceHandle(), &mImageInfo, nullptr, &mImageHandle));
+    VK(vkCreateImage(mDevice->GetHandle(), &mImageInfo, nullptr, &mImageHandle));
 
     VkMemoryRequirements memReq;
-    vkGetImageMemoryRequirements(Context::GetDeviceHandle(), mImageHandle, &memReq);
+    vkGetImageMemoryRequirements(mDevice->GetHandle(), mImageHandle, &memReq);
 
     VkMemoryAllocateInfo aInfo;
 
     aInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     aInfo.pNext = nullptr;
     aInfo.allocationSize = memReq.size;
-    aInfo.memoryTypeIndex = Buffer::GetMemoryIndex(Context::GetPhysicalDevice()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    aInfo.memoryTypeIndex = Buffer::GetMemoryIndex(mDevice->GetParent()->GetMemoryProperties(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    VK(vkAllocateMemory(Context::GetDeviceHandle(), &aInfo, nullptr, &mImageMemory));
-    VK(vkBindImageMemory(Context::GetDeviceHandle(), mImageHandle, mImageMemory, 0));
+    VK(vkAllocateMemory(mDevice->GetHandle(), &aInfo, nullptr, &mImageMemory));
+    VK(vkBindImageMemory(mDevice->GetHandle(), mImageHandle, mImageMemory, 0));
 }
 
 Texture::~Texture() {
-    vkFreeMemory(Context::GetDeviceHandle(), mImageMemory, nullptr);
-    vkDestroyImage(Context::GetDeviceHandle(), mImageHandle, nullptr);
-    vkDestroyImageView(Context::GetDeviceHandle(), mImageViewHandle, nullptr);
+    vkFreeMemory(mDevice->GetHandle(), mImageMemory, nullptr);
+    vkDestroyImage(mDevice->GetHandle(), mImageHandle, nullptr);
+    vkDestroyImageView(mDevice->GetHandle(), mImageViewHandle, nullptr);
 }
 
 void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, CommandBuffer* commandBuffer) {
@@ -179,17 +175,17 @@ void Texture2D::CreateImageView(VkFormat format) {
     mViewInfo.subresourceRange.baseArrayLayer = 0;
     mViewInfo.subresourceRange.layerCount = 1;
 
-    VK(vkCreateImageView(Context::GetDeviceHandle(), &mViewInfo, nullptr, &mImageViewHandle));
+    VK(vkCreateImageView(mDevice->GetHandle(), &mViewInfo, nullptr, &mImageViewHandle));
 }
 
-Texture2D::Texture2D(uint32_t width, uint32_t height, VkFormat format) : Texture("") {
+Texture2D::Texture2D(Device* device, uint32_t width, uint32_t height, VkFormat format) : Texture(device, "") {
     CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
     CreateImageView(format);
 
     mFlags |= AssetFlag_Loaded;
 }
 
-Texture2D::Texture2D(const std::filesystem::path& path) : Texture(path) {
+Texture2D::Texture2D(Device* device, const std::filesystem::path& path) : Texture(device, path) {
 
 }
 

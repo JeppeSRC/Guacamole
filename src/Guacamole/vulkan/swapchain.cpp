@@ -25,32 +25,25 @@ SOFTWARE.
 
 #include "swapchain.h"
 #include "context.h"
+#include "device.h"
 
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
-
+bool operator==(const VkSurfaceFormatKHR& left, const VkSurfaceFormatKHR& right) {
+    return left.colorSpace == right.colorSpace && left.format == right.format;
+}
 
 namespace Guacamole {
 
-VkSwapchainCreateInfoKHR Swapchain::msInfo;
-VkSwapchainKHR Swapchain::mSwapchainHandle;
-VkSurfaceKHR Swapchain::mSurfaceHandle;
-VkQueue Swapchain::mGraphicsQueue;
-uint32_t Swapchain::mCurrentImageIndex = ~0;
-VkSemaphore Swapchain::mImageSemaphore;
-VkSemaphore Swapchain::mRenderSubmitSemaphore;
-VkSemaphore Swapchain::mCopySubmitSemaphore;
-VkSemaphore Swapchain::mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
-VkSubmitInfo Swapchain::mCopySubmitInfo;
-VkSubmitInfo Swapchain::mRenderSubmitInfo;
-VkPresentInfoKHR Swapchain::mPresentInfo;
-std::vector<VkImage> Swapchain::mSwapchainImages;
-std::vector<VkImageView> Swapchain::mSwapchainImageViews;
-
-void Swapchain::Init(Window* window) {
+Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     ScopedTimer timer1("Swapchain::Init");
+
+    Window* window = spec.mWindow;
+    mDevice = spec.mDevice;
+    PhysicalDevice* physical = mDevice->GetParent();
+
 #if defined(GM_LINUX)
     VkXcbSurfaceCreateInfoKHR surfaceInfo;
 
@@ -74,24 +67,51 @@ void Swapchain::Init(Window* window) {
     VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
 #endif
 
+    VkSurfaceCapabilitiesKHR surfaceCaps = physical->GetSurfaceCapabilities(mSurfaceHandle);
+
     msInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     msInfo.pNext = nullptr;
     msInfo.flags = 0;
     msInfo.surface = mSurfaceHandle;
-    msInfo.minImageCount = Context::GetPhysicalDevice()->GetSurfaceCapabilities(mSurfaceHandle).minImageCount;
+    msInfo.minImageCount = surfaceCaps.minImageCount;
 
-    uint32_t formatCount = 0;
+    std::vector<VkSurfaceFormatKHR> surfaceFormats = physical->GetSurfaceFormats(mSurfaceHandle);
 
-    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), mSurfaceHandle, &formatCount, nullptr));
-    VkSurfaceFormatKHR* surfaceFormats = new VkSurfaceFormatKHR[formatCount];
-    VK(vkGetPhysicalDeviceSurfaceFormatsKHR(Context::GetPhysicalDeviceHandle(), mSurfaceHandle, &formatCount, surfaceFormats));
+    GM_VERIFY_MSG(surfaceFormats.size() > 0, "Selected device doesn't support any surface formats");
 
+    msInfo.imageFormat = VK_FORMAT_UNDEFINED;
 
-    //TODO: fix
-    msInfo.imageFormat = surfaceFormats[0].format;
-    msInfo.imageColorSpace = surfaceFormats[0].colorSpace;
+    for (VkSurfaceFormatKHR format : surfaceFormats)  {
+        for (VkSurfaceFormatKHR wanted : spec.mPreferredFormats) {
+            if (wanted == format) {
+                msInfo.imageFormat = format.format;
+                msInfo.imageColorSpace = format.colorSpace;
+            }
+        }
+    }
 
-    delete surfaceFormats;
+    if (msInfo.imageFormat == VK_FORMAT_UNDEFINED) {
+        GM_LOG_WARNING("[Swapchain] Selected device ({}) doesn't support any of the preferred surface formats, selecting first format", physical->GetProperties().deviceName);
+        msInfo.imageFormat = surfaceFormats[0].format;
+        msInfo.imageColorSpace = surfaceFormats[0].colorSpace;
+    }
+
+    std::vector<VkPresentModeKHR> presentModes = physical->GetPresentModes(mSurfaceHandle);
+
+    msInfo.presentMode = VK_PRESENT_MODE_MAX_ENUM_KHR;
+
+    for (VkPresentModeKHR preferred : spec.mPreferredPresentModes) {
+        for (VkPresentModeKHR mode : presentModes) {
+            if (preferred == mode) {
+                msInfo.presentMode = preferred;
+            }
+        }
+    }
+
+    if (msInfo.presentMode == VK_PRESENT_MODE_MAX_ENUM_KHR) {
+        GM_LOG_WARNING("[Swapchain] Selected device ({}) doesn't support any of the preferred present modes, selecting VK_PRESENT_MODE_FIFO_KHR", physical->GetProperties().deviceName);
+        msInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    }
 
     msInfo.imageExtent.width = window->GetSpec().Width;
     msInfo.imageExtent.height = window->GetSpec().Height;
@@ -102,22 +122,17 @@ void Swapchain::Init(Window* window) {
     msInfo.pQueueFamilyIndices = nullptr;
     msInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     msInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    msInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     msInfo.clipped = VK_FALSE;
     msInfo.oldSwapchain = nullptr;
 
-    VK(vkCreateSwapchainKHR(Context::GetDeviceHandle(), &msInfo, nullptr, &mSwapchainHandle));
-
-    vkGetDeviceQueue(Context::GetDevice()->GetHandle(), Context::GetDevice()->GetParent()->GetQueueIndex(VK_QUEUE_GRAPHICS_BIT), 0, &mGraphicsQueue);
+    VK(vkCreateSwapchainKHR(mDevice->GetHandle(), &msInfo, nullptr, &mSwapchainHandle));
 
     uint32_t imageCount = 0;
 
-    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), mSwapchainHandle, &imageCount, nullptr));
+    VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, nullptr));
     mSwapchainImages.resize(imageCount);
-    VK(vkGetSwapchainImagesKHR(Context::GetDeviceHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
+    VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
     
-    CommandPoolManager::AllocatePrimaryRenderCommandBuffers(imageCount);
-
     VkImageViewCreateInfo iwInfo;
 
     iwInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -141,7 +156,7 @@ void Swapchain::Init(Window* window) {
 
         VkImageView view;
 
-        VK(vkCreateImageView(Context::GetDeviceHandle(), &iwInfo, nullptr, &view));
+        VK(vkCreateImageView(mDevice->GetHandle(), &iwInfo, nullptr, &view));
 
         mSwapchainImageViews.push_back(view);
     }
@@ -152,29 +167,15 @@ void Swapchain::Init(Window* window) {
     spInfo.pNext = nullptr;
     spInfo.flags = 0;
 
-    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mImageSemaphore));
-    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mRenderSubmitSemaphore));
-    VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mCopySubmitSemaphore));
+    mSemaphores.Init((imageCount+1) * 2);
 
     for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
-        VK(vkCreateSemaphore(Context::GetDeviceHandle(), &spInfo, nullptr, &mAuxSemaphores[i]));
+        VK(vkCreateSemaphore(mDevice->GetHandle(), &spInfo, nullptr, &mAuxSemaphores[i]));
     }
-
-    mCopySubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    mCopySubmitInfo.pNext = nullptr;
-    mCopySubmitInfo.waitSemaphoreCount = 0;
-    mCopySubmitInfo.pWaitSemaphores = nullptr;
-    mCopySubmitInfo.pWaitDstStageMask = 0;
-    mCopySubmitInfo.commandBufferCount = 1; // 1 for now
-    mCopySubmitInfo.signalSemaphoreCount = 1;
-    mCopySubmitInfo.pSignalSemaphores = &mCopySubmitSemaphore;
 
     // Render submit constant values for VkSubmitInfo
     mRenderSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     mRenderSubmitInfo.pNext = nullptr;
-    //mRenderSubmitInfo.waitSemaphoreCount = 2;
-    //mRenderSubmitInfo.pWaitSemaphores = mAuxRenderSemaphores;
-    //mRenderSubmitInfo.pWaitDstStageMask = mRenderStageFlags;
     mRenderSubmitInfo.commandBufferCount = 1; // 1 for now
     mRenderSubmitInfo.signalSemaphoreCount = 1;
     mRenderSubmitInfo.pSignalSemaphores = &mRenderSubmitSemaphore;
@@ -189,36 +190,28 @@ void Swapchain::Init(Window* window) {
     
 }
 
-void Swapchain::Shutdown() {
-    WaitForAllCommandBufferFences();
-
-    vkDestroySemaphore(Context::GetDeviceHandle(), mImageSemaphore, nullptr);
-    vkDestroySemaphore(Context::GetDeviceHandle(), mRenderSubmitSemaphore, nullptr);
-    vkDestroySemaphore(Context::GetDeviceHandle(), mCopySubmitSemaphore, nullptr);
-
+Swapchain::~Swapchain() {
     for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
-        vkDestroySemaphore(Context::GetDeviceHandle(), mAuxSemaphores[i], nullptr);
+        vkDestroySemaphore(mDevice->GetHandle(), mAuxSemaphores[i], nullptr);
     }
 
     for (VkImageView view : mSwapchainImageViews) {
-        vkDestroyImageView(Context::GetDeviceHandle(), view, nullptr);
+        vkDestroyImageView(mDevice->GetHandle(), view, nullptr);
     }
 
-    vkDestroySwapchainKHR(Context::GetDeviceHandle(), mSwapchainHandle, nullptr);
+    vkDestroySwapchainKHR(mDevice->GetHandle(), mSwapchainHandle, nullptr);
     vkDestroySurfaceKHR(Context::GetInstance(), mSurfaceHandle, nullptr);
 }
 
 void Swapchain::Begin() {
-    VK(vkAcquireNextImageKHR(Context::GetDeviceHandle(), mSwapchainHandle, 10000, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
+    mImageSemaphore = mSemaphores.Get();
+    mRenderSubmitSemaphore = mSemaphores.Get();
+    VK(vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchainHandle, 10000, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
     GM_ASSERT(mCurrentImageIndex != ~0);
-
-    CommandBuffer* cmd = GetPrimaryCommandBuffer();
-
-    cmd->WaitForFence();
-    cmd->Begin(true);
 }
 
-void Swapchain::Present() {
+void Swapchain::Present(SwapchainPresentInfo* presentInfo) {
+    GM_ASSERT(presentInfo);
     mRenderSubmitInfo.waitSemaphoreCount = 1;
 
     std::vector<VkSemaphore> waitSemaphores({ mImageSemaphore });
@@ -245,8 +238,8 @@ void Swapchain::Present() {
         waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
         renderStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
-        VK(vkResetFences(Context::GetDeviceHandle(), 1, &asset.mCommandBuffer->GetFence()));
-        VK(vkQueueSubmit(mGraphicsQueue, 1, &info, asset.mCommandBuffer->GetFence()));
+        VK(vkResetFences(mDevice->GetHandle(), 1, &asset.mCommandBuffer->GetFence()));
+        VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &info, asset.mCommandBuffer->GetFence()));
     }
 
     std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
@@ -271,27 +264,11 @@ void Swapchain::Present() {
         waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
         renderStageFlags.push_back(buf.mStageFlags);
 
-        VK(vkResetFences(Context::GetDeviceHandle(), 1, &bufCmd->GetFence()));
-        VK(vkQueueSubmit(mGraphicsQueue, 1, &info, bufCmd->GetFence()));
+        VK(vkResetFences(mDevice->GetHandle(), 1, &bufCmd->GetFence()));
+        VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &info, bufCmd->GetFence()));
     }
 
-    // Fix when more threads are used
-    CommandBuffer* cmd = StagingManager::GetCommonStagingBuffer()->GetCommandBuffer();
-
-    if (cmd->IsUsed()) {
-        cmd->End();
-        mCopySubmitInfo.pCommandBuffers = &cmd->GetHandle();
-
-        VK(vkResetFences(Context::GetDeviceHandle(), 1, &cmd->GetFence()));
-        VK(vkQueueSubmit(mGraphicsQueue, 1, &mCopySubmitInfo, cmd->GetFence()));
-
-        waitSemaphores.push_back(mCopySubmitSemaphore);
-        renderStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-
-        mRenderSubmitInfo.waitSemaphoreCount++;
-    }
-    
-    cmd = GetPrimaryCommandBuffer();
+    CommandBuffer* cmd = presentInfo->mCommandBuffer;
     cmd->End();
    
     mRenderSubmitInfo.waitSemaphoreCount = waitSemaphores.size();
@@ -299,23 +276,40 @@ void Swapchain::Present() {
     mRenderSubmitInfo.pWaitDstStageMask = renderStageFlags.data();
     mRenderSubmitInfo.pCommandBuffers = &cmd->GetHandle();
 
-    VK(vkResetFences(Context::GetDeviceHandle(), 1, &cmd->GetFence()));
-    VK(vkQueueSubmit(mGraphicsQueue, 1, &mRenderSubmitInfo, cmd->GetFence()));
+    VK(vkResetFences(mDevice->GetHandle(), 1, &cmd->GetFence()));
+    VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &mRenderSubmitInfo, cmd->GetFence()));
 
     mPresentInfo.pImageIndices = &mCurrentImageIndex;
     mPresentInfo.pResults = nullptr;
 
-    VK(vkQueuePresentKHR(mGraphicsQueue, &mPresentInfo));
+    VK(vkQueuePresentKHR(mDevice->GetGraphicsQueue(), &mPresentInfo));
 
     mCurrentImageIndex = ~0;
 }
 
-void Swapchain::WaitForAllCommandBufferFences() {
-    CommandPoolManager::WaitForRenderFences();
+std::vector<Swapchain*> Swapchain::mSwapchains;
+
+Swapchain* Swapchain::CreateNew(const SwapchainSpec& spec) {
+    Swapchain* sw = new Swapchain(spec);
+    mSwapchains.push_back(sw);
+    return sw;
 }
 
-CommandBuffer* Swapchain::GetPrimaryCommandBuffer() {
-    return CommandPoolManager::GetRenderCommandBuffer();
+void Swapchain::DestroySwapchain(Swapchain* swapchain) {
+    for (uint32_t i = 0; i < mSwapchains.size(); i++) {
+        if (mSwapchains[i] == swapchain) {
+            delete swapchain;
+            mSwapchains.erase(mSwapchains.begin()+i);
+        }
+    }
+
+    GM_ASSERT(false);
+}
+
+void Swapchain::Shutdown() {
+    for (Swapchain* swapchain : mSwapchains) {
+        delete swapchain;
+    }
 }
 
 }

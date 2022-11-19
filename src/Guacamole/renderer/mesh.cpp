@@ -26,13 +26,14 @@ SOFTWARE.
 
 #include "mesh.h"
 
+#include <Guacamole/vulkan/device.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 
 namespace Guacamole {
 
-Mesh::Mesh(const std::filesystem::path& file) 
+Mesh::Mesh(Device* device, const std::filesystem::path& file) 
     : Asset(file, AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr) {}
+      mIBO(nullptr), mDevice(device) {}
 
 Mesh::~Mesh() {
     delete mVBO;
@@ -48,9 +49,9 @@ void Mesh::Unload() {
     delete mIBO;
 }
 
-Mesh::Mesh() 
+Mesh::Mesh(Device* device) 
     : Asset("", AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr) {
+      mIBO(nullptr), mDevice(device) {
 
     mFlags |= AssetFlag_Loaded;
 }
@@ -60,7 +61,7 @@ void Mesh::CreateVBO(Vertex* data, uint64_t count) {
 
     uint64_t size = count * sizeof(Vertex);
 
-    mVBO = new VertexBuffer(size);
+    mVBO = new VertexBuffer(mDevice, size);
 
     memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mVBO), data, size);
 }
@@ -68,7 +69,7 @@ void Mesh::CreateVBO(Vertex* data, uint64_t count) {
 void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     GM_ASSERT(mIBO == nullptr);
 
-    mIBO = new IndexBuffer(count, indexType);
+    mIBO = new IndexBuffer(mDevice, count, indexType);
 
     uint64_t size = mIBO->GetSize();
 
@@ -80,7 +81,7 @@ void Mesh::LoadFromFile(const std::filesystem::path& path) {
     GM_ASSERT(false);
 }
 
-Mesh* Mesh::GenerateQuad() {
+Mesh* Mesh::GenerateQuad(Device* device) {
     Vertex vertices[4 * 6] = {
         // Front
         {{-0.5, -0.5, 0.5, 1}, {0, 0, 1}, {0, 0}},
@@ -123,7 +124,7 @@ Mesh* Mesh::GenerateQuad() {
         20, 21, 22, 22, 23, 20
     };
 
-    Mesh* mesh = new Mesh;
+    Mesh* mesh = new Mesh(device);
 
     mesh->CreateVBO(vertices, 4 * 6);
     mesh->CreateIBO(indices, 6 * 6, VK_INDEX_TYPE_UINT16);
@@ -135,7 +136,7 @@ Mesh* Mesh::GenerateQuad() {
     return nullptr;
 }
 
-Mesh* Mesh::GeneratePlane() {
+Mesh* Mesh::GeneratePlane(Device* device) {
     Vertex vertices[4] = {
         {{-0.5, -0.5, 0, 1}, {0, 0, 1}, {0, 0}},
         {{ 0.5, -0.5, 0, 1}, {0, 0, 1}, {1, 0}},
@@ -147,7 +148,7 @@ Mesh* Mesh::GeneratePlane() {
         0, 1, 2, 2, 3, 0
     };
 
-    Mesh* mesh = new Mesh;
+    Mesh* mesh = new Mesh(device);
 
     mesh->CreateVBO(vertices, 4);
     mesh->CreateIBO(indices, 6, VK_INDEX_TYPE_UINT16);

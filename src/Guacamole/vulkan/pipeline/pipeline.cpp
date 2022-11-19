@@ -25,16 +25,15 @@ SOFTWARE.
 #include <Guacamole.h>
 #include "pipeline.h"
 
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
-
 Pipeline::~Pipeline() {
-    vkDestroyPipeline(Context::GetDeviceHandle(), mPipelineHandle, nullptr);
+    vkDestroyPipeline(mDevice->GetHandle(), mPipelineHandle, nullptr);
 }
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : mInfo(info) {
+GraphicsPipeline::GraphicsPipeline(Device* device, const GraphicsPipelineInfo& info) : Pipeline(device), mInfo(info) {
 
     VkPipelineShaderStageCreateInfo ssInfo[2];
 
@@ -192,7 +191,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineInfo& info) : mInfo(inf
     pInfo.basePipelineHandle = nullptr;
     pInfo.basePipelineIndex = 0;
 
-    VK(vkCreateGraphicsPipelines(Context::GetDeviceHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &mPipelineHandle));
+    VK(vkCreateGraphicsPipelines(mDevice->GetHandle(), VK_NULL_HANDLE, 1, &pInfo, nullptr, &mPipelineHandle));
 
 }
 

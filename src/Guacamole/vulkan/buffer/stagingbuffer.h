@@ -34,9 +34,10 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class StagingBuffer {
 public:
-    StagingBuffer(uint64_t mSize, CommandBuffer* commandBuffer = nullptr);
+    StagingBuffer(Device* device, uint64_t mSize, CommandBuffer* commandBuffer = nullptr);
     ~StagingBuffer();
 
     void Begin();
@@ -67,16 +68,16 @@ struct StagingBufferSubmitInfo {
 class StagingManager {
 public:
     // Called once per thread if the common buffer is used on that thread
-    static void AllocateCommonStagingBuffer(std::thread::id id, uint64_t size);
+    static void AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size);
     static void Shutdown();
 
     static void SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags);
     static std::vector<StagingBufferSubmitInfo> GetSubmittedStagingBuffers(bool clear = true);
-    static StagingBuffer* GetCommonStagingBuffer() { return mCommonStagingBuffers[std::this_thread::get_id()]; }
+    static StagingBuffer* GetCommonStagingBuffer() { return mCommonStagingBuffers[std::this_thread::get_id()].first; }
 
 
 private:
-    static std::unordered_map<std::thread::id, StagingBuffer*> mCommonStagingBuffers;
+    static std::unordered_map<std::thread::id, std::pair<StagingBuffer*, CommandPool*>> mCommonStagingBuffers;
     static std::vector<StagingBufferSubmitInfo> mSubmittedStagingBuffers;
 
     

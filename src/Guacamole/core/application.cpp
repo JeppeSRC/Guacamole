@@ -26,12 +26,11 @@ SOFTWARE.
 
 #include "application.h"
 
-#include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/context.h>
 #include <Guacamole/asset/assetmanager.h>
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/core/video/event.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/renderer/meshfactory.h>
 
 #include <chrono>
 
@@ -49,26 +48,28 @@ void Application::Run() {
     auto last = std::chrono::high_resolution_clock::now();
 
     while (!mWindow->ShouldClose()) {
-        EventManager::ProcessEvents(mWindow);
-
         auto now = std::chrono::high_resolution_clock::now();
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
         float delta = (float)duration / 1000.0f;
+
+        EventManager::ProcessEvents(mWindow);
+
+        mSwapchain->Begin();
 
         OnUpdate(delta);
 
         OnRender();
 
-        Swapchain::Present();
+        mSwapchain->Present(nullptr);
     }
 
     OnShutdown();
 
     
     StagingManager::Shutdown();
+    MeshFactory::Shutdown();
     AssetManager::Shutdown();
     Swapchain::Shutdown();
-    CommandPoolManager::Shutdown();
     Context::Shutdown();
     delete mWindow;
 }
@@ -77,12 +78,29 @@ Application::Application(ApplicationSpec& spec) : mSpec(spec), mWindow(nullptr) 
 
 }
 
-void Application::Init(const WindowSpec& windowSpec) {
+void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec) {
     mWindow = new Window(windowSpec);
 
-    Context::Init(mWindow);
-    Swapchain::Init(mWindow);
+    ContextSpec cs;
+    cs.applicationName = appSpec.appName;
+
+    Context::Init(cs);
+
+    if (appSpec.deviceIndex == ~0) {
+        mMainDevice = Context::CreateDevice(mWindow);
+    } else {
+        mMainDevice = Context::CreateDevice(appSpec.deviceIndex);
+    }
+
+    SwapchainSpec ss;
+    ss.mWindow = mWindow;
+    ss.mPreferredPresentModes.push_back(VK_PRESENT_MODE_IMMEDIATE_KHR);
+    ss.mDevice = mMainDevice;
+
+    mSwapchain = Swapchain::CreateNew(ss);
     AssetManager::Init();
+    StagingManager::AllocateCommonStagingBuffer(ss.mDevice, std::this_thread::get_id(), 1000000);
+    MeshFactory::Init(ss.mDevice);
 
     EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);
     EventManager::AddListener(EventType::KeyReleased, this, &Application::OnEvent);
@@ -90,7 +108,6 @@ void Application::Init(const WindowSpec& windowSpec) {
     EventManager::AddListener(EventType::ButtonReleased, this, &Application::OnEvent);
     EventManager::AddListener(EventType::MouseMoved, this, &Application::OnEvent);
 
-    StagingManager::AllocateCommonStagingBuffer(std::this_thread::get_id(), 1000000);
 }
 
 bool Application::OnEvent(Event* e) {

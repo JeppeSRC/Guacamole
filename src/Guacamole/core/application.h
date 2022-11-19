@@ -26,13 +26,20 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/core/video/window.h>
 #include <Guacamole/core/video/event.h>
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
 struct ApplicationSpec {
     std::string mName;
+};
+
+struct AppInitSpec {
+    std::string appName;
+    uint32_t deviceIndex;
 };
 
 class Application {
@@ -46,7 +53,7 @@ public:
 protected:
     Application(ApplicationSpec& spec);
 
-    void Init(const WindowSpec& windowSpec);
+    void Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec);
     virtual void OnInit() = 0;
     virtual void OnUpdate(float ts) = 0;
     virtual void OnRender() = 0;
@@ -63,7 +70,8 @@ protected:
 protected:
     ApplicationSpec mSpec;
     Window* mWindow;
-
+    Swapchain* mSwapchain;
+    Device* mMainDevice;
 };
 
 }

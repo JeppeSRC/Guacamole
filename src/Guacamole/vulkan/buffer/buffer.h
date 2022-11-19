@@ -28,6 +28,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class Buffer {
 protected:
     VkBuffer mBufferHandle;
@@ -36,17 +37,35 @@ protected:
 
     uint64_t mBufferSize;
     void* mMappedMemory;
+
+    Device* mDevice;
     
-    void Create(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    void Create(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 public:
     Buffer(VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    Buffer(VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    Buffer(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Buffer(Buffer&& other);
+    Buffer(const Buffer& other) = delete; // No copies allowed
     virtual ~Buffer();
 
     void* Map();
     void Unmap();
+
+    Buffer& operator=(const Buffer&) = delete;
+
+    Buffer& operator=(Buffer&& other) {
+        mBufferHandle = other.mBufferHandle;
+        mBufferMemory = other.mBufferMemory;
+        mBufferFlags = other.mBufferFlags;
+        mBufferSize = other.mBufferSize;
+        mMappedMemory = other.mMappedMemory;
+
+        other.mBufferMemory = VK_NULL_HANDLE;
+        other.mBufferHandle = VK_NULL_HANDLE;
+
+        return *this;
+    }
 
     inline const VkBuffer& GetHandle() const { return mBufferHandle; }
     inline uint64_t GetSize() const { return mBufferSize; }
@@ -57,12 +76,24 @@ public:
 
 class UniformBuffer : public Buffer {
 public:
-    UniformBuffer(uint64_t size) : Buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, size) {}
+    UniformBuffer() : Buffer(), mBinding(0) {}
+    UniformBuffer(Device* device, uint64_t size, uint32_t binding) : Buffer(device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, size), mBinding(binding) {}
+   // UniformBuffer(UniformBuffer&& other) : Buffer(std::move(*(Buffer*)&other)), mBinding(other.mBinding) { }
+
+    UniformBuffer& operator=(const UniformBuffer&) = delete;
+    UniformBuffer& operator=(UniformBuffer&& other) {
+        Buffer::operator=(std::move(*(Buffer*)&other));
+        mBinding = other.mBinding;
+        return *this;
+    }
+
+private:
+    uint32_t mBinding;
 };
 
 class IndexBuffer : public Buffer {
 public:
-    IndexBuffer(uint32_t count, VkIndexType type);
+    IndexBuffer(Device* device, uint32_t count, VkIndexType type);
 
     inline uint32_t GetCount() const { return mCount; }
     inline VkIndexType GetIndexType() const { return mIndexType; }
@@ -73,7 +104,7 @@ private:
 
 class VertexBuffer : public Buffer {
 public:
-    VertexBuffer(uint64_t size) : Buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size) {}
+    VertexBuffer(Device* device, uint64_t size) : Buffer(device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size) {}
 };
 
 }

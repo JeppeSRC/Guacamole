@@ -25,7 +25,7 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "assetmanager.h"
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
+#include <Guacamole/vulkan/buffer/commandbuffer.h>
 
 #if defined(GM_LINUX)
 
@@ -91,6 +91,7 @@ AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
 
     if (asyncLoad) {
         mQueueMutex.lock();
+        asset->mFlags |= AssetFlag_Loading;
         mAssetQueue.push_back(asset);
         mQueueMutex.unlock();
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Added To Queue!", asset->GetPathAsString().c_str(), handle);
@@ -127,6 +128,7 @@ Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
     const auto& itr = mAssets.find(handle);
 
     if (itr == mAssets.end()) {
+        GM_LOG_CRITICAL("Asset [handle: {:08x}] doesn't exist", handle);
         return nullptr;
     }
 
@@ -161,7 +163,7 @@ std::vector<AssetManager::FinishedAsset> AssetManager::GetFinishedAssets() {
 }
 
 void AssetManager::QueueWorker() {
-    CommandBuffer* cmd = CommandPoolManager::AllocateAuxCommandBuffer(std::this_thread::get_id(), true);
+    CommandBuffer* cmd = nullptr;
 
     while (!mShouldStop) {
         mQueueMutex.lock();
@@ -181,6 +183,7 @@ void AssetManager::QueueWorker() {
         mQueueMutex.unlock();
 
         LoadAssetFunction(currentAsset);
+        currentAsset->mFlags &= ~AssetFlag_Loading;
 
         cmd->End();
 
@@ -194,7 +197,7 @@ void AssetManager::QueueWorker() {
         mCommandBufferMutex.unlock();
     }
 
-    cmd->WaitForFence();
+    //cmd->WaitForFence();
 }
 
 void AssetManager::LoadAssetFunction(Asset* asset) {

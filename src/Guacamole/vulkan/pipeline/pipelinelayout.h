@@ -32,14 +32,15 @@ namespace Guacamole {
 
 class PipelineLayout {
 public:
-    PipelineLayout(DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants);
-    PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants);
+    PipelineLayout(Device* device, DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants);
+    PipelineLayout(Device* device, const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants);
     ~PipelineLayout();
 
     inline VkPipelineLayout GetHandle() const { return mLayoutHandle; }
 
 private:
     VkPipelineLayout mLayoutHandle;
+    Device* mDevice;
 };
 
 }

@@ -25,22 +25,21 @@ SOFTWARE.
 #include <Guacamole.h>
 #include "renderpass.h"
 
-#include "context.h"
 #include "swapchain.h"
 
 namespace Guacamole {
 
 Renderpass::~Renderpass() {
-    vkDestroyRenderPass(Context::GetDeviceHandle(), mRenderpassHandle, nullptr);
+    vkDestroyRenderPass(mDevice->GetHandle(), mRenderpassHandle, nullptr);
 }
 
 void Renderpass::Create(VkRenderPassCreateInfo* rInfo) {
     GM_ASSERT(rInfo)
 
-    VK(vkCreateRenderPass(Context::GetDeviceHandle(), rInfo, nullptr, &mRenderpassHandle));
+    VK(vkCreateRenderPass(mDevice->GetHandle(), rInfo, nullptr, &mRenderpassHandle));
 }
 
-BasicRenderpass::BasicRenderpass() {
+BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderpass(device) {
     VkRenderPassCreateInfo info;
 
     info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -50,7 +49,7 @@ BasicRenderpass::BasicRenderpass() {
     VkAttachmentDescription colorDesc;
 
     colorDesc.flags = 0;
-    colorDesc.format = Swapchain::GetFormat();
+    colorDesc.format = swapchain->GetFormat();
     colorDesc.samples = VK_SAMPLE_COUNT_1_BIT;
     colorDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -95,17 +94,17 @@ BasicRenderpass::BasicRenderpass() {
     fbInfo.renderPass = mRenderpassHandle;
     fbInfo.attachmentCount = 1;
     //fbInfo.pAttachments = nullptr;
-    fbInfo.width = Swapchain::GetExtent().width;
-    fbInfo.height = Swapchain::GetExtent().height;
+    fbInfo.width = swapchain->GetExtent().width;
+    fbInfo.height = swapchain->GetExtent().height;
     fbInfo.layers = 1;
 
-    std::vector<VkImageView> views = Swapchain::GetImageViews();
+    std::vector<VkImageView> views = swapchain->GetImageViews();
 
     for (VkImageView view : views) {
         fbInfo.pAttachments = &view;
 
         VkFramebuffer fb;
-        VK(vkCreateFramebuffer(Context::GetDeviceHandle(), &fbInfo, nullptr, &fb));
+        VK(vkCreateFramebuffer(mDevice->GetHandle(), &fbInfo, nullptr, &fb));
 
         mFramebuffers.push_back(fb);
     }
@@ -113,21 +112,21 @@ BasicRenderpass::BasicRenderpass() {
     mBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     mBeginInfo.pNext = nullptr;
     mBeginInfo.renderPass = mRenderpassHandle;
-    mBeginInfo.renderArea.extent = Swapchain::GetExtent();
+    mBeginInfo.renderArea.extent = swapchain->GetExtent();
     mBeginInfo.renderArea.offset.x = 0;
     mBeginInfo.renderArea.offset.y = 0;
 }
 
 BasicRenderpass::~BasicRenderpass() {
     for (VkFramebuffer fb : mFramebuffers) {
-        vkDestroyFramebuffer(Context::GetDeviceHandle(), fb, nullptr);
+        vkDestroyFramebuffer(mDevice->GetHandle(), fb, nullptr);
     }
 }
 
-void BasicRenderpass::Begin(const CommandBuffer* cmd) {
+void BasicRenderpass::Begin(Swapchain* swapchain, const CommandBuffer* cmd) {
     VkClearValue clear = {};
 
-    mBeginInfo.framebuffer = GetFramebufferHandle(Swapchain::GetCurrentImageIndex());
+    mBeginInfo.framebuffer = GetFramebufferHandle(swapchain->GetCurrentImageIndex());
     mBeginInfo.clearValueCount = 1;
     mBeginInfo.pClearValues = &clear;
     

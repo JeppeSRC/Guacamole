@@ -36,8 +36,7 @@ enum class AssetType {
     Binary,
     Text,
     Mesh,
-    VertexShader,
-    FragmentShader,
+    ShaderSource,
     Scene,
     Texture,
     Audio,
@@ -49,7 +48,8 @@ using AssetHandle = UUID;
 enum AssetFlags {
     AssetFlag_Loaded = 0x01, // asset is loaded
     AssetFlag_MemoryAsset = 0x02, // asset is loaded from memory
-    AssetFlag_OwnsMemory = 0x04 // asset owns and controls memory (asset manager will free the memory)
+    AssetFlag_OwnsMemory = 0x04, // asset owns and controls memory (asset manager will free the memory)
+    AssetFlag_Loading = 0x08, // asset is in the asset queue and is wating to be loaded    
 };
 
 class Asset {
@@ -70,6 +70,7 @@ public:
     inline const std::filesystem::path& GetPath() const { return mFilePath; }
     inline std::string GetPathAsString() const { return mFilePath.string(); }
     inline bool IsLoaded() const { return mFlags & AssetFlag_Loaded; }
+    inline bool IsLoading() const { return mFlags & AssetFlag_Loading; }
     inline AssetType GetType() const { return mType; }
     inline uint32_t GetFlags() const { return mFlags; }
 

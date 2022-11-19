@@ -63,6 +63,7 @@ public:
 
     template<typename T = Asset>
     static T* GetAsset(AssetHandle handle) { return (T*)GetAssetInternal(handle); }
+    static AssetType GetAssetType(AssetHandle handle) { return GetAssetInternal(handle)->mType; }
     static bool IsAssetLoaded(AssetHandle handle);
     static AssetHandle GetAssetHandleFromPath(const std::filesystem::path& path);
 

@@ -25,7 +25,8 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "descriptor.h"
-#include <Guacamole/vulkan/context.h>
+
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
@@ -37,7 +38,7 @@ DescriptorSet::~DescriptorSet() {
 
 }
 
-DescriptorSetLayout::DescriptorSetLayout() : mDescriptorSetLayoutHandle(VK_NULL_HANDLE) {
+DescriptorSetLayout::DescriptorSetLayout(Device* device) : mDescriptorSetLayoutHandle(VK_NULL_HANDLE), mDevice(device) {
     VkDescriptorSetLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -46,11 +47,11 @@ DescriptorSetLayout::DescriptorSetLayout() : mDescriptorSetLayoutHandle(VK_NULL_
     lInfo.bindingCount = 0;
     lInfo.pBindings = nullptr;
 
-    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
+    VK(vkCreateDescriptorSetLayout(mDevice->GetHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
 }
 
-DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout) 
-    : mDescriptorSetLayoutHandle(VK_NULL_HANDLE), mUniformLayout(uniformLayout) {
+DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout)
+    : mDescriptorSetLayoutHandle(VK_NULL_HANDLE), mUniformLayout(uniformLayout), mDevice(device) {
     VkDescriptorSetLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -59,11 +60,11 @@ DescriptorSetLayout::DescriptorSetLayout(const std::vector<VkDescriptorSetLayout
     lInfo.bindingCount = (uint32_t)bindings.size();
     lInfo.pBindings = bindings.data();
 
-    VK(vkCreateDescriptorSetLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
+    VK(vkCreateDescriptorSetLayout(mDevice->GetHandle(), &lInfo, nullptr, &mDescriptorSetLayoutHandle));
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(Context::GetDeviceHandle(), mDescriptorSetLayoutHandle, nullptr);
+    vkDestroyDescriptorSetLayout(mDevice->GetHandle(), mDescriptorSetLayoutHandle, nullptr);
 }
 
 const UniformBufferType* DescriptorSetLayout::GetUniformBuffer(uint32_t binding) const {
@@ -113,7 +114,7 @@ uint32_t DescriptorSetLayout::GetUniformBufferMemberOffset(uint32_t binding, uin
 }
 
 
-DescriptorPool::DescriptorPool(uint32_t maxSets) {
+DescriptorPool::DescriptorPool(Device* device, uint32_t maxSets) : mDevice(device) {
     VkDescriptorPoolSize poolSizes[10];
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -130,11 +131,11 @@ DescriptorPool::DescriptorPool(uint32_t maxSets) {
     pInfo.poolSizeCount = 2;
     pInfo.pPoolSizes = poolSizes;
 
-    VK(vkCreateDescriptorPool(Context::GetDeviceHandle(), &pInfo, nullptr, &mPoolHandle));
+    VK(vkCreateDescriptorPool(mDevice->GetHandle(), &pInfo, nullptr, &mPoolHandle));
 }
 
 DescriptorPool::~DescriptorPool() {
-    vkDestroyDescriptorPool(Context::GetDeviceHandle(), mPoolHandle, nullptr);
+    vkDestroyDescriptorPool(mDevice->GetHandle(), mPoolHandle, nullptr);
 }
 
 DescriptorSet DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
@@ -145,7 +146,12 @@ DescriptorSet DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout)
 }
 
 std::vector<DescriptorSet> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
-    VkDescriptorSetLayout tmp = layout->GetHandle();
+    VkDescriptorSetLayout* layouts = new VkDescriptorSetLayout[num];
+    VkDescriptorSetLayout layoutHandle = layout->GetHandle();
+
+    for (uint32_t i = 0; i < num; i++) {
+        layouts[i] = layoutHandle;
+    }
 
     VkDescriptorSetAllocateInfo aInfo;
 
@@ -153,17 +159,20 @@ std::vector<DescriptorSet> DescriptorPool::AllocateDescriptorSets(DescriptorSetL
     aInfo.pNext = nullptr;
     aInfo.descriptorPool = mPoolHandle;
     aInfo.descriptorSetCount = num;
-    aInfo.pSetLayouts = &tmp;
+    aInfo.pSetLayouts = layouts;
 
     VkDescriptorSet* set = new VkDescriptorSet[num];
     
     std::vector<DescriptorSet> sets;
 
-    VK(vkAllocateDescriptorSets(Context::GetDeviceHandle(), &aInfo, set));
+    VK(vkAllocateDescriptorSets(mDevice->GetHandle(), &aInfo, set));
 
     for (uint32_t i = 0; i < num; i++) {
         sets.emplace_back(set[i], layout);
     }
+
+    delete[] set;
+    delete[] layouts;
 
     return sets;
 }

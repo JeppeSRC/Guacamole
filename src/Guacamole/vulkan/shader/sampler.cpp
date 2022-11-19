@@ -26,26 +26,24 @@ SOFTWARE.
 
 #include "sampler.h"
 
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
-
-
-Sampler::Sampler() 
-    : mSamplerHandle(VK_NULL_HANDLE) {}
+Sampler::Sampler(Device* device) 
+    : mSamplerHandle(VK_NULL_HANDLE), mDevice(device) {}
 
 
 void Sampler::Create(const VkSamplerCreateInfo& info) {
-    VK(vkCreateSampler(Context::GetDeviceHandle(), &info, nullptr, &mSamplerHandle));
+    VK(vkCreateSampler(mDevice->GetHandle(), &info, nullptr, &mSamplerHandle));
 }
 
 Sampler::~Sampler() {
-    vkDestroySampler(Context::GetDeviceHandle(), mSamplerHandle, nullptr);
+    vkDestroySampler(mDevice->GetHandle(), mSamplerHandle, nullptr);
 }
 
 
-BasicSampler::BasicSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressMode) {
+BasicSampler::BasicSampler(Device* device, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressMode) : Sampler(device) {
     VkSamplerCreateInfo sInfo;
 
     sInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -58,7 +56,7 @@ BasicSampler::BasicSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerAddr
     sInfo.addressModeV = addressMode;
     sInfo.addressModeW = addressMode;
     sInfo.mipLodBias = 0;
-    sInfo.anisotropyEnable = true;
+    sInfo.anisotropyEnable = device->GetParent()->IsFeatureSupported(Device::FeatureAnisotropicSampling);
     sInfo.maxAnisotropy = 16;
     sInfo.compareEnable = false;
     sInfo.compareOp = VK_COMPARE_OP_EQUAL;

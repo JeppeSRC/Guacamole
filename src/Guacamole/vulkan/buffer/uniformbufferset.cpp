@@ -22,44 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include "physicaldevice.h"
+#include "uniformbufferset.h"
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
-class Device {
-public:
-enum  {
-    FeatureTimelineSemaphore = 0x01,
-    FeatureAnisotropicSampling = 0x02
-};
+UniformBufferSet::UniformBufferSet(Device* device, uint32_t framesInFlight) : mFrames(framesInFlight), mDevice(device) { }
 
-public:
-    Device(PhysicalDevice* physicalDevice);
-    ~Device();
+UniformBufferSet::~UniformBufferSet() { }
 
-    void WaitQueueIdle() const;
+void UniformBufferSet::Create(uint32_t binding, uint64_t size) {
+    for (uint32_t i = 0; i < mFrames; i++) {
+        mUniformBuffers[i][binding] = std::move(UniformBuffer(mDevice, size, binding));
+    }
+}
 
-    inline VkDevice GetHandle() const { return mDeviceHandle; }
-    inline PhysicalDevice* GetParent() const { return mParent; }
-    inline uint64_t GetFeatures() const { return mEnabledFeatures; }
-    inline VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
-
-private:
-    VkDevice mDeviceHandle;
-
-    uint32_t mGraphicsQueueIndex;
-    VkQueue mGraphicsQueue;
-    //VkQueue mTransferQueue;
-    //uint32_t mTransferQueueIndex;
-
-    PhysicalDevice* mParent;
-
-    uint64_t mEnabledFeatures;
-
-};
+UniformBuffer* UniformBufferSet::Get(uint32_t frame, uint32_t binding) {
+    return &mUniformBuffers[frame][binding];
+}
 
 }

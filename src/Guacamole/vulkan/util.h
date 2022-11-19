@@ -31,4 +31,29 @@ namespace Guacamole {
 uint64_t GetFormatSize(VkFormat format);
 const char* GetVkResultString(VkResult result);
 
+class Device;
+template<typename T>
+class CircularPool {
+protected:
+    CircularPool(Device* device, uint32_t count) : mIndex(0), mCount(count), mResource(nullptr), mDevice(device) {}
+
+    uint32_t mIndex;
+    uint32_t mCount;
+    T* mResource;
+    Device* mDevice;
+public:
+    T Get() {
+        return mResource[mIndex++ % mCount];
+    }
+
+};
+
+class CircularSemaphorePool : public CircularPool<VkSemaphore> {
+public:
+    CircularSemaphorePool(Device* device, uint32_t count = 0);
+    ~CircularSemaphorePool();
+
+    void Init(uint32_t count);
+};
+
 }

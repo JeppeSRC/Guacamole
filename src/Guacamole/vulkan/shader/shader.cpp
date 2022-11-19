@@ -26,7 +26,9 @@ SOFTWARE.
 
 #include "shader.h"
 
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/asset/assetmanager.h>
+
+#include <Guacamole/vulkan/device.h>
 #include <Guacamole/util/util.h>
 
 #include <shaderc/shaderc.hpp>
@@ -68,35 +70,34 @@ static VkShaderStageFlags ShaderStageToVkShaderStage(ShaderStage stage) {
     return VK_SHADER_STAGE_ALL_GRAPHICS; // Should never be reached
 }
 
-Shader::ShaderModule::ShaderModule(const std::string& file, bool src, ShaderStage stage) 
-    : mModuleHandle(VK_NULL_HANDLE), mIsSource(src), mFile(file), mStage(stage), mShaderSource(nullptr), mShaderSourceSize(0) {
+Shader::Source::Source(const std::filesystem::path& file, bool spirv, ShaderStage stage) : Asset(file, AssetType::ShaderSource),
+        mIsSpirv(spirv), mStage(stage), mShaderSource(nullptr), mShaderSourceSize(0) {
 }
 
-Shader::ShaderModule::~ShaderModule() {
-    vkDestroyShaderModule(Context::GetDeviceHandle(), mModuleHandle, nullptr);
-
+Shader::Source::~Source() {
     delete mShaderSource;
 }
 
-void Shader::ShaderModule::Reload(bool reCompile) {
-    vkDestroyShaderModule(Context::GetDeviceHandle(), mModuleHandle, nullptr);
-    delete mShaderSource;
-
+void Shader::Source::Load() {
+    Unload();
     uint64_t size;
-    char* data = (char*)Util::ReadFile(mFile, &size);
+    uint8_t* data = Util::ReadFile(mFilePath, &size);
 
-    if (data == nullptr) {
-        GM_LOG_CRITICAL("Failed to load shader file \"{0}\"", mFile.c_str());
-        return;
-    }
+    GM_VERIFY(data);
 
-    VkShaderModuleCreateInfo mInfo;
-
-    mInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    mInfo.pNext = nullptr;
-    mInfo.flags = 0;
-
-    if (mIsSource) {
+    if (mIsSpirv) {
+        if (size & 0x03) {
+            // Size is not a multiple of 4 so allocate new buffer that is
+            mShaderSourceSize = (size + 4) & 0x03;
+            mShaderSource = new uint32_t[mShaderSourceSize / 4];       
+            memcpy(mShaderSource, data, size);
+            memset(mShaderSource+size, 0, mShaderSourceSize-size);
+            delete data;     
+        } else {
+            mShaderSource = (uint32_t*)data;
+            mShaderSourceSize = (uint32_t)size;
+        }
+    } else {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
@@ -104,49 +105,65 @@ void Shader::ShaderModule::Reload(bool reCompile) {
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
         options.SetGenerateDebugInfo();
 
-        shaderc::CompilationResult result = compiler.CompileGlslToSpv(data, size, ShaderStageToShaderC(mStage), mFile.c_str(), options);
+        shaderc::CompilationResult result = compiler.CompileGlslToSpv((const char*)data, size, ShaderStageToShaderC(mStage), mFilePath.string().c_str(), options);
+
+        delete data;
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             GM_LOG_CRITICAL(result.GetErrorMessage());
-            GM_VERIFY(false);
+            return;
         }
 
         std::vector<uint32_t> spirv(result.begin(), result.end());
 
-        delete[] data;
-
-        data = new char[spirv.size() * 4];
-        memcpy(data, spirv.data(), spirv.size() * 4);
-
-        mInfo.codeSize = spirv.size() * 4;
-        mInfo.pCode = (uint32_t*)data;
-
-    } else {
-        if (size & 0x03) {
-            GM_LOG_WARNING("Shader binary \"{0}\" size is not a multiple of 4", mFile.c_str());
-
-            uint64_t newSize = (size & ~0x03) + 4;
-            char* newData = new char[newSize];
-
-            memcpy(newData, data, size);
-
-            delete[] data;
-
-            data = newData;
-            size = newSize;
-        }
-
-        mInfo.codeSize = size;
-        mInfo.pCode = (uint32_t*)data;
+        mShaderSourceSize = spirv.size() * 4;
+        mShaderSource = new uint32_t[mShaderSourceSize / 4];
+        memcpy(mShaderSource, (uint32_t*)spirv.data(), mShaderSourceSize);
     }
 
-    VK(vkCreateShaderModule(Context::GetDeviceHandle(), &mInfo, nullptr, &mModuleHandle));
-
-    mShaderSourceSize = (uint32_t)mInfo.codeSize;
-    mShaderSource = (uint32_t*)mInfo.pCode;
+    mFlags |= AssetFlag_Loaded;
 }
 
-Shader::Shader() {
+void Shader::Source::Unload() {
+    delete mShaderSource;
+    mShaderSourceSize = 0;
+    mFlags &= ~AssetFlag_Loaded;
+}
+
+Shader::ShaderModule::ShaderModule(AssetHandle source, ShaderStage stage) 
+    : mModuleHandle(VK_NULL_HANDLE), mSource(AssetManager::GetAsset<Source>(source)), mStage(stage) {
+}
+
+Shader::ShaderModule::~ShaderModule() {
+    vkDestroyShaderModule(mDevice->GetHandle(), mModuleHandle, nullptr);
+}
+
+void Shader::ShaderModule::Reload() {
+    GM_ASSERT_MSG(mSource->mStage == mStage, "ShaderStage missmatch!");
+
+    if (!mSource->IsLoaded()) {
+        GM_LOG_WARNING("[ShaderModule] source asset not loaded!");
+        if (!mSource->IsLoading()) {
+            mSource->Load();
+        } else {
+            while (mSource->IsLoading()); // Wait for it to be loaded
+        }
+    }
+
+    vkDestroyShaderModule(mDevice->GetHandle(), mModuleHandle, nullptr);
+
+    VkShaderModuleCreateInfo mInfo;
+
+    mInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    mInfo.pNext = nullptr;
+    mInfo.flags = 0;
+    mInfo.codeSize = mSource->mShaderSourceSize;
+    mInfo.pCode = mSource->mShaderSource;
+
+    VK(vkCreateShaderModule(mDevice->GetHandle(), &mInfo, nullptr, &mModuleHandle));
+}
+
+Shader::Shader(Device* device) : mDevice(device) {
     
 }
 
@@ -158,9 +175,9 @@ Shader::~Shader() {
         delete pool;
 }
 
-void Shader::Reload(bool reCompile) {
+void Shader::Reload() {
     for (ShaderModule& shader : mModules) {
-        shader.Reload(reCompile);
+        shader.Reload();
     }
 
     for (auto& [set, layout] : mDescriptorSetLayouts)
@@ -176,17 +193,18 @@ void Shader::Reload(bool reCompile) {
 
 }
 
-void Shader::AddModule(const std::string& file, bool src, ShaderStage stage) {
+void Shader::AddModule(AssetHandle handle, ShaderStage stage) {
     for (ShaderModule& shader : mModules) {
         GM_VERIFY(shader.mStage != stage);
     }
 
-    mModules.emplace_back(file, src, stage);
+    ShaderModule& module = mModules.emplace_back(handle, stage);
+    module.mDevice = mDevice;
 }
 
 void Shader::Compile() {
     for (ShaderModule& shader : mModules) {
-        shader.Reload(false);
+        shader.Reload();
     }
 
     ReflectStages();
@@ -211,7 +229,7 @@ std::vector<VkVertexInputAttributeDescription> Shader::GetVertexInputLayout(std:
         info.binding = binding.first;
         info.offset = 0;
 
-        // Maka sure locations are in order to properly calculate offset
+        // Make sure locations are in order to properly calculate offset
         std::sort(binding.second.begin(), binding.second.end()); 
 
         for (uint32_t location : binding.second) {
@@ -261,7 +279,7 @@ std::vector<DescriptorSetLayout*> Shader::GetDescriptorSetLayouts() const {
 }
 
 std::vector<DescriptorSet> Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
-    DescriptorPool* pool = new DescriptorPool(num);
+    DescriptorPool* pool = new DescriptorPool(mDevice, num);
 
     mDescriptorPools.push_back(pool);
 
@@ -269,7 +287,7 @@ std::vector<DescriptorSet> Shader::AllocateDescriptorSets(uint32_t set, uint32_t
 }
 
 DescriptorSet Shader::AllocateDescriptorSet(uint32_t set) {
-    DescriptorPool* pool = new DescriptorPool(1);
+    DescriptorPool* pool = new DescriptorPool(mDevice, 1);
 
     mDescriptorPools.push_back(pool);
 
@@ -279,14 +297,16 @@ DescriptorSet Shader::AllocateDescriptorSet(uint32_t set) {
 void Shader::ReflectStages() {
     
     for (ShaderModule& shader : mModules) {
-        spirv_cross::Compiler compiler(shader.mShaderSource, shader.mShaderSourceSize / 4);
+        spirv_cross::Compiler compiler(shader.GetSourceCode(), shader.GetSourceSize() / 4);
         spirv_cross::ShaderResources resources = compiler.get_shader_resources();
         
-        for (auto& input : resources.stage_inputs) {
-            uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
-            spirv_cross::SPIRType type = compiler.get_type(input.type_id);
+        if (shader.mStage == ShaderStage::Vertex) {
+            for (auto& input : resources.stage_inputs) {
+                uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
+                spirv_cross::SPIRType type = compiler.get_type(input.type_id);
 
-            mStageInputs.emplace_back(location, type);
+                mStageInputs.emplace_back(location, type);
+            }
         }
         
         for (auto& uniform : resources.uniform_buffers) {
@@ -387,7 +407,7 @@ void Shader::CreateDescriptorSetLayouts() {
     }
 
     if (sets.empty()) {
-        mDescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout);
+        mDescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout(mDevice));
     }
 
     uint32_t index = 0;
@@ -400,7 +420,7 @@ void Shader::CreateDescriptorSetLayouts() {
             uniforms.push_back(index.Uniform);
         }
 
-        DescriptorSetLayout* layout = new DescriptorSetLayout(bindings, uniforms);
+        DescriptorSetLayout* layout = new DescriptorSetLayout(mDevice, bindings, uniforms);
 
         mDescriptorSetLayouts.emplace_back(set, layout);
     }

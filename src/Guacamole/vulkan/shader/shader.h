@@ -26,41 +26,63 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/asset/asset.h>
+
 #include "descriptor.h"
 
 namespace Guacamole {
 
+class Device;
 class Shader {
 public:
-    class ShaderModule {
+    class ShaderModule;
+    class Source : public Asset {
     public:
-        ShaderModule(const std::string& file, bool src, ShaderStage stage);
-        ~ShaderModule();
+        Source(const std::filesystem::path& file, bool spirv, ShaderStage stage);
+        ~Source();
 
-        void Reload(bool reCompile = false);
+        void Load() override;
+        void Unload() override;
 
-        inline VkShaderModule GetHandle() const { return mModuleHandle; }
         inline ShaderStage GetStage() const { return mStage; }
 
     private:
-        VkShaderModule mModuleHandle;
-
         ShaderStage mStage;
-        bool mIsSource;
-        std::string mFile;
+        bool mIsSpirv;
 
         uint32_t mShaderSourceSize;
         uint32_t* mShaderSource;
+
+        friend class ShaderModule;
+    };
+
+    class ShaderModule {
+    public:
+        ShaderModule(AssetHandle source, ShaderStage stage);
+        ~ShaderModule();
+
+        void Reload();
+
+        inline VkShaderModule GetHandle() const { return mModuleHandle; }
+        inline ShaderStage GetStage() const { return mStage; }
+        inline const uint32_t* GetSourceCode() const { return mSource->mShaderSource; }
+        inline uint32_t GetSourceSize() const { return mSource->mShaderSourceSize; }
+
+    private:
+        VkShaderModule mModuleHandle;
+        Source* mSource;
+        ShaderStage mStage;
+        Device* mDevice;
 
         friend class Shader;
     };
 
 public:
-    Shader();
+    Shader(Device* device);
     ~Shader();
 
-    void Reload(bool reCompile = false);
-    void AddModule(const std::string& file, bool src, ShaderStage stage);
+    void Reload();
+    void AddModule(AssetHandle handle, ShaderStage stage);
     void Compile();
 
     VkShaderModule GetHandle(ShaderStage stage) const;
@@ -90,6 +112,7 @@ private:
     std::vector<std::pair<uint32_t, DescriptorSetLayout*>> mDescriptorSetLayouts;
     std::vector<DescriptorPool*> mDescriptorPools;
 
+    Device* mDevice;
 private:
     void ReflectStages();
     void CreateDescriptorSetLayouts();

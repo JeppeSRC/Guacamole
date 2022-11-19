@@ -28,9 +28,10 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class CommandBuffer {
 public:
-    CommandBuffer(VkCommandBuffer Handle);
+    CommandBuffer(Device* device, VkCommandBuffer Handle);
     ~CommandBuffer();
 
     void Reset() const;
@@ -45,11 +46,13 @@ private:
     VkCommandBuffer mCommandBufferHandle;
     VkFence mFenceHandle;
     mutable bool mUsed;
+
+    Device* mDevice;
 };
 
 class CommandPool {
 public:
-    CommandPool();
+    CommandPool(Device* device);
     ~CommandPool();
 
     void Reset() const;
@@ -58,6 +61,7 @@ public:
     inline const VkCommandPool& GetHandle() const { return mCommandPoolHandle; }
 private:
     VkCommandPool mCommandPoolHandle;
+    Device* mDevice;
 };
 
 

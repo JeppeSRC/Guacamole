@@ -29,18 +29,24 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Swapchain;
+class Device;
 class Renderpass {
 public:
     virtual ~Renderpass();
 
     VkRenderPass GetHandle() const { return mRenderpassHandle; }
     virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(const CommandBuffer* cmd) = 0;
+    virtual void Begin(Swapchain* swapchain, const CommandBuffer* cmd) = 0;
     virtual void End(const CommandBuffer* cmd) = 0;
 
 protected:
+    Renderpass(Device* device) : mDevice(device) {}
+
     VkRenderPass mRenderpassHandle;
     VkRenderPassBeginInfo mBeginInfo;
+
+    Device* mDevice;
 
     void Create(VkRenderPassCreateInfo* rInfo);
 private:
@@ -51,10 +57,10 @@ class BasicRenderpass : public Renderpass {
 private:
     std::vector<VkFramebuffer> mFramebuffers;
 public:
-    BasicRenderpass();
+    BasicRenderpass(Swapchain* swapchain, Device* device);
     ~BasicRenderpass();
 
-    void Begin(const CommandBuffer* cmd) override;
+    void Begin(Swapchain* swapchain, const CommandBuffer* cmd) override;
     void End(const CommandBuffer* cmd) override;
 
     VkFramebuffer GetFramebufferHandle(uint32_t index) const override;

@@ -22,44 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include "physicaldevice.h"
+#include "meshfactory.h"
+#include "mesh.h"
+
+#include <Guacamole/asset/assetmanager.h>
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
 
-class Device {
-public:
-enum  {
-    FeatureTimelineSemaphore = 0x01,
-    FeatureAnisotropicSampling = 0x02
-};
+AssetHandle MeshFactory::mPlaneAsset = AssetHandle::Null();
+AssetHandle MeshFactory::mQuadAsset = AssetHandle::Null();
 
-public:
-    Device(PhysicalDevice* physicalDevice);
-    ~Device();
+void MeshFactory::Init(Device* device) {
+    mPlaneAsset = AssetManager::AddMemoryAsset(Mesh::GeneratePlane(device), true);
+    mQuadAsset = AssetManager::AddMemoryAsset(Mesh::GenerateQuad(device), true);
+}
 
-    void WaitQueueIdle() const;
+void MeshFactory::Shutdown() {
 
-    inline VkDevice GetHandle() const { return mDeviceHandle; }
-    inline PhysicalDevice* GetParent() const { return mParent; }
-    inline uint64_t GetFeatures() const { return mEnabledFeatures; }
-    inline VkQueue GetGraphicsQueue() const { return mGraphicsQueue; }
-
-private:
-    VkDevice mDeviceHandle;
-
-    uint32_t mGraphicsQueueIndex;
-    VkQueue mGraphicsQueue;
-    //VkQueue mTransferQueue;
-    //uint32_t mTransferQueueIndex;
-
-    PhysicalDevice* mParent;
-
-    uint64_t mEnabledFeatures;
-
-};
+}
 
 }

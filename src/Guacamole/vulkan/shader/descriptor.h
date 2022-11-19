@@ -30,10 +30,12 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class DescriptorSetLayout {
 public:
-    DescriptorSetLayout();
-    DescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout);
+    DescriptorSetLayout(Device* device);
+    DescriptorSetLayout(Device* device, const std::vector<VkDescriptorSetLayoutBinding>& bindings, std::vector<UniformBaseType*> uniformLayout);
+    DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
     ~DescriptorSetLayout();
 
     const UniformBufferType* GetUniformBuffer(uint32_t binding) const;
@@ -51,6 +53,8 @@ private:
     std::vector<VkDescriptorSetLayoutBinding> mBindings;
 
     std::vector<UniformBaseType*> mUniformLayout;
+
+    Device* mDevice;
 };
 
 class DescriptorSet {
@@ -70,7 +74,8 @@ private:
 
 class DescriptorPool {
 public:
-    DescriptorPool(uint32_t maxSets);
+    DescriptorPool(Device* device, uint32_t maxSets);
+    DescriptorPool(Device* device, const DescriptorPool& other) = delete;
     ~DescriptorPool();
 
     DescriptorSet AllocateDescriptorSet(DescriptorSetLayout* layout);
@@ -80,6 +85,8 @@ public:
 
 private:
     VkDescriptorPool mPoolHandle;
+
+    Device* mDevice;
 };
 
 }

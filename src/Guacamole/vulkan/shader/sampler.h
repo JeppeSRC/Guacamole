@@ -29,9 +29,10 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class Sampler {
 protected:
-    Sampler();
+    Sampler(Device* device);
 
     void Create(const VkSamplerCreateInfo& info);
 
@@ -41,11 +42,13 @@ public:
     inline VkSampler GetHandle() const { return mSamplerHandle; }
 private:
     VkSampler mSamplerHandle;
+
+    Device* mDevice;
 };
 
 class BasicSampler : public Sampler {
 public:
-    BasicSampler(VkFilter magFilter = VK_FILTER_LINEAR, VkFilter minFilter = VK_FILTER_LINEAR, VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+    BasicSampler(Device* device, VkFilter magFilter = VK_FILTER_LINEAR, VkFilter minFilter = VK_FILTER_LINEAR, VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 };
 

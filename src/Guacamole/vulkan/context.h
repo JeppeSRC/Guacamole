@@ -26,20 +26,28 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include "physicaldevice.h"
 #include "device.h"
 
 namespace Guacamole {
 
+struct ContextSpec {
+    std::string applicationName;
+};
+
 class Context {
 public:
-    static void Init(const Window* window);
+    static void Init(const ContextSpec& spec);
     static void Shutdown();
 
+    // ATM this will select the first device with presentation support
+    static Device* CreateDevice(uint32_t deviceIndex);
+    static Device* CreateDevice(const Window* window);
+    static void DestroyDevice(Device* device);
+    static std::vector<PhysicalDevice*> GetPhysicalDevices() { return mPhysicalDevices; }
+    static std::vector<Device*> GetDevices() { return mDevices; }
+
     static VkInstance GetInstance() { return mInstance; }
-    static VkPhysicalDevice GetPhysicalDeviceHandle() { return mSelectedPhysDevice->GetHandle(); }
-    static PhysicalDevice* GetPhysicalDevice() { return mSelectedPhysDevice; }
-    static VkDevice GetDeviceHandle() { return mLogicalDevice->GetHandle(); }
-    static Device* GetDevice() { return mLogicalDevice; }
 private:
 
     struct InstanceLayer {
@@ -48,15 +56,17 @@ private:
     };
 
     static std::vector<InstanceLayer> mInstanceLayers;
+    static std::vector<PhysicalDevice*> mPhysicalDevices;
+    static std::vector<Device*> mDevices;
 
     static VkInstance mInstance;
-    static PhysicalDevice* mSelectedPhysDevice;
-    static Device* mLogicalDevice;
 
+    static PhysicalDevice* GetFirstSupportedPhysicalDevice(const Window* window);
     static void EnumerateLayersAndExtensions();
     static bool IsLayerSupported(const char* layerName);
     static bool IsExtensionSupported(const char* extentionName);
     static uint32_t IsLayerExtensionSupported(const char* layerName, const char* extensionName);
+    static void EnumeratePhysicalDevices();
     
 };
 

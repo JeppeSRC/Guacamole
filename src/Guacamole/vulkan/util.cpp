@@ -24,6 +24,9 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include "util.h"
+#include "device.h"
+
 namespace Guacamole {
 
 uint64_t GetFormatSize(VkFormat format) {
@@ -167,6 +170,36 @@ const char* GetVkResultString(VkResult result) {
 
     GM_ASSERT(false);
     return "unkown";
+}
+
+CircularSemaphorePool::CircularSemaphorePool(Device* device, uint32_t count) : CircularPool<VkSemaphore>(device, count) {
+        Init(count);
+}
+
+CircularSemaphorePool::~CircularSemaphorePool() {
+    for (uint32_t i = 0; i < mCount; i++) {
+        vkDestroySemaphore(mDevice->GetHandle(), mResource[i], nullptr);
+    }
+
+    delete[] mResource;
+}
+
+void CircularSemaphorePool::Init(uint32_t count) {
+    if (count == 0) return;
+
+    mCount = count;
+
+    mResource = new VkSemaphore[mCount];
+
+    VkSemaphoreCreateInfo info;
+
+    info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    info.pNext = nullptr;
+    info.flags = 0;
+
+    for (uint32_t i = 0; i < count; i++) {
+        VK(vkCreateSemaphore(mDevice->GetHandle(), &info, nullptr, &mResource[i]));
+    }
 }
 
 }

@@ -26,10 +26,10 @@ SOFTWARE.
 
 #include "pipelinelayout.h"
 
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/device.h>
 
 namespace Guacamole {
-PipelineLayout::PipelineLayout(DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants) {
+PipelineLayout::PipelineLayout(Device* device, DescriptorSetLayout* layout, std::vector<VkPushConstantRange> pushConstants) : mDevice(device) {
     VkDescriptorSetLayout l = layout->GetHandle();
 
     VkPipelineLayoutCreateInfo lInfo;
@@ -42,10 +42,10 @@ PipelineLayout::PipelineLayout(DescriptorSetLayout* layout, std::vector<VkPushCo
     lInfo.pushConstantRangeCount = (uint32_t)pushConstants.size();
     lInfo.pPushConstantRanges = pushConstants.data();
 
-    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
+    VK(vkCreatePipelineLayout(mDevice->GetHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
 
-PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants) : mLayoutHandle(VK_NULL_HANDLE) {
+PipelineLayout::PipelineLayout(Device* device, const std::vector<DescriptorSetLayout*>& layouts, std::vector<VkPushConstantRange> pushConstants) : mLayoutHandle(VK_NULL_HANDLE), mDevice(device) {
     VkPipelineLayoutCreateInfo lInfo;
 
     lInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -63,11 +63,11 @@ PipelineLayout::PipelineLayout(const std::vector<DescriptorSetLayout*>& layouts,
     lInfo.pushConstantRangeCount = (uint32_t)pushConstants.size();
     lInfo.pPushConstantRanges = pushConstants.data();nullptr;
 
-    VK(vkCreatePipelineLayout(Context::GetDeviceHandle(), &lInfo, nullptr, &mLayoutHandle));
+    VK(vkCreatePipelineLayout(mDevice->GetHandle(), &lInfo, nullptr, &mLayoutHandle));
 }
 
 PipelineLayout::~PipelineLayout() {
-    vkDestroyPipelineLayout(Context::GetDeviceHandle(), mLayoutHandle, nullptr);
+    vkDestroyPipelineLayout(mDevice->GetHandle(), mLayoutHandle, nullptr);
 }
 
 }

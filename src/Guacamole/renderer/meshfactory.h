@@ -26,32 +26,21 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <thread>
-
-#include "commandbuffer.h"
+#include <Guacamole/asset/asset.h>
 
 namespace Guacamole {
 
-class CommandPoolManager {
+class Device;
+class MeshFactory {
 public:
-    static void AllocatePrimaryRenderCommandBuffers(uint32_t imageCount);
-    static CommandBuffer* AllocateAuxCommandBuffer(std::thread::id threadId, bool primary);
-
-    static CommandBuffer* GetRenderCommandBuffer();
-    static CommandBuffer* GetAuxCommandBuffer(uint32_t index = 0);
-    
-    static void WaitForRenderFences();
-
+    static void Init(Device* device);
     static void Shutdown();
 
+    static AssetHandle GetPlaneAsset() { return mPlaneAsset; }
+    static AssetHandle GetQuadAsset() { return mQuadAsset; }
 private:
-    struct Pool {
-        CommandPool* mPool = nullptr;
-        std::vector<CommandBuffer*> mCommandBuffers;
-    };
-
-    static Pool mRenderCommandPool;
-    static std::unordered_map<std::thread::id, Pool> mAuxCommandPools;
+    static AssetHandle mPlaneAsset;
+    static AssetHandle mQuadAsset;
 };
 
 }
