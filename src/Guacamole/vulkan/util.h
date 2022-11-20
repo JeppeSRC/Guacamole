@@ -46,6 +46,8 @@ public:
         return mResource[mIndex++ % mCount];
     }
 
+    void Recyle(uint32_t count) { mIndex -= count; }
+
 };
 
 class CircularSemaphorePool : public CircularPool<VkSemaphore> {

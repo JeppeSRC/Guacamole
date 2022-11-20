@@ -188,11 +188,19 @@ Swapchain::~Swapchain() {
     vkDestroySurfaceKHR(Context::GetInstance(), mSurfaceHandle, nullptr);
 }
 
-void Swapchain::Begin() {
+bool Swapchain::Begin() {
     mImageSemaphore = mSemaphores.Get();
     mRenderSubmitSemaphore = mSemaphores.Get();
-    VK(vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchainHandle, 10000, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex));
-    GM_ASSERT(mCurrentImageIndex != ~0);
+    VkResult res = vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchainHandle, 0, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex);
+    
+    if (res == VK_SUCCESS) return true;
+
+    if (res == VK_TIMEOUT) {
+        mSemaphores.Recyle(2);
+        return false;
+    }
+
+    VK(res);
 }
 
 void Swapchain::Present(SwapchainPresentInfo* presentInfo) {

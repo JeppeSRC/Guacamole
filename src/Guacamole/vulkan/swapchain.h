@@ -55,7 +55,8 @@ private:
 public:
     ~Swapchain();
 
-    void Begin();
+    // Returns true if an image was aquired
+    bool Begin();
     void Present(SwapchainPresentInfo* presentInfo);
     VkFormat GetFormat() { return msInfo.imageFormat; }
     VkExtent2D GetExtent() { return msInfo.imageExtent; }
