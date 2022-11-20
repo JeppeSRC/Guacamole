@@ -26,47 +26,39 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/vulkan/semaphore.h>
-
 namespace Guacamole {
 
 class Device;
-class CommandBuffer {
+class Semaphore {
 public:
-    CommandBuffer(Device* device, VkCommandBuffer Handle);
-    ~CommandBuffer();
+    static Semaphore* Create(Device* device);
 
-    void Reset() const;
-    void Begin(bool oneTimeSubmit) const;
-    void End() const;
-    void Wait() const;
+    virtual ~Semaphore() {}
 
-    inline const VkCommandBuffer& GetHandle() const { return mCommandBufferHandle; }
-    inline Semaphore* GetSemaphore() const { return mSemaphore; }
-    inline bool IsUsed() const { return mUsed; }
-private:
-    VkCommandBuffer mCommandBufferHandle;
-    mutable bool mUsed;
-    Semaphore* mSemaphore;
+    virtual void Wait() = 0;
+
+    inline Device* GetDevice() const { return mDevice; }
+
+protected:
+    Semaphore(Device* device) : mDevice(device) {}
 
     Device* mDevice;
 };
 
-class CommandPool {
+class SemaphoreTimeline : public Semaphore {
 public:
-    CommandPool(Device* device);
-    ~CommandPool();
+    SemaphoreTimeline(Device* device);
+    ~SemaphoreTimeline();
 
-    void Reset() const;
-    std::vector<CommandBuffer*> AllocateCommandBuffers(uint32_t num, bool primary) const;
+    void Wait() override;
+    inline uint64_t IncrementSignalCounter() { return ++mCounter; }
 
-    inline const VkCommandPool& GetHandle() const { return mCommandPoolHandle; }
+    inline VkSemaphore GetHandle() const { return mSemaphore; }
+
 private:
-    VkCommandPool mCommandPoolHandle;
-    Device* mDevice;
+    uint64_t mCounter;
+    VkSemaphore mSemaphore;
+    VkSemaphoreWaitInfoKHR mWaitInfo;
 };
-
-
-
 
 }

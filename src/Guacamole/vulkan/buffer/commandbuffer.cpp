@@ -32,17 +32,11 @@ SOFTWARE.
 namespace Guacamole {
 
 CommandBuffer::CommandBuffer(Device* device, VkCommandBuffer Handle) : mCommandBufferHandle(Handle), mUsed(false), mDevice(device) {
-    VkFenceCreateInfo fInfo;
-
-    fInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fInfo.pNext = nullptr;
-    fInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    VK(vkCreateFence(mDevice->GetHandle(), &fInfo, nullptr, &mFenceHandle));
+    mSemaphore = Semaphore::Create(device);
 }
 
 CommandBuffer::~CommandBuffer() {
-    vkDestroyFence(mDevice->GetHandle(), mFenceHandle, nullptr);
+    delete mSemaphore;
 }
 
 
@@ -73,8 +67,8 @@ void CommandBuffer::End() const {
     mUsed = false;
 }
 
-void CommandBuffer::WaitForFence() const {
-    VK(vkWaitForFences(mDevice->GetHandle(), 1, &mFenceHandle, false, ~0));
+void CommandBuffer::Wait() const {
+    mSemaphore->Wait();
 }
 
 CommandPool::CommandPool(Device* device) : mDevice(device) {

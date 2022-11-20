@@ -167,18 +167,7 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     spInfo.pNext = nullptr;
     spInfo.flags = 0;
 
-    mSemaphores.Init((imageCount+1) * 2);
-
-    for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
-        VK(vkCreateSemaphore(mDevice->GetHandle(), &spInfo, nullptr, &mAuxSemaphores[i]));
-    }
-
-    // Render submit constant values for VkSubmitInfo
-    mRenderSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    mRenderSubmitInfo.pNext = nullptr;
-    mRenderSubmitInfo.commandBufferCount = 1; // 1 for now
-    mRenderSubmitInfo.signalSemaphoreCount = 1;
-    mRenderSubmitInfo.pSignalSemaphores = &mRenderSubmitSemaphore;
+    mSemaphores.Init((SWAPCHAIN_AUX_SEMAPHORES + 1) * imageCount + 1);
 
     // Present constant values for VkPresentInfoKHR
     mPresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -191,10 +180,6 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
 }
 
 Swapchain::~Swapchain() {
-    for (uint32_t i = 0; i < SWAPCHAIN_AUX_SEMAPHORES; i++) {
-        vkDestroySemaphore(mDevice->GetHandle(), mAuxSemaphores[i], nullptr);
-    }
-
     for (VkImageView view : mSwapchainImageViews) {
         vkDestroyImageView(mDevice->GetHandle(), view, nullptr);
     }
@@ -212,72 +197,136 @@ void Swapchain::Begin() {
 
 void Swapchain::Present(SwapchainPresentInfo* presentInfo) {
     GM_ASSERT(presentInfo);
-    mRenderSubmitInfo.waitSemaphoreCount = 1;
 
-    std::vector<VkSemaphore> waitSemaphores({ mImageSemaphore });
-    std::vector<VkPipelineStageFlags> renderStageFlags({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+    if (mDevice->GetFeatures() & Device::FeatureTimelineSemaphore) PresentInternalTimelineSemaphore(presentInfo);
 
+}
+
+void Swapchain::PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentInfo) {
+    GM_ASSERT(mDevice->GetFeatures() & Device::FeatureTimelineSemaphore);
+
+    std::vector<VkSemaphore> renderWaitSemaphores({ mImageSemaphore });
+    std::vector<VkPipelineStageFlags> renderWaitStageFlags({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+
+    std::vector<VkSubmitInfo> submits;
+    std::vector<VkSemaphore> otherSemaphores;
+    std::vector<VkTimelineSemaphoreSubmitInfoKHR> semaphoreSubmits;
+    std::vector<uint64_t> semaphoreSignalValues;
+    semaphoreSubmits.reserve(32);
+    semaphoreSignalValues.reserve(32);
+
+    std::vector<VkCommandBuffer> assetCommandBuffers;
     std::vector<AssetManager::FinishedAsset> finishedAssets = AssetManager::GetFinishedAssets();
 
-    uint32_t semaphoreIndex = 0;
+    if (!finishedAssets.empty()) { // Asset submission
+        VkSemaphore renderWait = mSemaphores.Get();
+
+        renderWaitSemaphores.push_back(renderWait);
+        renderWaitStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
+        otherSemaphores.push_back(renderWait);
+        semaphoreSignalValues.push_back(0);
+
+        for (AssetManager::FinishedAsset& asset : finishedAssets) {
+            assetCommandBuffers.push_back(asset.mCommandBuffer->GetHandle());
+            //asset.mCommandBuffer->End();
+
+            SemaphoreTimeline* sem = (SemaphoreTimeline*)asset.mCommandBuffer->GetSemaphore();
+            otherSemaphores.push_back(sem->GetHandle());
+            semaphoreSignalValues.push_back(sem->IncrementSignalCounter());
+        }
+
+        VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
+        semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+        semInfo.pNext = nullptr;
+        semInfo.signalSemaphoreValueCount = (uint32_t)otherSemaphores.size();
+        semInfo.pSignalSemaphoreValues = semaphoreSignalValues.data();
+        semInfo.waitSemaphoreValueCount = 0;
+        semInfo.pWaitSemaphoreValues = nullptr;
+
+        VkSubmitInfo& submitInfo = submits.emplace_back();
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.pNext = &semInfo;
+        submitInfo.waitSemaphoreCount = 0;
+        submitInfo.pWaitSemaphores = nullptr;
+        submitInfo.pWaitDstStageMask = nullptr;
+        submitInfo.commandBufferCount = (uint32_t)assetCommandBuffers.size();
+        submitInfo.pCommandBuffers = assetCommandBuffers.data();
+        submitInfo.signalSemaphoreCount = (uint32_t)otherSemaphores.size();
+        submitInfo.pSignalSemaphores = otherSemaphores.data();
+    }
+
+    { // staging buffer submission
+        std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
+
+        for (StagingBufferSubmitInfo& buf : stagingBuffers) {
+            CommandBuffer* bufCmd = buf.mStagingBuffer->GetCommandBuffer();
+            bufCmd->End();
+
+            VkSemaphore renderWait = mSemaphores.Get();
+
+            renderWaitSemaphores.push_back(renderWait);
+            renderWaitStageFlags.push_back(buf.mStageFlags);
+
+            uint64_t otherSemaphoresOffset = otherSemaphores.size();
+
+            otherSemaphores.push_back(renderWait);
+            semaphoreSignalValues.push_back(0);
+
+            SemaphoreTimeline* sem = (SemaphoreTimeline*)bufCmd->GetSemaphore();
+
+            otherSemaphores.push_back(sem->GetHandle());
+            semaphoreSignalValues.push_back(sem->IncrementSignalCounter());
+
+            VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
+            semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+            semInfo.pNext = nullptr;
+            semInfo.waitSemaphoreValueCount = 0;
+            semInfo.pWaitSemaphoreValues = nullptr;
+            semInfo.signalSemaphoreValueCount = 2;
+            semInfo.pSignalSemaphoreValues = &semaphoreSignalValues[otherSemaphoresOffset];
+
+            VkSubmitInfo& submitInfo = submits.emplace_back();
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.pNext = &semInfo;
+            submitInfo.waitSemaphoreCount = 0;
+            submitInfo.pWaitSemaphores = nullptr;
+            submitInfo.pWaitDstStageMask = nullptr;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &bufCmd->GetHandle();
+            submitInfo.signalSemaphoreCount = 2;
+            submitInfo.pSignalSemaphores = &otherSemaphores[otherSemaphoresOffset];
+        }
+    }
     
-    for (AssetManager::FinishedAsset& asset : finishedAssets) {
-        GM_ASSERT(SWAPCHAIN_AUX_SEMAPHORES > semaphoreIndex);
-        VkSubmitInfo info;
-
-        info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        info.pNext = nullptr;
-        info.waitSemaphoreCount = 0;
-        info.pWaitSemaphores = nullptr;
-        info.pWaitDstStageMask = nullptr;
-        info.commandBufferCount = 1;
-        info.pCommandBuffers = &asset.mCommandBuffer->GetHandle();
-        info.signalSemaphoreCount = 1;
-        info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
-
-        waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
-        renderStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-
-        VK(vkResetFences(mDevice->GetHandle(), 1, &asset.mCommandBuffer->GetFence()));
-        VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &info, asset.mCommandBuffer->GetFence()));
-    }
-
-    std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
-
-    for (StagingBufferSubmitInfo& buf : stagingBuffers) {
-        GM_ASSERT(SWAPCHAIN_AUX_SEMAPHORES > semaphoreIndex);
-        VkSubmitInfo info;
-
-        CommandBuffer* bufCmd = buf.mStagingBuffer->GetCommandBuffer();
-        bufCmd->End();
-
-        info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        info.pNext = nullptr;
-        info.waitSemaphoreCount = 0;
-        info.pWaitSemaphores = nullptr;
-        info.pWaitDstStageMask = nullptr;
-        info.commandBufferCount = 1;
-        info.pCommandBuffers = &bufCmd->GetHandle();
-        info.signalSemaphoreCount = 1;
-        info.pSignalSemaphores = &mAuxSemaphores[semaphoreIndex];
-
-        waitSemaphores.push_back(mAuxSemaphores[semaphoreIndex++]);
-        renderStageFlags.push_back(buf.mStageFlags);
-
-        VK(vkResetFences(mDevice->GetHandle(), 1, &bufCmd->GetFence()));
-        VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &info, bufCmd->GetFence()));
-    }
-
     CommandBuffer* cmd = presentInfo->mCommandBuffer;
     cmd->End();
    
-    mRenderSubmitInfo.waitSemaphoreCount = waitSemaphores.size();
-    mRenderSubmitInfo.pWaitSemaphores = waitSemaphores.data();
-    mRenderSubmitInfo.pWaitDstStageMask = renderStageFlags.data();
-    mRenderSubmitInfo.pCommandBuffers = &cmd->GetHandle();
+    SemaphoreTimeline* sem = (SemaphoreTimeline*)cmd->GetSemaphore();
+    VkSemaphore signalSemaphores[] = {mRenderSubmitSemaphore, sem->GetHandle()};
 
-    VK(vkResetFences(mDevice->GetHandle(), 1, &cmd->GetFence()));
-    VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &mRenderSubmitInfo, cmd->GetFence()));
+    uint64_t signalValues[] = {0, sem->IncrementSignalCounter()};
+
+    VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
+    semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+    semInfo.pNext = nullptr;
+    semInfo.waitSemaphoreValueCount = 0;
+    semInfo.pWaitSemaphoreValues = nullptr;
+    semInfo.signalSemaphoreValueCount = 2;
+    semInfo.pSignalSemaphoreValues = signalValues;
+
+    VkSubmitInfo& renderSubmitInfo = submits.emplace_back();
+    renderSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    renderSubmitInfo.pNext = &semInfo;
+    renderSubmitInfo.commandBufferCount = 1;
+    renderSubmitInfo.pCommandBuffers = &cmd->GetHandle();
+    renderSubmitInfo.waitSemaphoreCount = renderWaitSemaphores.size();
+    renderSubmitInfo.pWaitSemaphores = renderWaitSemaphores.data();
+    renderSubmitInfo.pWaitDstStageMask = renderWaitStageFlags.data();
+    renderSubmitInfo.signalSemaphoreCount = 2;
+    renderSubmitInfo.pSignalSemaphores = signalSemaphores;
+
+    VK(vkQueueSubmit(mDevice->GetGraphicsQueue(), (uint32_t)submits.size(), submits.data(), nullptr));
 
     mPresentInfo.pImageIndices = &mCurrentImageIndex;
     mPresentInfo.pResults = nullptr;

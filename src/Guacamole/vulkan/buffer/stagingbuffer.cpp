@@ -44,7 +44,7 @@ StagingBuffer::~StagingBuffer() {
 }
 
 void StagingBuffer::Begin() {
-    mCommandBuffer->WaitForFence();
+    mCommandBuffer->Wait();
     mCommandBuffer->Begin(true);
 }
 
@@ -121,7 +121,7 @@ void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id
 
 void StagingManager::Shutdown() {
     for (auto [id, buf] : mCommonStagingBuffers) {
-        buf.first->GetCommandBuffer()->WaitForFence();
+        buf.first->GetCommandBuffer()->Wait();
         delete buf.first->GetCommandBuffer();
         delete buf.first;
         delete buf.second;

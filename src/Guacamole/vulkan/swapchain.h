@@ -64,6 +64,9 @@ public:
     uint32_t GetFramesInFlight() { return mSwapchainImages.size(); }
 
 private:
+    void PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentInfo);
+
+private:
     Window* mWindow;
     Device* mDevice;
     VkSwapchainCreateInfoKHR msInfo;
@@ -78,8 +81,6 @@ private:
 
     CircularSemaphorePool mSemaphores;
 
-    VkSemaphore mAuxSemaphores[SWAPCHAIN_AUX_SEMAPHORES];
-    VkSubmitInfo mRenderSubmitInfo;
     VkPresentInfoKHR mPresentInfo;
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
