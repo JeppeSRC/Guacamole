@@ -25,7 +25,10 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include "assetmanager.h"
+
 #include <Guacamole/vulkan/buffer/commandbuffer.h>
+#include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/vulkan/device.h>
 
 #if defined(GM_LINUX)
 
@@ -42,18 +45,19 @@ namespace std {
 
 namespace Guacamole {
 
+Device* AssetManager::mDevice;
 bool AssetManager::mShouldStop;
 std::thread AssetManager::mLoaderThread;
 std::mutex AssetManager::mQueueMutex;
 std::mutex AssetManager::mCommandBufferMutex;
 std::unordered_map<AssetHandle, Asset*> AssetManager::mAssets;
-std::vector<AssetManager::FinishedAsset> AssetManager::mFinishedCommandBuffers;
 std::vector<Asset*> AssetManager::mAssetQueue;
 
 
 
-void AssetManager::Init() {
+void AssetManager::Init(Device* device) {
     mShouldStop = false;
+    mDevice = device;
     mLoaderThread = std::thread(&AssetManager::QueueWorker);
 }
 
@@ -153,17 +157,8 @@ AssetHandle AssetManager::GetAssetHandleFromPath(const std::filesystem::path& pa
     return AssetHandle::Null();
 }
 
-std::vector<AssetManager::FinishedAsset> AssetManager::GetFinishedAssets() {
-    mCommandBufferMutex.lock();
-    std::vector<FinishedAsset> ret(mFinishedCommandBuffers.begin(), mFinishedCommandBuffers.end());
-    mFinishedCommandBuffers.clear();
-    mCommandBufferMutex.unlock();
-
-    return std::move(ret);
-}
-
 void AssetManager::QueueWorker() {
-    CommandBuffer* cmd = nullptr;
+    StagingManager::AllocateCommonStagingBuffer(mDevice, std::this_thread::get_id(), 24000000); // 24MB
 
     while (!mShouldStop) {
         mQueueMutex.lock();
@@ -174,44 +169,40 @@ void AssetManager::QueueWorker() {
             continue;
         }
 
-        cmd->WaitForFence();
-        cmd->Begin(true);
+        StagingBuffer* buf = StagingManager::GetCommonStagingBuffer();
+
+        buf->Begin();
 
         Asset* currentAsset = mAssetQueue.front();
 
         mAssetQueue.erase(mAssetQueue.begin());
         mQueueMutex.unlock();
 
-        LoadAssetFunction(currentAsset);
+        bool usedBuffer = LoadAssetFunction(currentAsset);
         currentAsset->mFlags &= ~AssetFlag_Loading;
 
-        cmd->End();
-
-        FinishedAsset finishedAsset;
-
-        finishedAsset.mAsset = currentAsset;
-        finishedAsset.mCommandBuffer = cmd;
-
-        mCommandBufferMutex.lock();
-        mFinishedCommandBuffers.push_back(finishedAsset);
-        mCommandBufferMutex.unlock();
+        if (usedBuffer) {
+            StagingManager::SubmitStagingBuffer(buf, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+        } else {
+            buf->GetCommandBuffer()->End();
+        }
     }
-
-    //cmd->WaitForFence();
 }
 
-void AssetManager::LoadAssetFunction(Asset* asset) {
+bool AssetManager::LoadAssetFunction(Asset* asset) {
     AssetHandle handle = asset->mHandle;
 
     GM_LOG_DEBUG("Loading asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
 
-    asset->Load();
+    bool usedBuffer = asset->Load();
 
     if (asset->IsLoaded()) {
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
     } else {
         GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Not loaded!", asset->GetPathAsString().c_str(), handle);
     }
+
+    return usedBuffer;
 }
 
 }

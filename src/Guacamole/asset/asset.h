@@ -63,7 +63,8 @@ protected:
 public:
     virtual ~Asset();
 
-    virtual void Load();
+    // Returns true if the commandbuffer/stagingbuffer was used
+    virtual bool Load();
     virtual void Unload();
 
     inline AssetHandle GetHandle() const { return mHandle; }

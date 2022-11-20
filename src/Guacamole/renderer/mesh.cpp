@@ -40,8 +40,9 @@ Mesh::~Mesh() {
     delete mIBO;
 }
 
-void Mesh::Load() {
+bool Mesh::Load() {
     LoadFromFile(mFilePath);
+    return false;
 }
 
 void Mesh::Unload() {

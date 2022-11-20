@@ -44,7 +44,7 @@ public:
 
     Entity CreateEntity(const std::string& name = "");
 
-    void Load() override;
+    bool Load() override;
     void Unload() override;
 
 protected:

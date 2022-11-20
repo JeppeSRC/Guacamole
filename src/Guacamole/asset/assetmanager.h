@@ -56,7 +56,7 @@ public:
     };
 
 public:
-    static void Init();
+    static void Init(Device* device);
     static void Shutdown();
     static AssetHandle AddAsset(Asset* asset, bool asyncLoad);
     static AssetHandle AddMemoryAsset(Asset* asset, bool takeOwnershipOfMemory = true);
@@ -66,21 +66,19 @@ public:
     static AssetType GetAssetType(AssetHandle handle) { return GetAssetInternal(handle)->mType; }
     static bool IsAssetLoaded(AssetHandle handle);
     static AssetHandle GetAssetHandleFromPath(const std::filesystem::path& path);
-
-    static std::vector<FinishedAsset> GetFinishedAssets();
 private:
     static Asset* GetAssetInternal(AssetHandle handle);
     
     static void QueueWorker();
-    static void LoadAssetFunction(Asset* asset);
+    static bool LoadAssetFunction(Asset* asset);
 
 private:
+    static Device* mDevice;
     static bool mShouldStop;
     static std::thread mLoaderThread;
     static std::mutex mQueueMutex;
     static std::mutex mCommandBufferMutex;
     static std::unordered_map<AssetHandle, Asset*> mAssets;
-    static std::vector<FinishedAsset> mFinishedCommandBuffers;
     static std::vector<Asset*> mAssetQueue;
 };
 

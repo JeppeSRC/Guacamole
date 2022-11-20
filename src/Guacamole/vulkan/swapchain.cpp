@@ -215,47 +215,6 @@ void Swapchain::PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentIn
     semaphoreSubmits.reserve(32);
     semaphoreSignalValues.reserve(32);
 
-    std::vector<VkCommandBuffer> assetCommandBuffers;
-    std::vector<AssetManager::FinishedAsset> finishedAssets = AssetManager::GetFinishedAssets();
-
-    if (!finishedAssets.empty()) { // Asset submission
-        VkSemaphore renderWait = mSemaphores.Get();
-
-        renderWaitSemaphores.push_back(renderWait);
-        renderWaitStageFlags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-
-        otherSemaphores.push_back(renderWait);
-        semaphoreSignalValues.push_back(0);
-
-        for (AssetManager::FinishedAsset& asset : finishedAssets) {
-            assetCommandBuffers.push_back(asset.mCommandBuffer->GetHandle());
-            //asset.mCommandBuffer->End();
-
-            SemaphoreTimeline* sem = (SemaphoreTimeline*)asset.mCommandBuffer->GetSemaphore();
-            otherSemaphores.push_back(sem->GetHandle());
-            semaphoreSignalValues.push_back(sem->IncrementSignalCounter());
-        }
-
-        VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
-        semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
-        semInfo.pNext = nullptr;
-        semInfo.signalSemaphoreValueCount = (uint32_t)otherSemaphores.size();
-        semInfo.pSignalSemaphoreValues = semaphoreSignalValues.data();
-        semInfo.waitSemaphoreValueCount = 0;
-        semInfo.pWaitSemaphoreValues = nullptr;
-
-        VkSubmitInfo& submitInfo = submits.emplace_back();
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.pNext = &semInfo;
-        submitInfo.waitSemaphoreCount = 0;
-        submitInfo.pWaitSemaphores = nullptr;
-        submitInfo.pWaitDstStageMask = nullptr;
-        submitInfo.commandBufferCount = (uint32_t)assetCommandBuffers.size();
-        submitInfo.pCommandBuffers = assetCommandBuffers.data();
-        submitInfo.signalSemaphoreCount = (uint32_t)otherSemaphores.size();
-        submitInfo.pSignalSemaphores = otherSemaphores.data();
-    }
-
     { // staging buffer submission
         std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
 

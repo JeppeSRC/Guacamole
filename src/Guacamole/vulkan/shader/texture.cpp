@@ -189,10 +189,12 @@ Texture2D::Texture2D(Device* device, const std::filesystem::path& path) : Textur
 
 }
 
-void Texture2D::Load() {
+bool Texture2D::Load() {
     GM_ASSERT_MSG(!(mFlags & AssetFlag_Loaded), "Texture already loaded");
 
     LoadImageFromFile(mFilePath);
+
+    return mFlags & AssetFlag_Loaded;
 }
 
 void Texture2D::Unload() {
@@ -236,7 +238,7 @@ void Texture2D::LoadImageInternal(uint8_t* data, uint64_t size) {
 
     if (pixels == nullptr) {
         GM_LOG_CRITICAL("stbi_load_from_memory({0}, {1}, {2}, {3}, {4}, {5}) failed", uint64_t(data), size, width, height, channels, 4);
-        free(pixels);
+        return;
     }
 
     CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { (uint32_t)width, (uint32_t)height, 1 }, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);

@@ -41,7 +41,7 @@ public:
         Source(const std::filesystem::path& file, bool spirv, ShaderStage stage);
         ~Source();
 
-        void Load() override;
+        bool Load() override;
         void Unload() override;
 
         inline ShaderStage GetStage() const { return mStage; }

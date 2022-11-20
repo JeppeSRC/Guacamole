@@ -37,8 +37,9 @@ Asset::~Asset() {
   
 }
 
-void Asset::Load() {
+bool Asset::Load() {
     GM_ASSERT_MSG(false, "Asset::Load not implemented");
+    return false;
 } 
 
 void Asset::Unload() {

@@ -78,7 +78,7 @@ Shader::Source::~Source() {
     delete mShaderSource;
 }
 
-void Shader::Source::Load() {
+bool Shader::Source::Load() {
     Unload();
     uint64_t size;
     uint8_t* data = Util::ReadFile(mFilePath, &size);
@@ -111,7 +111,7 @@ void Shader::Source::Load() {
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
             GM_LOG_CRITICAL(result.GetErrorMessage());
-            return;
+            return false;
         }
 
         std::vector<uint32_t> spirv(result.begin(), result.end());
@@ -122,6 +122,8 @@ void Shader::Source::Load() {
     }
 
     mFlags |= AssetFlag_Loaded;
+
+    return false;
 }
 
 void Shader::Source::Unload() {

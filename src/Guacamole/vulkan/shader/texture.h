@@ -71,7 +71,7 @@ public:
     Texture2D(Device* device,uint32_t width, uint32_t height, VkFormat format);
     Texture2D(Device* device,const std::filesystem::path& path);
 
-    void Load() override;
+    bool Load() override;
     void Unload() override;
 
     void LoadImageFromMemory(uint8_t* data, uint64_t size);

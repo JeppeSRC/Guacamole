@@ -45,7 +45,7 @@ public:
     Mesh(Device* device, const std::filesystem::path& file);
     ~Mesh();
 
-    void Load() override;
+    bool Load() override;
     void Unload() override;
 
     inline VertexBuffer* GetVBO() const { return mVBO; }

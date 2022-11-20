@@ -112,7 +112,21 @@ std::vector<StagingBufferSubmitInfo> StagingManager::mSubmittedStagingBuffers;
 void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size) {
     auto it = mCommonStagingBuffers.find(id);
 
-    GM_ASSERT_MSG(it == mCommonStagingBuffers.end(), "This may onle be done once per thread");
+    if (it != mCommonStagingBuffers.end()) {
+        // Buffer already exist
+        StagingBuffer*& buffer = it->second.first;
+
+        if (size > buffer->GetSize()) {
+            // Only reallocate if size requested is larger
+            CommandBuffer* cmd = buffer->GetCommandBuffer();
+            cmd->Wait();
+            delete buffer;
+            
+            buffer = new StagingBuffer(device, size, cmd);
+        }
+
+        return;
+    }
 
     CommandPool* pool = new CommandPool(device);
 
