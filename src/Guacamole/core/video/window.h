@@ -56,6 +56,9 @@ public:
 
     inline const WindowSpec& GetSpec() const { return mSpec; }
     inline bool ShouldClose() const { return mShouldClose; }
+    inline uint32_t GetWidth() const { return mSpec.Width; }
+    inline uint32_t GetHeight() const { return mSpec.Height; }
+
 private:
     WindowSpec mSpec;
     bool mShouldClose;
