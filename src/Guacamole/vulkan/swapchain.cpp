@@ -191,16 +191,19 @@ Swapchain::~Swapchain() {
 bool Swapchain::Begin() {
     mImageSemaphore = mSemaphores.Get();
     mRenderSubmitSemaphore = mSemaphores.Get();
-    VkResult res = vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchainHandle, 0, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex);
+    VkResult res = vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchainHandle, 1000, mImageSemaphore, VK_NULL_HANDLE, &mCurrentImageIndex);
     
     if (res == VK_SUCCESS) return true;
 
-    if (res == VK_TIMEOUT) {
-        mSemaphores.Recyle(2);
+    mSemaphores.Recyle(2);
+
+    if (res == VK_TIMEOUT || res == VK_NOT_READY) {
         return false;
     }
 
     VK(res);
+
+    return false;
 }
 
 void Swapchain::Present(SwapchainPresentInfo* presentInfo) {

@@ -54,13 +54,17 @@ void Application::Run() {
 
         EventManager::ProcessEvents(mWindow);
 
-        mSwapchain->Begin();
+        bool shouldRender = mSwapchain->Begin();
 
         OnUpdate(delta);
 
-        OnRender();
+        if (shouldRender) {
+            SwapchainPresentInfo presentInfo;
 
-        mSwapchain->Present(nullptr);
+            OnRender();
+            mSwapchain->Present(&presentInfo);
+        }
+
     }
 
     OnShutdown();
