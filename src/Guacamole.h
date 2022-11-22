@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define GM_VK_MIN_VERSION VK_MAKE_API_VERSION(0, 1, 1, 0)
+
 #include <iostream>
 
 #include <stddef.h>
@@ -39,4 +41,3 @@ SOFTWARE.
 #include <spirv_cross/spirv_glsl.hpp>
 
 VkResult GMCheckVkCall(VkResult res, const char* const file, const char* const callingFunc, const char* const func, uint32_t line);
-
