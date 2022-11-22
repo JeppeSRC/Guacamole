@@ -169,6 +169,9 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
 
     mSemaphores.Init((SWAPCHAIN_AUX_SEMAPHORES + 1) * imageCount + 1);
 
+    mCommandPool = new CommandPool(mDevice);
+    mCommandBuffers = mCommandPool->AllocateCommandBuffers(imageCount, true);
+
     // Present constant values for VkPresentInfoKHR
     mPresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     mPresentInfo.pNext = nullptr;
@@ -180,6 +183,12 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
 }
 
 Swapchain::~Swapchain() {
+    for (CommandBuffer* cmd : mCommandBuffers) {
+        delete cmd;
+    }
+
+    delete mCommandPool;
+
     for (VkImageView view : mSwapchainImageViews) {
         vkDestroyImageView(mDevice->GetHandle(), view, nullptr);
     }
@@ -206,14 +215,11 @@ bool Swapchain::Begin() {
     return false;
 }
 
-void Swapchain::Present(SwapchainPresentInfo* presentInfo) {
-    GM_ASSERT(presentInfo);
-
-    if (mDevice->GetFeatures() & Device::FeatureTimelineSemaphore) PresentInternalTimelineSemaphore(presentInfo);
-
+void Swapchain::Present() {
+    if (mDevice->GetFeatures() & Device::FeatureTimelineSemaphore) PresentInternalTimelineSemaphore();
 }
 
-void Swapchain::PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentInfo) {
+void Swapchain::PresentInternalTimelineSemaphore() {
     GM_ASSERT(mDevice->GetFeatures() & Device::FeatureTimelineSemaphore);
 
     std::vector<VkSemaphore> renderWaitSemaphores({ mImageSemaphore });
@@ -269,7 +275,7 @@ void Swapchain::PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentIn
         }
     }
     
-    CommandBuffer* cmd = presentInfo->mCommandBuffer;
+    CommandBuffer* cmd = GetRenderCommandBuffer();
     cmd->End();
    
     SemaphoreTimeline* sem = (SemaphoreTimeline*)cmd->GetSemaphore();

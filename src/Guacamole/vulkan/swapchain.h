@@ -44,11 +44,8 @@ struct SwapchainSpec {
     std::vector<VkPresentModeKHR> mPreferredPresentModes;
 };
 
+class CommandPool;
 class CommandBuffer;
-struct SwapchainPresentInfo {
-    CommandBuffer* mCommandBuffer;
-};
-
 class Swapchain {
 private:
     Swapchain(const SwapchainSpec& spec);
@@ -57,15 +54,16 @@ public:
 
     // Returns true if an image was aquired
     bool Begin();
-    void Present(SwapchainPresentInfo* presentInfo);
+    void Present();
     VkFormat GetFormat() { return msInfo.imageFormat; }
     VkExtent2D GetExtent() { return msInfo.imageExtent; }
     std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
     uint32_t GetCurrentImageIndex() { return mCurrentImageIndex; }
     uint32_t GetFramesInFlight() { return mSwapchainImages.size(); }
+    CommandBuffer* GetRenderCommandBuffer() { return mCommandBuffers[mCurrentImageIndex]; }
 
 private:
-    void PresentInternalTimelineSemaphore(SwapchainPresentInfo* presentInfo);
+    void PresentInternalTimelineSemaphore();
 
 private:
     Window* mWindow;
@@ -81,6 +79,9 @@ private:
     VkSemaphore mRenderSubmitSemaphore;
 
     CircularSemaphorePool mSemaphores;
+
+    CommandPool* mCommandPool;
+    std::vector<CommandBuffer*> mCommandBuffers;
 
     VkPresentInfoKHR mPresentInfo;
     std::vector<VkImage> mSwapchainImages;
