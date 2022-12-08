@@ -172,9 +172,6 @@ Shader::Shader(Device* device) : mDevice(device) {
 Shader::~Shader() {
     for (auto& [set, layout] : mDescriptorSetLayouts)
         delete layout;
-
-    for (DescriptorPool* pool : mDescriptorPools)
-        delete pool;
 }
 
 void Shader::Reload() {
@@ -184,9 +181,6 @@ void Shader::Reload() {
 
     for (auto& [set, layout] : mDescriptorSetLayouts)
         delete layout;
-
-    for (DescriptorPool* pool : mDescriptorPools)
-        delete pool;
 
     mDescriptorSetLayouts.clear();
 
@@ -278,22 +272,6 @@ std::vector<DescriptorSetLayout*> Shader::GetDescriptorSetLayouts() const {
     }
 
     return ret;
-}
-
-std::vector<DescriptorSet> Shader::AllocateDescriptorSets(uint32_t set, uint32_t num) {
-    DescriptorPool* pool = new DescriptorPool(mDevice, num);
-
-    mDescriptorPools.push_back(pool);
-
-    return pool->AllocateDescriptorSets(GetDescriptorSetLayout(set), num);
-}
-
-DescriptorSet Shader::AllocateDescriptorSet(uint32_t set) {
-    DescriptorPool* pool = new DescriptorPool(mDevice, 1);
-
-    mDescriptorPools.push_back(pool);
-
-    return pool->AllocateDescriptorSet(GetDescriptorSetLayout(set));
 }
 
 void Shader::ReflectStages() {

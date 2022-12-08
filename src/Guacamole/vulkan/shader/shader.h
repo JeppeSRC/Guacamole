@@ -110,7 +110,6 @@ private:
     std::vector<VkPushConstantRange> mPushConstants;
 
     std::vector<std::pair<uint32_t, DescriptorSetLayout*>> mDescriptorSetLayouts;
-    std::vector<DescriptorPool*> mDescriptorPools;
 
     Device* mDevice;
 private:
