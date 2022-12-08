@@ -114,5 +114,10 @@ std::vector<CommandBuffer*> CommandPool::AllocateCommandBuffers(uint32_t num, bo
     return result;
 }
 
+CommandBuffer* CommandPool::AllocateCommandBuffer(bool primary) const {
+    std::vector<CommandBuffer*> res = AllocateCommandBuffers(1, primary);
+
+    return res[0];
+}
 
 }

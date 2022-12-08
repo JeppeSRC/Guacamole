@@ -59,6 +59,7 @@ public:
 
     void Reset() const;
     std::vector<CommandBuffer*> AllocateCommandBuffers(uint32_t num, bool primary) const;
+    CommandBuffer* AllocateCommandBuffer(bool primary) const;
 
     inline const VkCommandPool& GetHandle() const { return mCommandPoolHandle; }
 private:
