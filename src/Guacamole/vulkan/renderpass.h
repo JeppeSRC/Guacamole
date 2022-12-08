@@ -37,16 +37,17 @@ public:
 
     VkRenderPass GetHandle() const { return mRenderpassHandle; }
     virtual VkFramebuffer GetFramebufferHandle(uint32_t index) const = 0;
-    virtual void Begin(Swapchain* swapchain, const CommandBuffer* cmd) = 0;
+    virtual void Begin(const CommandBuffer* cmd) = 0;
     virtual void End(const CommandBuffer* cmd) = 0;
 
 protected:
-    Renderpass(Device* device) : mDevice(device) {}
+    Renderpass(Device* device, Swapchain* swapchain) : mDevice(device), mSwapchain(swapchain) {}
 
     VkRenderPass mRenderpassHandle;
     VkRenderPassBeginInfo mBeginInfo;
 
     Device* mDevice;
+    Swapchain* mSwapchain;
 
     void Create(VkRenderPassCreateInfo* rInfo);
 private:
@@ -60,7 +61,7 @@ public:
     BasicRenderpass(Swapchain* swapchain, Device* device);
     ~BasicRenderpass();
 
-    void Begin(Swapchain* swapchain, const CommandBuffer* cmd) override;
+    void Begin(const CommandBuffer* cmd) override;
     void End(const CommandBuffer* cmd) override;
 
     VkFramebuffer GetFramebufferHandle(uint32_t index) const override;

@@ -39,7 +39,7 @@ void Renderpass::Create(VkRenderPassCreateInfo* rInfo) {
     VK(vkCreateRenderPass(mDevice->GetHandle(), rInfo, nullptr, &mRenderpassHandle));
 }
 
-BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderpass(device) {
+BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderpass(device, swapchain) {
     VkRenderPassCreateInfo info;
 
     info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -123,10 +123,10 @@ BasicRenderpass::~BasicRenderpass() {
     }
 }
 
-void BasicRenderpass::Begin(Swapchain* swapchain, const CommandBuffer* cmd) {
+void BasicRenderpass::Begin(const CommandBuffer* cmd) {
     VkClearValue clear = {};
 
-    mBeginInfo.framebuffer = GetFramebufferHandle(swapchain->GetCurrentImageIndex());
+    mBeginInfo.framebuffer = GetFramebufferHandle(mSwapchain->GetCurrentImageIndex());
     mBeginInfo.clearValueCount = 1;
     mBeginInfo.pClearValues = &clear;
     
