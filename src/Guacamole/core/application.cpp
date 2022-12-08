@@ -103,7 +103,7 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
 
     mSwapchain = Swapchain::CreateNew(ss);
     AssetManager::Init(mMainDevice);
-    StagingManager::AllocateCommonStagingBuffer(ss.mDevice, std::this_thread::get_id(), 1000000);
+    StagingManager::AllocateCommonStagingBuffer(ss.mDevice, std::this_thread::get_id(), 10000000, true);
     MeshFactory::Init(ss.mDevice);
 
     EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);

@@ -68,7 +68,7 @@ struct StagingBufferSubmitInfo {
 class StagingManager {
 public:
     // Called once per thread if the common buffer is used on that thread
-    static void AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size);
+    static void AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size, bool beginCommandBuffer);
     static void Shutdown();
 
     static void SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags);

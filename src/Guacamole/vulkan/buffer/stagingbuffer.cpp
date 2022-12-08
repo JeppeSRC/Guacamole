@@ -109,7 +109,7 @@ void StagingBuffer::Reset() {
 std::unordered_map<std::thread::id, std::pair<StagingBuffer*, CommandPool*>> StagingManager::mCommonStagingBuffers;
 std::vector<StagingBufferSubmitInfo> StagingManager::mSubmittedStagingBuffers;
 
-void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size) {
+void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size, bool beginCommandBuffer) {
     auto it = mCommonStagingBuffers.find(id);
 
     if (it != mCommonStagingBuffers.end()) {
@@ -123,14 +123,21 @@ void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id
             delete buffer;
             
             buffer = new StagingBuffer(device, size, cmd);
+
+            if (beginCommandBuffer)
+                buffer->Begin();
         }
 
         return;
     }
 
     CommandPool* pool = new CommandPool(device);
+    StagingBuffer* buffer = new StagingBuffer(device, size, pool->AllocateCommandBuffers(1, true)[0]);
 
-    mCommonStagingBuffers[id] = {new StagingBuffer(device, size, pool->AllocateCommandBuffers(1, true)[0]), pool};
+    mCommonStagingBuffers[id] = {buffer, pool};
+
+    if (beginCommandBuffer)
+        buffer->Begin();
 }
 
 void StagingManager::Shutdown() {

@@ -158,7 +158,7 @@ AssetHandle AssetManager::GetAssetHandleFromPath(const std::filesystem::path& pa
 }
 
 void AssetManager::QueueWorker() {
-    StagingManager::AllocateCommonStagingBuffer(mDevice, std::this_thread::get_id(), 24000000); // 24MB
+    StagingManager::AllocateCommonStagingBuffer(mDevice, std::this_thread::get_id(), 24000000, true); // 24MB
 
     while (!mShouldStop) {
         mQueueMutex.lock();
