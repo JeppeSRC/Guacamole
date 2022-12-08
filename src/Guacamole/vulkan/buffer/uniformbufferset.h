@@ -40,7 +40,7 @@ public:
 
 private:
     uint32_t mFrames;
-    std::map<uint32_t, std::map<uint32_t, UniformBuffer>> mUniformBuffers;
+    std::map<uint32_t, std::map<uint32_t, UniformBuffer*>> mUniformBuffers;
 
     Device* mDevice;
 };

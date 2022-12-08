@@ -32,6 +32,17 @@ SOFTWARE.
 
 namespace Guacamole { 
 
+struct DescriptorUpdateBinding {
+    uint32_t mBinding;
+    uint32_t mArrayStart;
+    uint32_t mCount; // has to be 1 atm
+
+    VkDescriptorType mType;
+
+    VkDescriptorBufferInfo mBufferInfo;
+    VkDescriptorImageInfo mImageInfo;
+};
+
 class Renderer {
 public:
     static void Init();
@@ -44,7 +55,7 @@ public:
     static void BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass);
     static void EndRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass);
 
-
+    static void UpdateDescriptorSet(const DescriptorSet& set, const DescriptorUpdateBinding* bindings, uint32_t count);
 };
 
 }

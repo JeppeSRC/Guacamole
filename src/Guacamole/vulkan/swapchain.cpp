@@ -228,9 +228,12 @@ void Swapchain::PresentInternalTimelineSemaphore() {
     std::vector<VkSubmitInfo> submits;
     std::vector<VkSemaphore> otherSemaphores;
     std::vector<VkTimelineSemaphoreSubmitInfoKHR> semaphoreSubmits;
-    std::vector<uint64_t> semaphoreSignalValues;
+    std::vector<uint64_t> semaphoreWaitValues;
     semaphoreSubmits.reserve(32);
-    semaphoreSignalValues.reserve(32);
+    semaphoreWaitValues.reserve(32);
+    otherSemaphores.reserve(32);
+
+    semaphoreWaitValues.push_back(0);
 
     { // staging buffer submission
         std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
@@ -239,28 +242,20 @@ void Swapchain::PresentInternalTimelineSemaphore() {
             CommandBuffer* bufCmd = buf.mStagingBuffer->GetCommandBuffer();
             bufCmd->End();
 
-            VkSemaphore renderWait = mSemaphores.Get();
-
-            renderWaitSemaphores.push_back(renderWait);
-            renderWaitStageFlags.push_back(buf.mStageFlags);
-
-            uint64_t otherSemaphoresOffset = otherSemaphores.size();
-
-            otherSemaphores.push_back(renderWait);
-            semaphoreSignalValues.push_back(0);
-
             SemaphoreTimeline* sem = (SemaphoreTimeline*)bufCmd->GetSemaphore();
 
-            otherSemaphores.push_back(sem->GetHandle());
-            semaphoreSignalValues.push_back(sem->IncrementSignalCounter());
+            renderWaitSemaphores.push_back(sem->GetHandle());
+            renderWaitStageFlags.push_back(buf.mStageFlags);
+
+            semaphoreWaitValues.push_back(sem->IncrementSignalCounter());
 
             VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
             semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
             semInfo.pNext = nullptr;
             semInfo.waitSemaphoreValueCount = 0;
             semInfo.pWaitSemaphoreValues = nullptr;
-            semInfo.signalSemaphoreValueCount = 2;
-            semInfo.pSignalSemaphoreValues = &semaphoreSignalValues[otherSemaphoresOffset];
+            semInfo.signalSemaphoreValueCount = 1;
+            semInfo.pSignalSemaphoreValues = &semaphoreWaitValues.back();
 
             VkSubmitInfo& submitInfo = submits.emplace_back();
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -270,8 +265,8 @@ void Swapchain::PresentInternalTimelineSemaphore() {
             submitInfo.pWaitDstStageMask = nullptr;
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &bufCmd->GetHandle();
-            submitInfo.signalSemaphoreCount = 2;
-            submitInfo.pSignalSemaphores = &otherSemaphores[otherSemaphoresOffset];
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = &sem->GetHandle();
         }
     }
     
@@ -283,11 +278,13 @@ void Swapchain::PresentInternalTimelineSemaphore() {
 
     uint64_t signalValues[] = {0, sem->IncrementSignalCounter()};
 
+    GM_ASSERT(renderWaitSemaphores.size() == semaphoreWaitValues.size());
+
     VkTimelineSemaphoreSubmitInfoKHR& semInfo = semaphoreSubmits.emplace_back();
     semInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
     semInfo.pNext = nullptr;
-    semInfo.waitSemaphoreValueCount = 0;
-    semInfo.pWaitSemaphoreValues = nullptr;
+    semInfo.waitSemaphoreValueCount = (uint32_t)renderWaitSemaphores.size();
+    semInfo.pWaitSemaphoreValues = semaphoreWaitValues.data();
     semInfo.signalSemaphoreValueCount = 2;
     semInfo.pSignalSemaphoreValues = signalValues;
 
@@ -296,7 +293,7 @@ void Swapchain::PresentInternalTimelineSemaphore() {
     renderSubmitInfo.pNext = &semInfo;
     renderSubmitInfo.commandBufferCount = 1;
     renderSubmitInfo.pCommandBuffers = &cmd->GetHandle();
-    renderSubmitInfo.waitSemaphoreCount = renderWaitSemaphores.size();
+    renderSubmitInfo.waitSemaphoreCount = semInfo.waitSemaphoreValueCount;
     renderSubmitInfo.pWaitSemaphores = renderWaitSemaphores.data();
     renderSubmitInfo.pWaitDstStageMask = renderWaitStageFlags.data();
     renderSubmitInfo.signalSemaphoreCount = 2;

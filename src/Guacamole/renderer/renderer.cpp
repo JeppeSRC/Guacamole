@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include "renderer.h"
 
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
 #include <Guacamole/vulkan/renderpass.h>
 
 namespace Guacamole {
@@ -57,6 +56,30 @@ void Renderer::BeginRenderpass(const CommandBuffer* cmdBuffer, Renderpass* rende
 
 void Renderer::EndRenderpass(const CommandBuffer* cmdBuffer, Renderpass* renderpass) {
     renderpass->End(cmdBuffer);
+}
+
+void Renderer::UpdateDescriptorSet(const DescriptorSet& set, const DescriptorUpdateBinding* bindings, uint32_t count) {
+    GM_ASSERT(count < 16);
+    GM_ASSERT(bindings != nullptr);
+    VkWriteDescriptorSet write[16];
+
+    for (uint32_t i = 0; i < count; i++) {
+        const DescriptorUpdateBinding& binding = bindings[i];
+        
+        GM_VERIFY(write[i].descriptorCount == 1);
+
+        write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write[i].pNext = nullptr;
+        write[i].dstSet = set.GetHandle();
+        write[i].dstBinding = binding.mBinding;
+        write[i].dstArrayElement = binding.mArrayStart;
+        write[i].descriptorCount = binding.mCount;
+        write[i].descriptorType = binding.mType;
+        write[i].pBufferInfo = &binding.mBufferInfo;
+        write[i].pImageInfo = &binding.mImageInfo;
+    }
+
+    //vkUpdateDescriptorSets(Context::GetDeviceHandle(), count, write, 0, nullptr);
 }
 
 }

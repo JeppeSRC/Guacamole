@@ -45,7 +45,7 @@ void CommandBuffer::Reset() const {
 }
 
 void CommandBuffer::Begin(bool oneTimeSubmit) const {
-    GM_ASSERT(mUsed == false);
+    if (mUsed) return;
 
     VkCommandBufferBeginInfo bInfo;
 

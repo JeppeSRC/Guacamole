@@ -78,14 +78,6 @@ class UniformBuffer : public Buffer {
 public:
     UniformBuffer() : Buffer(), mBinding(0) {}
     UniformBuffer(Device* device, uint64_t size, uint32_t binding) : Buffer(device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, size), mBinding(binding) {}
-   // UniformBuffer(UniformBuffer&& other) : Buffer(std::move(*(Buffer*)&other)), mBinding(other.mBinding) { }
-
-    UniformBuffer& operator=(const UniformBuffer&) = delete;
-    UniformBuffer& operator=(UniformBuffer&& other) {
-        Buffer::operator=(std::move(*(Buffer*)&other));
-        mBinding = other.mBinding;
-        return *this;
-    }
 
 private:
     uint32_t mBinding;

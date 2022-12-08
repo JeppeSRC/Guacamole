@@ -53,7 +53,7 @@ public:
     void Wait() override;
     inline uint64_t IncrementSignalCounter() { return ++mCounter; }
 
-    inline VkSemaphore GetHandle() const { return mSemaphore; }
+    inline const VkSemaphore& GetHandle() const { return mSemaphore; }
 
 private:
     uint64_t mCounter;

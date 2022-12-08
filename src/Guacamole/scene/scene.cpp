@@ -27,58 +27,56 @@ SOFTWARE.
 #include "scene.h"
 #include "entity.h"
 
-#include <Guacamole/vulkan/context.h>
+#include <Guacamole/core/application.h>
+#include <Guacamole/vulkan/swapchain.h>
 
 namespace Guacamole {
 
-Scene::Scene(const std::filesystem::path& path) : Asset(path, AssetType::Scene) {
-    mRenderer = new SceneRenderer(1280, 720);    
-
-
+Scene::Scene(Application* app) : mApplication(app) {
+    mRenderer = new SceneRenderer(this);    
 }
 
 Scene::~Scene() {
+    delete mRenderer;
     mRegistry.clear();
 }
 
-
 void Scene::OnUpdate(float ts) {
-    mRenderer->Begin(this);
+    
 }
 
 void Scene::OnRender() {
-    auto cameraView = mRegistry.view<CameraComponent>();
-
-    GM_ASSERT(cameraView.size());
+    mRenderer->Begin();
 
     Camera cam;
 
+    auto cameraView = mRegistry.view<CameraComponent, TransformComponent>();
+
     for (auto entity : cameraView) {
-        CameraComponent c = cameraView.get<CameraComponent>(entity);
+        CameraComponent& c = cameraView.get<CameraComponent>(entity);
+        TransformComponent& trans = cameraView.get<TransformComponent>(entity);
+
+        c.mCamera.SetView(trans.GetView());
 
         if (c.mPrimary) {
             cam = c.mCamera;
-            break;
         }
     }
 
-    GM_ASSERT(cam.GetProjection() == glm::mat4(1.0f));
-    
-    mRenderer->BeginScene(cam);
-    StagingBuffer* staging = mRenderer->GetStagingBuffer();
-
     auto view = mRegistry.view<TransformComponent, MeshComponent, MaterialComponent>();
+
+    mRenderer->BeginScene(cam);
 
     for (auto entity : view) {
         const TransformComponent& transform = view.get<TransformComponent>(entity);
         const MeshComponent& mesh = view.get<MeshComponent>(entity);
-        const MaterialComponent& mat = view.get<MaterialComponent>(entity);
+        const MaterialComponent& material = view.get<MaterialComponent>(entity);
 
-        
-        
+        mRenderer->SubmitMesh(mesh, transform, material);        
     }
 
     mRenderer->EndScene();
+    mRenderer->End();
 }
 
 Entity Scene::CreateEntity(const std::string& name) {
@@ -92,18 +90,5 @@ Entity Scene::CreateEntity(const std::string& name) {
 
     return ent;
 }
-
-
-
-bool Scene::Load() {
-    GM_ASSERT(false);
-    return false;
-}
-
-void Scene::Unload() {
-    GM_ASSERT(false);
-}
-
-
 
 }

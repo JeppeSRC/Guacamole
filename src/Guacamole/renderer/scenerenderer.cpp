@@ -27,110 +27,198 @@ SOFTWARE.
 #include "scenerenderer.h"
 
 #include <Guacamole/asset/assetmanager.h>
-#include <Guacamole/vulkan/context.h>
-#include <Guacamole/vulkan/buffer/commandpoolmanager.h>
+#include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/scene/scene.h>
+#include <Guacamole/core/application.h>
+#include <Guacamole/renderer/material.h>
+
 
 namespace Guacamole {
 
-SceneRenderer::SceneRenderer(uint32_t width, uint32_t height) : mStagingBuffer(1024 * 10) {
-    mShader = new Shader;
-    mShader->AddModule("res/shader/scene.vert", true, ShaderStage::Vertex);
-    mShader->AddModule("res/shader/scene.frag", true, ShaderStage::Fragment);
+SceneRenderer::SceneRenderer(Scene* scene) : 
+        mScene(scene), mDevice(scene->GetDevice()), mSwapchain(scene->GetSwapchain()),
+        mStagingBuffer(scene->GetDevice(), 1024 * 10), mSceneUniformSet(scene->GetDevice(), 
+        scene->GetSwapchain()->GetFramesInFlight()), mSampler(scene->GetDevice()),
+        mCommandPool(scene->GetDevice())  {
+
+    AssetHandle vertHandle = AssetManager::AddAsset(new Shader::Source("res/shader/scene.vert", false, ShaderStage::Vertex), false);
+    AssetHandle fragHandle = AssetManager::AddAsset(new Shader::Source("res/shader/scene.frag", false, ShaderStage::Fragment), false);
+
+    mShader = new Shader(mDevice);
+    mShader->AddModule(vertHandle, ShaderStage::Vertex);
+    mShader->AddModule(fragHandle, ShaderStage::Fragment);
     mShader->Compile();
 
-    mPipelineLayout = new PipelineLayout(mShader->GetDescriptorSetLayouts(), mShader->GetPushConstants());
+    mPipelineLayout = new PipelineLayout(mDevice, mShader->GetDescriptorSetLayouts(), mShader->GetPushConstants());
 
-    mRenderpass = new BasicRenderpass;
+    mRenderpass = new BasicRenderpass(mSwapchain, mDevice);
 
     GraphicsPipelineInfo gInfo;
 
-    gInfo.mWidth = width;
-    gInfo.mHeight = height;
+    Window* window = mScene->GetApplication()->GetWindow();
+
+    gInfo.mWidth = window->GetWidth();
+    gInfo.mHeight = window->GetHeight();
     gInfo.mPipelineLayout = mPipelineLayout;
     gInfo.mRenderpass = mRenderpass;
     gInfo.mShader = mShader;
     gInfo.mVertexInputAttributes = mShader->GetVertexInputLayout({ { 0, { 0, 1, 2 }}});
     gInfo.mVertexInputBindings.push_back({0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX});
 
-    mPipeline = new GraphicsPipeline(gInfo);
+    mPipeline = new GraphicsPipeline(mDevice, gInfo);
 
-    mSceneUniformData.mSceneSet = mShader->AllocateDescriptorSet(0);
+    mSceneUniformSet.Create(0, sizeof(SceneData));
 
-    VkWriteDescriptorSet wSet;
+    constexpr uint32_t descriptorCount = 100;
 
-    VkDescriptorBufferInfo bInfo;
+    for (uint32_t i = 0; i < mSwapchain->GetFramesInFlight(); i++) {
+        mDescriptorPools.push_back(new DescriptorPool(mDevice, descriptorCount));
+    }
 
-    bInfo.buffer = mSceneUniformData.mUniformBuffer.GetHandle();
-    bInfo.offset = 0;
-    bInfo.range = sizeof(mSceneUniformData.mData);
+    for (uint32_t i = 0; i < descriptorCount; i++) {
+        UniformBufferSet* set = new UniformBufferSet(mDevice, mSwapchain->GetFramesInFlight());
+        mUniformBufferSetPool.push_back(set);
 
-    wSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    wSet.pNext = nullptr;
-    wSet.dstSet = mSceneUniformData.mSceneSet->GetHandle();
-    wSet.dstBinding = 0;
-    wSet.dstArrayElement = 0;
-    wSet.descriptorCount = 1;
-    wSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    wSet.pImageInfo = nullptr;
-    wSet.pBufferInfo = &bInfo;
-    wSet.pTexelBufferView = nullptr;
+        set->Create(1, sizeof(glm::vec4));
+    }
 
-    vkUpdateDescriptorSets(Context::GetDeviceHandle(), 1, &wSet, 0, nullptr);
-
+    mStagingCommandBuffer = mCommandPool.AllocateCommandBuffer(true);
+    mStagingBuffer.SetCommandBuffer(mStagingCommandBuffer);
 }
 
 SceneRenderer::~SceneRenderer() {
+    for (UniformBufferSet* set : mUniformBufferSetPool)
+        delete set;
+
+    for (DescriptorPool* pool : mDescriptorPools) 
+        delete pool;
+
+    delete mStagingCommandBuffer;
     delete mPipeline;
     delete mPipelineLayout;
     delete mRenderpass;
     delete mShader;
 }
 
-void SceneRenderer::Begin(Scene* scene) {
-    mScene = scene;
+void SceneRenderer::Begin() {
+    CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
+    cmd->Begin(true);
+
     mStagingBuffer.Begin();
-    CommandPoolManager::GetRenderCommandBuffer()->Begin(true);
+
+    //mRenderlist.Begin(cmd, Swapchain::GetCurrentImageIndex());
+    mUniformBufferSetIndex = 0;
 }
 
 void SceneRenderer::BeginScene(const Camera& camera) {
-    mSceneUniformData.mData = (SceneUniformData::Data*)mStagingBuffer.Allocate(sizeof(SceneUniformData::Data), &mSceneUniformData.mUniformBuffer);
-    mSceneUniformData.mData->mProjection = camera.GetProjection();
-    mSceneUniformData.mData->mView = camera.GetView();
+    uint32_t frame = mSwapchain->GetCurrentImageIndex();
 
-    CommandBuffer* cmd = CommandPoolManager::GetRenderCommandBuffer();
+    DescriptorPool* descPool = mDescriptorPools[frame];
+    descPool->Reset();
 
-    cmd->WaitForFence();
-    cmd->Begin(true);
+    DescriptorSet set = descPool->AllocateDescriptorSet(mShader->GetDescriptorSetLayout(0));
 
-    Renderer::BindPipeline(cmd, mPipeline);
+    UniformBuffer* buffer = mSceneUniformSet.Get(frame, 0);
+    
+    VkDescriptorBufferInfo bInfo;
+    bInfo.buffer = buffer->GetHandle();
+    bInfo.offset = 0;
+    bInfo.range = buffer->GetSize();
+
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.descriptorCount = 1;
+    write.dstArrayElement = 0;
+    write.dstBinding = 0;
+    write.dstSet = set.GetHandle();
+    write.pBufferInfo = &bInfo;
+
+    vkUpdateDescriptorSets(mDevice->GetHandle(), 1, &write, 0, 0);
+
+    SceneData* data = (SceneData*)mStagingBuffer.Allocate(sizeof(SceneData), buffer);
+
+    data->mProjection = camera.GetProjection();
+    data->mView = camera.GetView();
+
+    CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
     Renderer::BeginRenderpass(cmd, mRenderpass);
 
-    vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &mSceneUniformData.mSceneSet->GetHandle(), 0, nullptr);
+    vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &set.GetHandle(), 0, 0);
 }
 
 void SceneRenderer::EndScene() {
-    Renderer::EndRenderpass(CommandPoolManager::GetRenderCommandBuffer(), mRenderpass);
+    //mRenderlist.End();
+    //mRenderlist.Execute();
+
+    Renderer::EndRenderpass(mSwapchain->GetRenderCommandBuffer(), mRenderpass);
 }
 
 void SceneRenderer::End() {
     StagingManager::SubmitStagingBuffer(&mStagingBuffer, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 }
 
-void SceneRenderer::SubmitMesh(const Mesh* mesh, const DescriptorSet* modelSet, const DescriptorSet* materialSet) {
-    CommandBuffer* cmd = CommandPoolManager::GetRenderCommandBuffer();
+void SceneRenderer::SubmitMesh(const MeshComponent& mesh, const TransformComponent& transform, const MaterialComponent& material) {
+    CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
+    VkCommandBuffer cmdHandle = cmd->GetHandle();
 
-    VkDescriptorSet sets[2] = {modelSet->GetHandle(), materialSet->GetHandle()};
-
-    vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 1, 2, sets, 0, nullptr);
+    Mesh* meshAsset = AssetManager::GetAsset<Mesh>(mesh.mMesh);
 
     VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(cmdHandle, 0, 1, &meshAsset->GetVBOHandle(), &offset);
+    vkCmdBindIndexBuffer(cmdHandle, meshAsset->GetIBOHandle(), 0, meshAsset->GetIndexType());
 
-    vkCmdBindIndexBuffer(cmd->GetHandle(), mesh->GetIBOHandle(), 0, mesh->GetIndexType());
-    vkCmdBindVertexBuffers(cmd->GetHandle(), 0, 1, &mesh->GetVBOHandle(), &offset);
+    glm::mat4 trans = transform.GetTransform();
+    vkCmdPushConstants(cmdHandle, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &trans);
 
-    vkCmdDrawIndexed(cmd->GetHandle(), mesh->GetIndexCount(), 0, 0, 0, 0);
+    Material* materialAsset = AssetManager::GetAsset<Material>(material.mMaterial);
+    Texture2D* tex = AssetManager::GetAsset<Texture2D>(materialAsset->mTextureHandle);
+
+    DescriptorPool* descPool = mDescriptorPools[mSwapchain->GetCurrentImageIndex()];
+    DescriptorSet set = descPool->AllocateDescriptorSet(mShader->GetDescriptorSetLayout(1));
+    VkDescriptorSet setHandle = set.GetHandle();
+    UniformBufferSet* bufferSet = mUniformBufferSetPool[mUniformBufferSetIndex++];
+    UniformBuffer* buffer = bufferSet->Get(mSwapchain->GetCurrentImageIndex(), 1);
+
+    VkDescriptorBufferInfo bInfo;
+    bInfo.buffer = buffer->GetHandle();
+    bInfo.offset = 0;
+    bInfo.range = buffer->GetSize();
+
+    VkDescriptorImageInfo iInfo;
+
+    iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    iInfo.imageView = tex->GetImageViewHandle();
+    iInfo.sampler = mSampler.GetHandle();
+
+    VkWriteDescriptorSet write[2];
+    write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write[0].pNext = nullptr;
+    write[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write[0].descriptorCount = 1;
+    write[0].dstArrayElement = 0;
+    write[0].dstBinding = 0;
+    write[0].dstSet = setHandle;
+    write[0].pImageInfo = &iInfo;
+
+    write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write[1].pNext = nullptr;
+    write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write[1].descriptorCount = 1;
+    write[1].dstArrayElement = 0;
+    write[1].dstBinding = 1;
+    write[1].dstSet = setHandle;
+    write[1].pBufferInfo = &bInfo;
+
+    vkUpdateDescriptorSets(mDevice->GetHandle(), 2, write, 0, 0);
+    vkCmdBindDescriptorSets(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 1, 1, &setHandle, 0, 0);
+
+    memcpy(mStagingBuffer.Allocate(sizeof(glm::vec4), buffer), &materialAsset->mAlbedo, sizeof(glm::mat4));
+
+    vkCmdBindPipeline(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline->GetHandle());
+    vkCmdDrawIndexed(cmdHandle, meshAsset->GetIndexCount(), 1, 0, 0, 0);
 
 }
-    
+
 }

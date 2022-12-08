@@ -29,62 +29,60 @@ SOFTWARE.
 #include "renderer.h"
 #include "mesh.h"
 #include "camera.h"
+#include "renderlist.h"
 
 #include <Guacamole/vulkan/shader/descriptor.h>
+#include <Guacamole/vulkan/shader/sampler.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 #include <Guacamole/vulkan/buffer/buffer.h>
+#include <Guacamole/vulkan/buffer/uniformbufferset.h>
+#include <Guacamole/vulkan/swapchain.h>
+#include <Guacamole/scene/components.h>
 
 namespace Guacamole {
 
-
-
-struct SceneUniformData {
-    SceneUniformData() : 
-        mUniformBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-                        sizeof(Data), 
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {}
-
-    Buffer mUniformBuffer;
-    DescriptorSet* mSceneSet;
-
-    struct Data {
-        glm::mat4 mProjection;
-        glm::mat4 mView;
-    } *mData;
-};
-
-struct SceneMaterialData {
-    glm::vec4 mColor;
-};
-
-struct SceneModelData {
-    glm::mat4 mModelMatrix;
-};
-
 class Scene;
 class SceneRenderer {
+private:
+struct SceneData {
+    glm::mat4 mProjection;
+    glm::mat4 mView;
+};
+
 public:
-    SceneRenderer(uint32_t width, uint32_t height);
+    SceneRenderer(Scene* scene);
     ~SceneRenderer();
 
-    void Begin(Scene* scene);
+    void Begin();
     void BeginScene(const Camera& camera);
     void EndScene();
     void End();
 
-    void SubmitMesh(const Mesh* mesh, const DescriptorSet* modelSet, const DescriptorSet* materialSet);
-
-    inline StagingBuffer* GetStagingBuffer() { return &mStagingBuffer; }
+    void SubmitMesh(const MeshComponent& mesh, const TransformComponent& transform, const MaterialComponent& material);
 private:
+    std::vector<DescriptorPool*> mDescriptorPools;
+    
+    // Temporary just to get something going
+    uint32_t mUniformBufferSetIndex;
+    std::vector<UniformBufferSet*> mUniformBufferSetPool;
+    BasicSampler mSampler;
+
+private:
+    Scene* mScene;
+    Device* mDevice;
+    Swapchain* mSwapchain;
     Shader* mShader;
     PipelineLayout* mPipelineLayout;
     Pipeline* mPipeline;
     Renderpass* mRenderpass;
 
-    StagingBuffer mStagingBuffer;
-    SceneUniformData mSceneUniformData;
+    UniformBufferSet mSceneUniformSet;
 
-    Scene* mScene;
+    CommandPool mCommandPool;
+    CommandBuffer* mStagingCommandBuffer;
+    StagingBuffer mStagingBuffer;
+
+    friend class Renderlist;
 };
 
 }

@@ -134,15 +134,19 @@ DescriptorPool::DescriptorPool(Device* device, uint32_t maxSets) : mDevice(devic
     VK(vkCreateDescriptorPool(mDevice->GetHandle(), &pInfo, nullptr, &mPoolHandle));
 }
 
+DescriptorPool::DescriptorPool(DescriptorPool&& other) : mDevice(other.mDevice), mPoolHandle(other.mPoolHandle) {
+    other.mPoolHandle = 0;
+    other.mDevice = nullptr;
+}
+
 DescriptorPool::~DescriptorPool() {
     vkDestroyDescriptorPool(mDevice->GetHandle(), mPoolHandle, nullptr);
 }
 
 DescriptorSet DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout* layout) {
     std::vector<DescriptorSet> sets = AllocateDescriptorSets(layout, 1);
-    DescriptorSet ret = sets[0];
 
-    return ret;
+    return std::move(sets[0]);
 }
 
 std::vector<DescriptorSet> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num) {
@@ -177,5 +181,8 @@ std::vector<DescriptorSet> DescriptorPool::AllocateDescriptorSets(DescriptorSetL
     return sets;
 }
 
+void DescriptorPool::Reset() {
+    vkResetDescriptorPool(mDevice->GetHandle(), mPoolHandle, 0);
+}
 
 }

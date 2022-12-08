@@ -26,29 +26,30 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/asset/asset.h>
 #include <Guacamole/renderer/scenerenderer.h>
+#include <Guacamole/core/application.h>
 
 namespace Guacamole {
 
 class Entity;
-class Scene : public Asset {
+class Application;
+class Scene  {
 public:
-    Scene(const std::filesystem::path& path = "");
+    Scene(Application* app);
     ~Scene();
 
-    void BeginScene();
     void OnUpdate(float ts);
     void OnRender();
-    void EndScene();
 
     Entity CreateEntity(const std::string& name = "");
 
-    bool Load() override;
-    void Unload() override;
+    inline Application* GetApplication() const { return mApplication; }
+    inline Swapchain* GetSwapchain() const { return mApplication->GetSwapchain(); }
+    inline Device* GetDevice() const { return mApplication->GetDevice(); }
 
 protected:
     entt::registry mRegistry;
+    Application* mApplication;
     SceneRenderer* mRenderer;
 
     friend class Entity;

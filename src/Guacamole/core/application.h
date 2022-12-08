@@ -49,6 +49,8 @@ public:
     void Run();
 
     inline Window* GetWindow() const { return mWindow; }
+    inline Swapchain* GetSwapchain() const { return mSwapchain; }
+    inline Device* GetDevice() const { return mMainDevice; }
 
 protected:
     Application(ApplicationSpec& spec);

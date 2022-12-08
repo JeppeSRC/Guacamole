@@ -25,10 +25,12 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <Guacamole/vulkan/context.h>
+#include <Guacamole/vulkan/device.h>
 #include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/renderpass.h>
 #include <Guacamole/vulkan/pipeline/pipeline.h>
 #include <Guacamole/vulkan/buffer/buffer.h>
+#include <Guacamole/vulkan/buffer/commandbuffer.h>
 #include <Guacamole/vulkan/shader/texture.h>
 #include <Guacamole/vulkan/shader/descriptor.h>
 #include <Guacamole/vulkan/shader/shader.h>
@@ -42,6 +44,8 @@ SOFTWARE.
 #include <Guacamole/core/application.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/renderer/meshfactory.h>
+#include <Guacamole/renderer/material.h>
 
 using namespace Guacamole;
 
@@ -52,16 +56,53 @@ public:
     void OnInit() override {
         spdlog::set_level(spdlog::level::debug);
 
-        WindowSpec spec;
+        WindowSpec windowSpec;
 
-        spec.Width = 1280;
-        spec.Height = 720;
-        spec.Windowed = true;
-        spec.Title = "Dope TItle";
+        windowSpec.Width = 1280;
+        windowSpec.Height = 720;
+        windowSpec.Windowed = true;
+        windowSpec.Title = "Dope TItle";
 
-        Init(spec);
+        AppInitSpec initSpec;
 
-        mScene = new Scene;
+        initSpec.appName = "TestApp";
+        initSpec.deviceIndex = ~0;
+
+        Init(windowSpec, initSpec);
+
+        mScene = new Scene(this);
+
+        AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), false);
+        AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
+
+        Entity e0 = mScene->CreateEntity("first");
+
+        MeshComponent& mesh = e0.AddComponent<MeshComponent>();
+        MaterialComponent& mat = e0.AddComponent<MaterialComponent>();
+        TransformComponent& trans = e0.AddComponent<TransformComponent>();
+
+        mesh.mMesh = MeshFactory::GetPlaneAsset();
+        mat.mMaterial = matAsset;
+        trans.mScale = glm::vec3(1.0f, 1.0f, 1.0f);
+        trans.mRotation = glm::vec3(0.0f);
+        trans.mTranslation = glm::vec3(0.0f, 0.0f, -2);
+
+        Entity c = mScene->CreateEntity("camera");
+
+        CameraComponent& cam = c.AddComponent<CameraComponent>();
+        TransformComponent& camTrans = c.AddComponent<TransformComponent>();
+
+        cam.mPrimary = true;
+        cam.mFov = 70.0f;
+        cam.mAspect = (float)1280/720;
+        cam.mNear = 0.0001f;
+        cam.mFar = 100.0f;
+
+        cam.GenerateProjection();
+
+        camTrans.mScale = glm::vec3(1.0f);
+        camTrans.mRotation = glm::vec3(0.0f);
+        camTrans.mTranslation = glm::vec3(0.0f);
     }
 
     void OnUpdate(float ts) override {
@@ -73,7 +114,7 @@ public:
     }
 
     void OnShutdown() override {
-
+        delete mScene;
     }
 
     bool OnKeyPressed(KeyPressedEvent* e) override {
@@ -101,16 +142,17 @@ private:
 };
 
 int main() {
-#if 0
+    GM_LOG_INFO("Start...");
     ApplicationSpec appSpec;
 
+    appSpec.mName = "sa";
+ 
     TestApp app(appSpec);
 
     app.Run();
 
     return 0;
-#endif
-    
+
     spdlog::set_level(spdlog::level::debug);
 
     WindowSpec spec;
@@ -123,21 +165,35 @@ int main() {
     
     Guacamole::Window window(spec);
 
-    Context::Init(&window);
-    AssetManager::Init();
-    Swapchain::Init(&window);
-    StagingManager::AllocateCommonStagingBuffer(std::this_thread::get_id(), 50000000);
+    ContextSpec cSpec;
+    cSpec.applicationName = "TestApp";
+
+    Context::Init(cSpec);
+
+    Device* device = Context::CreateDevice(&window);
+
+    SwapchainSpec scSpec;
+    scSpec.mWindow = &window;
+    scSpec.mPreferredPresentModes.push_back(VK_PRESENT_MODE_IMMEDIATE_KHR);
+    scSpec.mDevice = device;
+
+    AssetManager::Init(device);
+    Swapchain* swapchain = Swapchain::CreateNew(scSpec);
+    StagingManager::AllocateCommonStagingBuffer(device, std::this_thread::get_id(), 50000000, false);
 
     StagingBuffer* staging = StagingManager::GetCommonStagingBuffer();
     staging->Begin();
 
     {
-        Shader shader;
-        shader.AddModule("build/res/shader.vert", true, ShaderStage::Vertex);
-        shader.AddModule("build/res/shader.frag", true, ShaderStage::Fragment);
+        AssetHandle vertHandle = AssetManager::AddAsset(new Shader::Source("build/res/shader.vert", false, ShaderStage::Vertex), false);
+        AssetHandle fragHandle = AssetManager::AddAsset(new Shader::Source("build/res/shader.frag", false, ShaderStage::Fragment), false);
+
+        Shader shader(device);
+        shader.AddModule(vertHandle, ShaderStage::Vertex);
+        shader.AddModule(fragHandle, ShaderStage::Fragment);
         shader.Compile();
 
-        Texture2D tex(100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
+        Texture2D tex(device, 100, 100, VK_FORMAT_R32G32B32A32_SFLOAT);
         
         glm::vec4 colors[100 * 100];
 
@@ -149,15 +205,15 @@ int main() {
 
         memcpy(staging->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &tex), colors, sizeof(colors));
 
-        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D("build/res/sheet.png"), false);
+        AssetHandle sheetHandle = AssetManager::AddAsset(new Texture2D(device, "build/res/sheet.png"), false);
         AssetHandle texHandle = AssetManager::AddMemoryAsset(&tex, false);
         //AssetManager::AddAsset(new Mesh("res/mesh.obj"), false);
-        AssetHandle planeHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane());
-        AssetHandle quadHandle = AssetManager::AddMemoryAsset(Mesh::GenerateQuad());
+        AssetHandle planeHandle = AssetManager::AddMemoryAsset(Mesh::GeneratePlane(device));
+        AssetHandle quadHandle = AssetManager::AddMemoryAsset(Mesh::GenerateQuad(device));
 
-        BasicRenderpass pass;
+        BasicRenderpass pass(swapchain, device);
 
-        PipelineLayout pipelineLayout(shader.GetDescriptorSetLayout(0), shader.GetPushConstants());
+        PipelineLayout pipelineLayout(device, shader.GetDescriptorSetLayout(0), shader.GetPushConstants());
 
         GraphicsPipelineInfo gInfo;
 
@@ -169,13 +225,15 @@ int main() {
         gInfo.mRenderpass = &pass;
         gInfo.mShader = &shader;
         
-        GraphicsPipeline gPipeline(gInfo);
+        GraphicsPipeline gPipeline(device, gInfo);
 
-        DescriptorSet* set = shader.AllocateDescriptorSets(0, 1)[0];
-        VkDescriptorSet setHandle = set->GetHandle();
+        DescriptorPool mPool(device, 10);
 
-        Buffer uniform(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(0));
-        Buffer uniform2(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set->GetLayout()->GetUniformBufferSize(2));
+        DescriptorSet set = mPool.AllocateDescriptorSet(shader.GetDescriptorSetLayout(0));
+        VkDescriptorSet setHandle = set.GetHandle();
+
+        Buffer uniform(device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set.GetLayout()->GetUniformBufferSize(0));
+        Buffer uniform2(device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, set.GetLayout()->GetUniformBufferSize(2));
 
         glm::mat4 matrix(1.0f);
         glm::vec4 color(1, 1, 1, 1);
@@ -193,7 +251,7 @@ int main() {
         memcpy(staging->Allocate(sizeof(color), &uniform), &color, sizeof(color));
         memcpy(staging->Allocate(sizeof(mvp), &uniform2), &mvp, sizeof(mvp));
 
-        BasicSampler sampler;
+        BasicSampler sampler(device);
 
         VkDescriptorBufferInfo bInfo;
 
@@ -248,56 +306,50 @@ int main() {
         wSet[1].pBufferInfo = nullptr;
         wSet[1].pTexelBufferView = nullptr;
         
-        vkUpdateDescriptorSets(Context::GetDeviceHandle(), 3, wSet, 0, nullptr);
+        vkUpdateDescriptorSets(device->GetHandle(), 3, wSet, 0, nullptr);
+
+        StagingManager::SubmitStagingBuffer(staging, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
         while (!window.ShouldClose()) {
-            if (!staging->GetCommandBuffer()->IsUsed()) {
-                staging->Reset();
-                staging->Begin();
-            }
-
             EventManager::ProcessEvents(&window);
             auto start = std::chrono::high_resolution_clock::now();
-            Swapchain::Begin();
-            CommandBuffer* cmd = Swapchain::GetPrimaryCommandBuffer();
+            bool hasImage = swapchain->Begin();
+            if (hasImage) {
+                CommandBuffer* cmd = swapchain->GetRenderCommandBuffer();
+                cmd->Wait();
+                cmd->Begin(true);
 
-            VkCommandBuffer handle = cmd->GetHandle();
+                VkCommandBuffer handle = cmd->GetHandle();
 
-            vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, gPipeline.GetHandle());
+                vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, gPipeline.GetHandle());
 
-            pass.Begin(cmd);
+                pass.Begin(cmd);
 
-            Mesh* mesh = AssetManager::GetAsset<Mesh>(quadHandle);
+                Mesh* mesh = AssetManager::GetAsset<Mesh>(quadHandle);
 
-            VkDeviceSize offset = 0;
-            VkBuffer vboHandle = mesh->GetVBOHandle();
-            VkBuffer iboHandle = mesh->GetIBOHandle();
-            
-            vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
-            vkCmdBindIndexBuffer(handle, iboHandle, 0, mesh->GetIndexType());
-            vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);
+                VkDeviceSize offset = 0;
+                VkBuffer vboHandle = mesh->GetVBOHandle();
+                VkBuffer iboHandle = mesh->GetIBOHandle();
+                
+                vkCmdBindVertexBuffers(handle, 0, 1, &vboHandle, &offset);
+                vkCmdBindIndexBuffer(handle, iboHandle, 0, mesh->GetIndexType());
+                vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.GetHandle(), 0, 1, &setHandle, 0, 0);
 
-            vkCmdDrawIndexed(handle, mesh->GetIndexCount(), 1, 0, 0, 0);
+                vkCmdDrawIndexed(handle, mesh->GetIndexCount(), 1, 0, 0, 0);
 
-            pass.End(cmd);
+                pass.End(cmd);
 
-            Swapchain::Present();
+                swapchain->Present();
+            }
 
-          /*  auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-            float ms = float(duration) / 1000.0f;
-
-            std::cout << "Frame Time: " << ms << "ms FPS: " << 1000.0f / ms << "\n";*/
         }
 
-        Swapchain::WaitForAllCommandBufferFences();
+        device->WaitQueueIdle();
     }
 
     AssetManager::Shutdown();
     StagingManager::Shutdown();
     Swapchain::Shutdown();
-    CommandPoolManager::Shutdown();
     Context::Shutdown();
 
     return 0;

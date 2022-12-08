@@ -34,7 +34,7 @@ SOFTWARE.
 namespace Guacamole {
 
 struct Vertex {
-    glm::vec4 Position;
+    glm::vec3 Position;
     glm::vec3 Normal;
     glm::vec2 UV;
 };

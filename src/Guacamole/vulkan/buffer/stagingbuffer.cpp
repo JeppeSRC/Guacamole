@@ -152,8 +152,12 @@ void StagingManager::Shutdown() {
 }
 
 void StagingManager::SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags) {
-    GM_ASSERT(buffer->IsUsed());
     GM_ASSERT(stageFlags != 0);
+
+    if (buffer->GetAllocated() == 0) {
+        buffer->GetCommandBuffer()->End();
+        return;
+    }
 
     StagingBufferSubmitInfo& buf = mSubmittedStagingBuffers.emplace_back();
 
@@ -162,6 +166,7 @@ void StagingManager::SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageF
 
     buffer->Reset();
 }
+
 
 std::vector<StagingBufferSubmitInfo> StagingManager::GetSubmittedStagingBuffers(bool clear) {
     std::vector<StagingBufferSubmitInfo> ret = mSubmittedStagingBuffers;

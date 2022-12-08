@@ -31,16 +31,22 @@ namespace Guacamole {
 
 UniformBufferSet::UniformBufferSet(Device* device, uint32_t framesInFlight) : mFrames(framesInFlight), mDevice(device) { }
 
-UniformBufferSet::~UniformBufferSet() { }
+UniformBufferSet::~UniformBufferSet() { 
+    for (auto& map : mUniformBuffers) {
+        for (auto& map2 : map.second) {
+            delete map2.second;
+        }
+    }
+}
 
 void UniformBufferSet::Create(uint32_t binding, uint64_t size) {
     for (uint32_t i = 0; i < mFrames; i++) {
-        mUniformBuffers[i][binding] = std::move(UniformBuffer(mDevice, size, binding));
+        mUniformBuffers[i][binding] = new UniformBuffer(mDevice, size, binding);
     }
 }
 
 UniformBuffer* UniformBufferSet::Get(uint32_t frame, uint32_t binding) {
-    return &mUniformBuffers[frame][binding];
+    return mUniformBuffers[frame][binding];
 }
 
 }

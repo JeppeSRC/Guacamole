@@ -63,6 +63,12 @@ struct TransformComponent {
                glm::toMat4(glm::quat(mRotation)) *
                glm::scale(glm::mat4(1.0f), mScale);
     }
+
+    glm::mat4 GetView() const {
+        return glm::translate(glm::mat4(1.0f), -mTranslation) *
+               glm::toMat4(glm::quat(mRotation)) *
+               glm::scale(glm::mat4(1.0f), mScale);
+    }
 };
 
 struct CameraComponent {
@@ -77,13 +83,6 @@ struct CameraComponent {
 
     void GenerateProjection() {
         mCamera.SetProjection(glm::perspective(mFov, mAspect, mNear, mFar));
-    }
-
-    void SetView(const TransformComponent& transform) {
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), -transform.mTranslation) *
-                         glm::toMat4(glm::quat(transform.mRotation)) * 
-                         glm::scale(glm::mat4(1.0f), transform.mScale);
-                         
     }
 };
 

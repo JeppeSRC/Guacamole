@@ -75,11 +75,14 @@ private:
 class DescriptorPool {
 public:
     DescriptorPool(Device* device, uint32_t maxSets);
-    DescriptorPool(Device* device, const DescriptorPool& other) = delete;
+    DescriptorPool(const DescriptorPool& other) = delete;
+    DescriptorPool(DescriptorPool&& other);
     ~DescriptorPool();
 
     DescriptorSet AllocateDescriptorSet(DescriptorSetLayout* layout);
     std::vector<DescriptorSet> AllocateDescriptorSets(DescriptorSetLayout* layout, uint32_t num);
+
+    void Reset();
 
     inline VkDescriptorPool GetHandle() const { return mPoolHandle; }
 

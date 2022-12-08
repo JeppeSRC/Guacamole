@@ -52,6 +52,9 @@ void Application::Run() {
         int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
         float delta = (float)duration / 1000.0f;
 
+        StagingBuffer* commonStaging = StagingManager::GetCommonStagingBuffer();
+        commonStaging->Begin();
+
         EventManager::ProcessEvents(mWindow);
 
         bool shouldRender = mSwapchain->Begin();
@@ -59,13 +62,16 @@ void Application::Run() {
         OnUpdate(delta);
 
         if (shouldRender) {
-            SwapchainPresentInfo presentInfo;
-
             OnRender();
-            mSwapchain->Present(&presentInfo);
+
+            StagingManager::SubmitStagingBuffer(commonStaging, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
+            mSwapchain->Present();
         }
 
     }
+
+    mMainDevice->WaitQueueIdle();
 
     OnShutdown();
 
