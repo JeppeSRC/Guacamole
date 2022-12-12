@@ -49,8 +49,9 @@ void Application::Run() {
 
     while (!mWindow->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
-        int64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
-        float delta = (float)duration / 1000.0f;
+        int64_t duration = std::chrono::duration_cast<std::chrono::microseconds>(now - last).count();
+        float delta = (float)duration / 1000000.0f;
+        last = now;
 
         StagingBuffer* commonStaging = StagingManager::GetCommonStagingBuffer();
         commonStaging->Begin();
