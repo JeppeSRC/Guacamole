@@ -133,8 +133,6 @@ Mesh* Mesh::GenerateQuad(Device* device) {
     mesh->mFlags |= AssetFlag_Loaded;
 
     return mesh;
-
-    return nullptr;
 }
 
 Mesh* Mesh::GeneratePlane(Device* device) {
