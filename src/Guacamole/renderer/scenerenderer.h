@@ -29,7 +29,6 @@ SOFTWARE.
 #include "renderer.h"
 #include "mesh.h"
 #include "camera.h"
-#include "renderlist.h"
 
 #include <Guacamole/vulkan/shader/descriptor.h>
 #include <Guacamole/vulkan/shader/sampler.h>
