@@ -52,6 +52,9 @@ void* StagingBuffer::Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffs
     GM_ASSERT_MSG(size + mAllocated <= GetSize(), "Buffer size exceeded");
     GM_ASSERT_MSG((bufferOffset + size) <= buffer->GetSize(), "Offset + size larager than buffer size");
 
+    mAllocated += 8;
+    mAllocated &= ~0x7ULL;
+
     uint8_t* mem = mMemory + mAllocated;
 
     VkBufferCopy copy;
