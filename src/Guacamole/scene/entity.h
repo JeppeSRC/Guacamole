@@ -58,6 +58,9 @@ public:
         mScene->mRegistry.remove<T>(mHandle);
     }
 
+    inline entt::entity GetHandle() const { return mHandle; }
+    inline Scene* GetScene() const { return mScene; }
+
 private:
     entt::entity mHandle;
     Scene* mScene;

@@ -81,10 +81,16 @@ public:
         MaterialComponent& mat = e0.AddComponent<MaterialComponent>();
         TransformComponent& trans = e0.AddComponent<TransformComponent>();
 
-        mesh.mMesh = MeshFactory::GetPlaneAsset();
+        e0.AddComponent<ScriptComponent>([](Entity* entity, float ts) {
+            TransformComponent& trans = entity->GetComponent<TransformComponent>();
+            GM_LOG_DEBUG("{}", ts);
+            trans.mRotation.y += ts * 0.2;
+        });
+
+        mesh.mMesh = MeshFactory::GetQuadAsset();
         mat.mMaterial = matAsset;
         trans.mScale = glm::vec3(1.0f, 1.0f, 1.0f);
-        trans.mRotation = glm::vec3(0.0f);
+        trans.mRotation = glm::vec3(0.0f, 1.0f, 0.0f * 3.1415f / 4.0f);
         trans.mTranslation = glm::vec3(0.0f, 0.0f, -2);
 
         Entity c = mScene->CreateEntity("camera");
@@ -102,7 +108,7 @@ public:
 
         camTrans.mScale = glm::vec3(1.0f);
         camTrans.mRotation = glm::vec3(0.0f);
-        camTrans.mTranslation = glm::vec3(0.0f);
+        camTrans.mTranslation = glm::vec3(0.0f, 0.0f, -0.5f);
     }
 
     void OnUpdate(float ts) override {

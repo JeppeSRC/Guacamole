@@ -90,4 +90,14 @@ struct MaterialComponent {
     AssetHandle mMaterial;
 };
 
+class Entity;
+struct ScriptComponent {
+    typedef void(*FPN_ScriptUpdate)(Entity* entity, float ts);
+
+    ScriptComponent(FPN_ScriptUpdate fn) : mScript(fn) {}
+
+
+    FPN_ScriptUpdate mScript;
+};
+
 }

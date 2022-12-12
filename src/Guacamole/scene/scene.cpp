@@ -42,7 +42,15 @@ Scene::~Scene() {
 }
 
 void Scene::OnUpdate(float ts) {
-    
+    auto view = mRegistry.view<ScriptComponent>();
+
+    for (auto entity : view) {
+        Entity e(this, entity);
+
+        ScriptComponent& script = view.get<ScriptComponent>(entity);
+
+        script.mScript(&e, ts);
+    }
 }
 
 void Scene::OnRender() {
