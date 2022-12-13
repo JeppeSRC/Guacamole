@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <Guacamole/core/log.h>
 #include <Guacamole/vulkan/platform.h>
+#include <Guacamole/platform/input.h>
 #include <entt/entt.hpp>
 
 #undef min

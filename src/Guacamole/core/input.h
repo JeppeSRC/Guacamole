@@ -26,14 +26,26 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <unordered_map>
+
+#include <Guacamole/core/video/event.h>
+
 namespace Guacamole {
 
 class Input {
 public:
+    static void Init();
+    static void Shutdown();
 
+    static bool IsKeyPressed(uint32_t key);
+
+    static const char* GetKeyString(uint32_t key);
 
 private:
+    static std::unordered_map<uint32_t, const char*> mKeyStrings;
+    static std::unordered_map<uint32_t, bool> mKeys;
 
+    static bool OnKey(Event* event);
 };
 
 }

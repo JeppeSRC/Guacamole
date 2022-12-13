@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Guacamole/core/video/event.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 #include <Guacamole/renderer/meshfactory.h>
+#include <Guacamole/core/input.h>
 
 #include <chrono>
 
@@ -76,7 +77,7 @@ void Application::Run() {
 
     OnShutdown();
 
-    
+    Input::Shutdown();
     StagingManager::Shutdown();
     MeshFactory::Shutdown();
     AssetManager::Shutdown();
@@ -112,6 +113,7 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
     AssetManager::Init(mMainDevice);
     StagingManager::AllocateCommonStagingBuffer(ss.mDevice, std::this_thread::get_id(), 10000000, true);
     MeshFactory::Init(ss.mDevice);
+    Input::Init();
 
     EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);
     EventManager::AddListener(EventType::KeyReleased, this, &Application::OnEvent);

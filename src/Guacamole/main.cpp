@@ -42,6 +42,7 @@ SOFTWARE.
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
+#include <Guacamole/core/input.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 #include <Guacamole/renderer/meshfactory.h>
@@ -83,7 +84,6 @@ public:
 
         e0.AddComponent<ScriptComponent>([](Entity* entity, float ts) {
             TransformComponent& trans = entity->GetComponent<TransformComponent>();
-            GM_LOG_DEBUG("{}", ts);
             trans.mRotation.y += ts * 0.2;
         });
 
@@ -97,6 +97,29 @@ public:
 
         CameraComponent& cam = c.AddComponent<CameraComponent>();
         TransformComponent& camTrans = c.AddComponent<TransformComponent>();
+
+        c.AddComponent<ScriptComponent>([](Entity* entity, float ts) {
+            TransformComponent& trans = entity->GetComponent<TransformComponent>();
+            
+            glm::mat4 view = glm::toMat4(glm::quat(trans.mRotation));
+
+            glm::vec3 forward = view[2];
+            glm::vec3 right = view[0];
+
+
+            forward *= ts * 1.5;
+            right *= ts * 1.5;
+
+            if (Input::IsKeyPressed(GM_KEY_w))
+                trans.mTranslation -= forward;
+            else if (Input::IsKeyPressed(GM_KEY_s))
+                trans.mTranslation += forward;
+
+            if (Input::IsKeyPressed(GM_KEY_d))
+                trans.mTranslation += right;
+            else if (Input::IsKeyPressed(GM_KEY_a))
+                trans.mTranslation -= right;
+        });
 
         cam.mPrimary = true;
         cam.mFov = 70.0f;
