@@ -24,8 +24,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Guacamole.h>
-
 namespace Guacamole {
 
 #if defined(GM_LINUX)
