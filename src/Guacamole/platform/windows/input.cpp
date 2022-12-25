@@ -22,46 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include <unordered_map>
-
-#include <Guacamole/core/video/event.h>
+#include <Gucaumole/core/input.h>
 
 namespace Guacamole {
 
-class Input {
-public:
-    static constexpr uint32_t MAX_KEY_STRING_LENGTH = 32;
+void Input::AddKey(uint32_t scanCode) {
+    Key key;
 
-    struct Key {
-        uint32_t mKeyCode;
-        uint32_t mScanCode;
-        bool mPressed;
-        char mString[MAX_KEY_STRING_LENGTH];
-    };
+    key.mKeyCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
+    key.mKeyCode |= (scanCode & 0xE100);
+    key.mScanCode = scanCode;
+    key.mPressed = false;
+    GetKeyString(key);
 
-public:
-    static void Init();
-    static void Shutdown();
+    mKeys[scanCode] = key;
+    mScanCodes[key.mKeyCode] = scanCode;
 
-    static bool IsKeyPressed(uint32_t scanCode);
-    static bool IsVKeyPressed(uint32_t keyCode);
-    static const Key* GetKeyInfo(uint32_t scanCode);
-    
+    GM_LOG_DEBUG("Added Key: SC=0x{0:04x} VK=0x{1:04x} Char='{2}'", scanCode, key.mKeyCode, key.mString);
+}
 
-private:
-    static void OnKey(uint32_t scanCode, bool pressed);
-    static void AddKey(uint32_t scanCode);
-    static void GetKeyString(Key& key);
+void Input::GetKeyString(Key& key) {
+    memset(key.mString, 0, MAX_KEY_STRING_LENGTH);
 
-    static std::unordered_map<uint32_t, Key> mKeys;
-    static std::unordered_map<uint32_t, uint32_t> mScanCodes; // Stores the scancode for a specific key code 
-    static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
+    #define STRING(str) memcpy(key.mString, str, strlen(str))
+    auto it = mKeyCodeStrings.find(key.mKeyCode);
 
-    friend class EventManager;
-};
+    if (it == mKeyCodeStrings.end()) {
+        uint16_t val = MapVirtualKey(key.mKeyCode, MAPVK_VK_TO_CHAR) & 0xFFFF;
+
+        if (val == 0) {
+            GM_LOG_WARNING("Key: SC=0x{:04x} KC=0x{:04x} has no string mapping!", key.mScanCode, key.mKeyCode);
+            STRING("Unknown");
+            return;
+        }
+
+        key.mString[0] = (char)val;
+        return;
+    }
+
+    STRING(it->second);
+}
 
 }

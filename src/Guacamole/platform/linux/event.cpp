@@ -28,6 +28,7 @@ SOFTWARE.
 
 #include <Guacamole/core/video/event.h>
 #include <Guacamole/core/video/window.h>
+#include <Guacamole/core/input.h>
 
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
@@ -68,10 +69,10 @@ void EventManager::ProcessEvents(Window* window) {
         switch (e->response_type & 0x7F) {
             case XCB_KEY_PRESS: {
                 xcb_key_press_event_t* pressed = (xcb_key_press_event_t*)e;
-                xkb_keysym_t sym = xkb_state_key_get_one_sym(mState, pressed->detail);
                 
-                KeyPressedEvent evnt(sym);
+                KeyPressedEvent evnt(pressed->detail);
                 
+                Input::OnKey(pressed->detail, true);
                 DispatchEvent(&evnt);
 
                 break;
@@ -79,10 +80,10 @@ void EventManager::ProcessEvents(Window* window) {
 
             case XCB_KEY_RELEASE: {
                 xcb_key_release_event_t* released = (xcb_key_release_event_t*)e;
-                xkb_keysym_t sym = xkb_state_key_get_one_sym(mState, released->detail);
                 
-                KeyReleasedEvent evnt(sym);
+                KeyReleasedEvent evnt(released->detail);
                 
+                Input::OnKey(released->detail, false);
                 DispatchEvent(&evnt);
 
                 break;

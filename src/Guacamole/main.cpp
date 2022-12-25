@@ -110,14 +110,14 @@ public:
             forward *= ts * 1.5;
             right *= ts * 1.5;
 
-            if (Input::IsKeyPressed(GM_KEY_w))
+            if (Input::IsVKeyPressed(GM_KEY_W))
                 trans.mTranslation -= forward;
-            else if (Input::IsKeyPressed(GM_KEY_s))
+            else if (Input::IsVKeyPressed(GM_KEY_S))
                 trans.mTranslation += forward;
 
-            if (Input::IsKeyPressed(GM_KEY_d))
+            if (Input::IsVKeyPressed(GM_KEY_D))
                 trans.mTranslation += right;
-            else if (Input::IsKeyPressed(GM_KEY_a))
+            else if (Input::IsVKeyPressed(GM_KEY_A))
                 trans.mTranslation -= right;
         });
 

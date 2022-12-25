@@ -139,6 +139,8 @@ private:
     static std::vector<std::pair<EventType, std::function<bool(Event*)>>> mCallbacks;
 
 #if defined(GM_LINUX)
+public:
+    static xkb_state* GetState() { return mState; }
 
 private:
     static xkb_context* mXkbContext;
