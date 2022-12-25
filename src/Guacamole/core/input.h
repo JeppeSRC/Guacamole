@@ -34,18 +34,33 @@ namespace Guacamole {
 
 class Input {
 public:
+    static constexpr uint32_t MAX_KEY_STRING_LENGTH = 32;
+
+    struct Key {
+        uint32_t mKeyCode;
+        uint32_t mScanCode;
+        bool mPressed;
+        char mString[MAX_KEY_STRING_LENGTH];
+    };
+
+public:
     static void Init();
     static void Shutdown();
 
-    static bool IsKeyPressed(uint32_t key);
-
-    static const char* GetKeyString(uint32_t key);
+    static bool IsKeyPressed(uint32_t scanCode);
+    static bool IsVKeyPressed(uint32_t keyCode);
+    static const Key* GetKeyInfo(uint32_t scanCode);
+    
 
 private:
-    static std::unordered_map<uint32_t, const char*> mKeyStrings;
-    static std::unordered_map<uint32_t, bool> mKeys;
+    static void OnKey(uint32_t scanCode, bool pressed);
+    static void AddKey(uint32_t scanCode);
+    static void GetKeyString(Key& key);
 
-    static bool OnKey(Event* event);
+    static std::unordered_map<uint32_t, Key> mKeys;
+    static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
+
+    friend class EventManager;
 };
 
 }
