@@ -91,9 +91,10 @@ void EventManager::ProcessEvents(Window* window) {
 
             case XCB_BUTTON_PRESS: {
                 xcb_button_press_event_t* pressed = (xcb_button_press_event_t*)e;
+                
+                ButtonPressedEvent evnt(pressed->detail  | GM_BUTTON_OFFSET);
 
-                ButtonPressedEvent evnt(pressed->detail);
-
+                Input::OnKey(pressed->detail | GM_BUTTON_OFFSET, true);
                 DispatchEvent(&evnt);
 
                 break;
@@ -102,8 +103,9 @@ void EventManager::ProcessEvents(Window* window) {
             case XCB_BUTTON_RELEASE: {
                 xcb_button_release_event_t* released = (xcb_button_release_event_t*)e;
 
-                ButtonPressedEvent evnt(released->detail);
+                ButtonPressedEvent evnt(released->detail | GM_BUTTON_OFFSET);
 
+                Input::OnKey(released->detail | GM_BUTTON_OFFSET, false);
                 DispatchEvent(&evnt);
 
                 break;

@@ -35,7 +35,7 @@ std::unordered_map<uint32_t, uint32_t> Input::mScanCodes;
 std::unordered_map<uint32_t, const char*> Input::mKeyCodeStrings;
 
 #define ADD(key, string) mKeyCodeStrings[key] = string
-#define ADD_RANGE(start, end) for (uint32_t i = start; i <= end; i++) { AddKey(i); }
+#define ADD_RANGE(start, end) for (uint32_t i = (start); i <= (end); i++) { AddKey(i); }
 
 void Input::Init() {
 
@@ -112,6 +112,14 @@ void Input::Init() {
     ADD(GM_KEY_Minus, "-");
     ADD(GM_KEY_Period, ".");
 
+    ADD(GM_BUTTON_Left, "MB LEFT");
+    ADD(GM_BUTTON_Middle, "MB MIDDLE");
+    ADD(GM_BUTTON_Right, "MB RIGHT");
+    ADD(GM_BUTTON_Scroll_Up, "MB SCROLL UP");
+    ADD(GM_BUTTON_Scroll_Down, "MB SCROLL DOWN");
+    ADD(GM_BUTTON_Back, "MB BACK");
+    ADD(GM_BUTTON_Forward, "MB FORWARD");
+
 #if defined(GM_WINDOWS)
     ADD_RANGE(0x1, 0x58);
     ADD_RANGE(0xE01C, 0xE01D);
@@ -134,6 +142,9 @@ void Input::Init() {
     ADD_RANGE(0x68, 0x6A);
     ADD_RANGE(0x6E, 0x77);
     ADD_RANGE(0x85, 0x87);
+
+    ADD_RANGE(GM_BUTTON_OFFSET | 0x01, GM_BUTTON_OFFSET | 0x05);
+    ADD_RANGE(GM_BUTTON_OFFSET | 0x08, GM_BUTTON_OFFSET | 0x09);
 
 #endif
 }

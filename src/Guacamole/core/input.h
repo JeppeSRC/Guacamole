@@ -58,7 +58,7 @@ private:
     static void GetKeyString(Key& key);
 
     static std::unordered_map<uint32_t, Key> mKeys;
-    static std::unordered_map<uint32_t, uint32_t> mScanCodes; // Stores the scancode for a specific key code 
+    static std::unordered_map<uint32_t, uint32_t> mScanCodes;
     static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
 
     friend class EventManager;

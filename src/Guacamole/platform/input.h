@@ -30,7 +30,18 @@ namespace Guacamole {
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
+#define GM_BUTTON_OFFSET 0x6900
+
 enum KeyCode {
+    GM_BUTTON_Left = 0x01,
+    GM_BUTTON_Middle = 0x02,
+    GM_BUTTON_Right = 0x03,
+    GM_BUTTON_Scroll_Up = 0x04,
+    GM_BUTTON_Scroll_Down = 0x05,
+    GM_BUTTON_Back = 0x08,
+    GM_BUTTON_Forward = 0x09,
+
+
     GM_KEY_KP_Enter = XKB_KEY_KP_Enter,
 
     GM_KEY_KP_Delete = XKB_KEY_KP_Separator,
