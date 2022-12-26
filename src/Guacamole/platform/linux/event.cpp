@@ -113,9 +113,15 @@ void EventManager::ProcessEvents(Window* window) {
 
             case XCB_MOTION_NOTIFY: {
                 xcb_motion_notify_event_t* motion = (xcb_motion_notify_event_t*)e;
+                
+                uint32_t x = motion->event_x;
+                uint32_t y =  motion->event_y;
+                int32_t dx = x - Input::mMouseX;
+                int32_t dy = y - Input::mMouseY;
 
-                MouseMovedEvent evnt(motion->event_x, motion->event_y);
+                MouseMovedEvent evnt(x, y, dx, dx);
 
+                Input::OnMouse(motion->event_x, motion->event_y);
                 DispatchEvent(&evnt);
                 break;
             }

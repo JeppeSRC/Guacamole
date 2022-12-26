@@ -33,6 +33,8 @@ namespace Guacamole {
 std::unordered_map<uint32_t, Input::Key> Input::mKeys;
 std::unordered_map<uint32_t, uint32_t> Input::mScanCodes;
 std::unordered_map<uint32_t, const char*> Input::mKeyCodeStrings;
+uint32_t Input::mMouseX = 0;
+uint32_t Input::mMouseY = 0;
 
 #define ADD(key, string) mKeyCodeStrings[key] = string
 #define ADD_RANGE(start, end) for (uint32_t i = (start); i <= (end); i++) { AddKey(i); }
@@ -177,6 +179,11 @@ const Input::Key* Input::GetKeyInfo(uint32_t scanCode) {
 
 void Input::OnKey(uint32_t scanCode, bool pressed) {
     mKeys[scanCode].mPressed = pressed;
+}
+
+void Input::OnMouse(uint32_t x, uint32_t y) {
+    mMouseX = x;
+    mMouseY = y;
 }
 
 }

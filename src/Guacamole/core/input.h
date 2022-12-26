@@ -51,6 +51,8 @@ public:
     static bool IsVKeyPressed(uint32_t keyCode);
     static const Key* GetKeyInfo(uint32_t scanCode);
     
+    static uint32_t GetMouseX() { return mMouseX; }
+    static uint32_t GetMouseY() { return mMouseY; }
 
 private:
     static void OnKey(uint32_t scanCode, bool pressed);
@@ -60,6 +62,11 @@ private:
     static std::unordered_map<uint32_t, Key> mKeys;
     static std::unordered_map<uint32_t, uint32_t> mScanCodes;
     static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
+
+    static void OnMouse(uint32_t x, uint32_t y);
+
+    static uint32_t mMouseX;
+    static uint32_t mMouseY;
 
     friend class EventManager;
 };

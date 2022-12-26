@@ -88,13 +88,15 @@ public:
 
 class MouseMovedEvent : public Event {
 public:
-    MouseMovedEvent(uint32_t dx, uint32_t dy) : mDX(dx), mDY(dy) {}
+    MouseMovedEvent(uint32_t x, uint32_t y, int32_t dx, int32_t dy) : mX(x), mY(y), mDeltaX(dx), mDeltaY(dy) {}
 
     inline EventType GetType() const override { return EventType::MouseMoved; }
 
 public:
-    uint32_t mDX;
-    uint32_t mDY;
+    uint32_t mX;
+    uint32_t mY;
+    int32_t mDeltaX;
+    int32_t mDeltaY;
 };
 
 class WindowResizeEvent : public Event {
