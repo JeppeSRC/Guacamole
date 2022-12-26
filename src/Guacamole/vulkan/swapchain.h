@@ -44,6 +44,8 @@ struct SwapchainSpec {
     std::vector<VkPresentModeKHR> mPreferredPresentModes;
 };
 
+class Framebuffer;
+class Event;
 class CommandPool;
 class CommandBuffer;
 class Swapchain {
@@ -55,6 +57,7 @@ public:
     // Returns true if an image was aquired
     bool Begin();
     void Present();
+    bool Resize(uint32_t width, uint32_t height);
     VkFormat GetFormat() { return msInfo.imageFormat; }
     VkExtent2D GetExtent() { return msInfo.imageExtent; }
     std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
@@ -62,14 +65,23 @@ public:
     uint32_t GetFramesInFlight() { return mSwapchainImages.size(); }
     CommandBuffer* GetRenderCommandBuffer() { return mCommandBuffers[mCurrentImageIndex]; }
 
+    void AddFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer);
+    void RemoveFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer);
+
 private:
     void PresentInternalTimelineSemaphore();
-
+    bool OnEvent(Event* event);
 private:
     Window* mWindow;
     Device* mDevice;
     VkSwapchainCreateInfoKHR msInfo;
     VkSwapchainKHR mSwapchainHandle;
+
+#if defined(GM_LINUX)
+    VkXcbSurfaceCreateInfoKHR mSurfaceInfo;
+#elif defined(GM_WINDOWS)
+    VkWin32SurfaceCreateInfoKHR mSurfaceInfo;
+#endif
 
     VkSurfaceKHR mSurfaceHandle;
 
@@ -84,9 +96,11 @@ private:
     std::vector<CommandBuffer*> mCommandBuffers;
 
     VkPresentInfoKHR mPresentInfo;
+    VkImageViewCreateInfo miwInfo;
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
 
+    std::map<uint32_t, std::vector<Framebuffer*>> mFramebuffers; // Framebuffers created from swapchain images
 public:
     static Swapchain* CreateNew(const SwapchainSpec& spec);
     static void DestroySwapchain(Swapchain* swapchain);

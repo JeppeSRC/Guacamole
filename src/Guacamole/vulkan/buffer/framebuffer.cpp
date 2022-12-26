@@ -24,14 +24,41 @@ SOFTWARE.
 #include <Guacamole.h>
 #include "framebuffer.h"
 
+#include <Guacamole/vulkan/device.h>
+
 namespace Guacamole {
 
-Framebuffer::Framebuffer(uint32_t width, uint32_t height) {
+Framebuffer::Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView) 
+        : mDevice(device), mWidth(width), mHeight(height), mRenderpassHandle(renderpassHandle) {
+            
+    mfbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    mfbInfo.pNext = nullptr;
+    mfbInfo.flags = 0;
+    mfbInfo.renderPass = mRenderpassHandle;
+    mfbInfo.attachmentCount = 1;
+    mfbInfo.pAttachments = &imageView;
+    mfbInfo.width = width;
+    mfbInfo.height = height;
+    mfbInfo.layers = 1;
 
+    VK(vkCreateFramebuffer(device->GetHandle(), &mfbInfo, nullptr, &mFramebufferHandle));
 }
 
 Framebuffer::~Framebuffer() {
-    
+    vkDestroyFramebuffer(mDevice->GetHandle(), mFramebufferHandle, nullptr);
+}
+
+void Framebuffer::ReCreate(uint32_t width, uint32_t height, VkImageView imageView) {
+    vkDestroyFramebuffer(mDevice->GetHandle(), mFramebufferHandle, nullptr);
+
+    mfbInfo.width = width;
+    mfbInfo.height = height;
+    mfbInfo.pAttachments = &imageView;
+
+    VK(vkCreateFramebuffer(mDevice->GetHandle(), &mfbInfo, nullptr, &mFramebufferHandle));
+
+    mWidth = width;
+    mHeight = height;
 }
 
 }

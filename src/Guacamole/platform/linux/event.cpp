@@ -136,17 +136,20 @@ void EventManager::ProcessEvents(Window* window) {
                 break;
             }
 
-            case XCB_RESIZE_REQUEST: {
-                xcb_resize_request_event_t* resize = (xcb_resize_request_event_t*)e;
+            case XCB_CONFIGURE_NOTIFY: {
+                xcb_configure_notify_event_t* notify = (xcb_configure_notify_event_t*)e;
                 
-                WindowResizeEvent evnt(resize->width, resize->height);
+                if (notify->width != window->mSpec.Width || notify->height != window->mSpec.Height) {
+                    WindowResizeEvent evnt(notify->width, notify->height);
 
-                window->mSpec.Width = resize->width;
-                window->mSpec.Height = resize->height;
+                    window->mSpec.Width = notify->width;
+                    window->mSpec.Height = notify->height;
 
-                GM_LOG_DEBUG("[Window] Resize {}x{}", resize->width, resize->height);
+                    GM_LOG_DEBUG("[Window] Resize {}x{}", notify->width, notify->height);
 
-                DispatchEvent(&evnt);
+                    DispatchEvent(&evnt);
+                }
+                
                 
 
                 break;

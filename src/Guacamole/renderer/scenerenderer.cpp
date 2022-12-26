@@ -143,8 +143,28 @@ void SceneRenderer::BeginScene(const Camera& camera) {
     data->mView = camera.GetView();
 
     CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
-    Renderer::BeginRenderpass(cmd, mRenderpass);
 
+    VkExtent2D screenSize = mSwapchain->GetExtent();
+
+    VkViewport viewPort;
+
+    viewPort.width = (float)screenSize.width;
+    viewPort.height = (float)screenSize.height;
+    viewPort.x = 0;
+    viewPort.y = 0;
+    viewPort.minDepth = 0.001f;
+    viewPort.maxDepth = 1;
+
+    VkRect2D rect;
+
+    rect.offset.x = 0;
+    rect.offset.y = 0;
+    rect.extent = screenSize;
+    
+    vkCmdSetViewport(cmd->GetHandle(), 0, 1, &viewPort);
+    vkCmdSetScissor(cmd->GetHandle(), 0, 1, &rect);
+
+    Renderer::BeginRenderpass(cmd, mRenderpass);
     vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &set.GetHandle(), 0, 0);
 }
 

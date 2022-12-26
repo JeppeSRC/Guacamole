@@ -86,46 +86,33 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
 
     Create(&info);
 
-    VkFramebufferCreateInfo fbInfo;
+    std::vector<VkImageView> imageViews = swapchain->GetImageViews();
 
-    fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    fbInfo.pNext = nullptr;
-    fbInfo.flags = 0;
-    fbInfo.renderPass = mRenderpassHandle;
-    fbInfo.attachmentCount = 1;
-    //fbInfo.pAttachments = nullptr;
-    fbInfo.width = swapchain->GetExtent().width;
-    fbInfo.height = swapchain->GetExtent().height;
-    fbInfo.layers = 1;
+    mFramebuffers.reserve(imageViews.size());
 
-    std::vector<VkImageView> views = swapchain->GetImageViews();
+    VkExtent2D extent = swapchain->GetExtent();
 
-    for (VkImageView view : views) {
-        fbInfo.pAttachments = &view;
-
-        VkFramebuffer fb;
-        VK(vkCreateFramebuffer(mDevice->GetHandle(), &fbInfo, nullptr, &fb));
-
-        mFramebuffers.push_back(fb);
+    for (uint32_t i = 0; i < imageViews.size(); i++) {
+        mFramebuffers.emplace_back(mDevice, extent.width, extent.height, mRenderpassHandle, imageViews[i]);
+        swapchain->AddFramebuffer(i, &mFramebuffers[i]);
     }
 
     mBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     mBeginInfo.pNext = nullptr;
     mBeginInfo.renderPass = mRenderpassHandle;
-    mBeginInfo.renderArea.extent = swapchain->GetExtent();
     mBeginInfo.renderArea.offset.x = 0;
     mBeginInfo.renderArea.offset.y = 0;
 }
 
 BasicRenderpass::~BasicRenderpass() {
-    for (VkFramebuffer fb : mFramebuffers) {
-        vkDestroyFramebuffer(mDevice->GetHandle(), fb, nullptr);
-    }
+    for (uint32_t i = 0; i < mFramebuffers.size(); i++) 
+        mSwapchain->RemoveFramebuffer(i, &mFramebuffers[i]);
 }
 
 void BasicRenderpass::Begin(const CommandBuffer* cmd) {
     VkClearValue clear = {};
 
+    mBeginInfo.renderArea.extent = mSwapchain->GetExtent();
     mBeginInfo.framebuffer = GetFramebufferHandle(mSwapchain->GetCurrentImageIndex());
     mBeginInfo.clearValueCount = 1;
     mBeginInfo.pClearValues = &clear;
@@ -138,7 +125,8 @@ void BasicRenderpass::End(const CommandBuffer* cmd) {
 }
 
 VkFramebuffer BasicRenderpass::GetFramebufferHandle(uint32_t index) const {
-    return mFramebuffers[index];
+    return mFramebuffers[index].GetHandle();
 }
+
 
 }

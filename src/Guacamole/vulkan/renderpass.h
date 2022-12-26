@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 #include <Guacamole/vulkan/buffer/commandbuffer.h>
+#include <Guacamole/vulkan/buffer/framebuffer.h>
 
 namespace Guacamole {
 
@@ -55,8 +56,6 @@ private:
 };
 
 class BasicRenderpass : public Renderpass {
-private:
-    std::vector<VkFramebuffer> mFramebuffers;
 public:
     BasicRenderpass(Swapchain* swapchain, Device* device);
     ~BasicRenderpass();
@@ -65,6 +64,13 @@ public:
     void End(const CommandBuffer* cmd) override;
 
     VkFramebuffer GetFramebufferHandle(uint32_t index) const override;
+    
+    inline uint32_t GetWidth() const { return mFramebuffers[0].GetWidth(); }
+    inline uint32_t GetHeight() const { return mFramebuffers[0].GetHeight(); }
+
+private:
+    std::vector<Framebuffer> mFramebuffers;
+    
 };
 
 }

@@ -28,16 +28,28 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class Device;
 class Framebuffer {
-private:
+protected:
+    Device* mDevice;
+    VkFramebufferCreateInfo mfbInfo;
     VkFramebuffer mFramebufferHandle;
+    VkRenderPass mRenderpassHandle;
 
     uint32_t mWidth;
     uint32_t mHeight;
 
 public:
-    Framebuffer(uint32_t width, uint32_t height);
+    Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView);
     ~Framebuffer();
+
+    void ReCreate(uint32_t width, uint32_t height, VkImageView imageView);
+
+    inline Device* GetDevice() const { return mDevice; }
+    inline VkFramebuffer GetHandle() const { return mFramebufferHandle; }
+    inline VkRenderPass GetRenderpassHandle() const { return mRenderpassHandle; }
+    inline uint32_t GetWidth() const { return mWidth; }
+    inline uint32_t GetHeight() const { return mHeight; }
 
 };
 

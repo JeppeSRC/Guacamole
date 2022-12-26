@@ -30,6 +30,8 @@ SOFTWARE.
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/core/video/event.h>
+#include <Guacamole/vulkan/buffer/framebuffer.h>
 
 bool operator==(const VkSurfaceFormatKHR& left, const VkSurfaceFormatKHR& right) {
     return left.colorSpace == right.colorSpace && left.format == right.format;
@@ -45,26 +47,22 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     PhysicalDevice* physical = mDevice->GetParent();
 
 #if defined(GM_LINUX)
-    VkXcbSurfaceCreateInfoKHR surfaceInfo;
+    mSurfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+    mSurfaceInfo.pNext = nullptr;
+    mSurfaceInfo.flags = 0;
+    mSurfaceInfo.connection = window->GetXCBConnection();
+    mSurfaceInfo.window = window->GetXCBWindow();
 
-    surfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    surfaceInfo.pNext = nullptr;
-    surfaceInfo.flags = 0;
-    surfaceInfo.connection = window->GetXCBConnection();
-    surfaceInfo.window = window->GetXCBWindow();
-
-    VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
+    VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
 
 #elif defined(GM_WINDOWS)
-    VkWin32SurfaceCreateInfoKHR surfaceInfo;
+    mSurfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    mSurfaceInfo.pNext = nullptr;
+    mSurfaceInfo.flags = 0;
+    mSurfaceInfo.hinstance = 0;
+    mSurfaceInfo.hwnd = window->GetHWND();
 
-    surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    surfaceInfo.pNext = nullptr;
-    surfaceInfo.flags = 0;
-    surfaceInfo.hinstance = 0;
-    surfaceInfo.hwnd = window->GetHWND();
-
-    VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &surfaceInfo, nullptr, &mSurfaceHandle));
+    VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
 #endif
 
     VkSurfaceCapabilitiesKHR surfaceCaps = physical->GetSurfaceCapabilities(mSurfaceHandle);
@@ -132,31 +130,28 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, nullptr));
     mSwapchainImages.resize(imageCount);
     VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
-    
-    VkImageViewCreateInfo iwInfo;
 
-    iwInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    iwInfo.pNext = nullptr;
-    iwInfo.flags = 0;
-    //iwInfo.image
-    iwInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    iwInfo.format = msInfo.imageFormat;
-    iwInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-    iwInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-    iwInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-    iwInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-    iwInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    iwInfo.subresourceRange.baseArrayLayer = 0;
-    iwInfo.subresourceRange.baseMipLevel = 0;
-    iwInfo.subresourceRange.layerCount = 1;
-    iwInfo.subresourceRange.levelCount = 1;
+    miwInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    miwInfo.pNext = nullptr;
+    miwInfo.flags = 0;
+    miwInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    miwInfo.format = msInfo.imageFormat;
+    miwInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    miwInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    miwInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    miwInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    miwInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    miwInfo.subresourceRange.baseArrayLayer = 0;
+    miwInfo.subresourceRange.baseMipLevel = 0;
+    miwInfo.subresourceRange.layerCount = 1;
+    miwInfo.subresourceRange.levelCount = 1;
     
     for (VkImage image : mSwapchainImages) {
-        iwInfo.image = image;
+        miwInfo.image = image;
 
         VkImageView view;
 
-        VK(vkCreateImageView(mDevice->GetHandle(), &iwInfo, nullptr, &view));
+        VK(vkCreateImageView(mDevice->GetHandle(), &miwInfo, nullptr, &view));
 
         mSwapchainImageViews.push_back(view);
     }
@@ -179,7 +174,8 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     mPresentInfo.pWaitSemaphores = &mRenderSubmitSemaphore;
     mPresentInfo.swapchainCount = 1;
     mPresentInfo.pSwapchains = &mSwapchainHandle;
-    
+
+    EventManager::AddListener(EventType::WindowResize, this, &Swapchain::OnEvent);
 }
 
 Swapchain::~Swapchain() {
@@ -217,6 +213,71 @@ bool Swapchain::Begin() {
 
 void Swapchain::Present() {
     if (mDevice->GetFeatures() & Device::FeatureTimelineSemaphore) PresentInternalTimelineSemaphore();
+}
+
+bool Swapchain::Resize(uint32_t width, uint32_t height) {
+    mDevice->WaitQueueIdle();
+
+    VkSwapchainKHR newHandle;
+    VkSurfaceCapabilitiesKHR caps = mDevice->GetParent()->GetSurfaceCapabilities(mSurfaceHandle);
+
+    bool isWidthCorrect = width >= caps.minImageExtent.width && width <= caps.maxImageExtent.width;
+    bool isHeightCorrect = height >= caps.minImageExtent.height && height <= caps.maxImageExtent.height;
+
+    if (!(isWidthCorrect && isHeightCorrect)) {
+        return false;
+    }
+
+    for (VkImageView view : mSwapchainImageViews) {
+        vkDestroyImageView(mDevice->GetHandle(), view, nullptr);
+    }
+
+    mSwapchainImageViews.clear();
+
+    msInfo.imageExtent.width = width;
+    msInfo.imageExtent.height = height;
+    msInfo.oldSwapchain = mSwapchainHandle;
+
+    VK(vkCreateSwapchainKHR(mDevice->GetHandle(), &msInfo, nullptr, &newHandle));
+    vkDestroySwapchainKHR(mDevice->GetHandle(), mSwapchainHandle, nullptr);
+    mSwapchainHandle = newHandle;
+
+    uint32_t imageCount = mSwapchainImages.size();
+    VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
+
+    for (uint32_t i = 0; i < imageCount; i++) {
+        miwInfo.image = mSwapchainImages[i];
+
+        VkImageView view;
+
+        VK(vkCreateImageView(mDevice->GetHandle(), &miwInfo, nullptr, &view));
+
+        mSwapchainImageViews.push_back(view);
+
+        std::vector<Framebuffer*>& buffers = mFramebuffers[i];
+
+        for (Framebuffer* fb : buffers) {
+            fb->ReCreate(width, height, view);
+        }
+
+    }
+
+    return true;
+}
+
+void Swapchain::AddFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer) {
+    mFramebuffers[viewIndex].push_back(framebuffer);
+}
+
+void Swapchain::RemoveFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer) {
+    std::vector<Framebuffer*>& buffers = mFramebuffers[viewIndex];
+
+    for (uint32_t i = 0; i < buffers.size(); i++) {
+        if (buffers[i] == framebuffer) {
+            buffers.erase(buffers.begin() + i);
+            break;
+        }
+    }
 }
 
 void Swapchain::PresentInternalTimelineSemaphore() {
@@ -307,6 +368,16 @@ void Swapchain::PresentInternalTimelineSemaphore() {
     VK(vkQueuePresentKHR(mDevice->GetGraphicsQueue(), &mPresentInfo));
 
     mCurrentImageIndex = ~0;
+}
+
+bool Swapchain::OnEvent(Event* event) {
+    WindowResizeEvent* resize = (WindowResizeEvent*)event;
+
+    if (!Resize(resize->mWidth, resize->mHeight)) {
+        GM_LOG_WARNING("[Swapchain] Skipped resize");
+    }
+
+    return false;
 }
 
 std::vector<Swapchain*> Swapchain::mSwapchains;

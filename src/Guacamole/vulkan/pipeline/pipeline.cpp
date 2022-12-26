@@ -163,11 +163,13 @@ GraphicsPipeline::GraphicsPipeline(Device* device, const GraphicsPipelineInfo& i
 
     VkPipelineDynamicStateCreateInfo dsInfo;
 
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
     dsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dsInfo.pNext = nullptr;
     dsInfo.flags = 0;
-    dsInfo.dynamicStateCount = 0;
-    dsInfo.pDynamicStates = nullptr;
+    dsInfo.dynamicStateCount = 1;
+    dsInfo.pDynamicStates = dynamicStates;
 
     VkGraphicsPipelineCreateInfo pInfo;
 
