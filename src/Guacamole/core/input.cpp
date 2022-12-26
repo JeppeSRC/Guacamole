@@ -41,7 +41,7 @@ void Input::Init() {
 
     ADD(GM_KEY_BackSpace, "BACKSPACE");
     ADD(GM_KEY_Tab, "TAB");
-    ADD(GM_KEY_End, "ENTER");
+    ADD(GM_KEY_End, "END");
     ADD(GM_KEY_KP_Enter, "KP ENTER");
     ADD(GM_KEY_Caps_Lock, "CAPS");
     ADD(GM_KEY_Escape, "ESCAPE");
@@ -111,6 +111,7 @@ void Input::Init() {
     ADD(GM_KEY_Comma, ",");
     ADD(GM_KEY_Minus, "-");
     ADD(GM_KEY_Period, ".");
+    ADD(GM_KEY_Enter, "ENTER");
 
     ADD(GM_BUTTON_Left, "MB LEFT");
     ADD(GM_BUTTON_Middle, "MB MIDDLE");

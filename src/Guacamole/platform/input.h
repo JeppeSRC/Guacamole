@@ -113,7 +113,7 @@ enum KeyCode {
     GM_KEY_BackSpace = XKB_KEY_BackSpace,
 
     GM_KEY_Tab = XKB_KEY_Tab,
-    GM_KEY_Return = XKB_KEY_Return,
+    GM_KEY_Enter = XKB_KEY_Return,
     GM_KEY_Pause = XKB_KEY_Pause,
     GM_KEY_Scroll_Lock = XKB_KEY_Scroll_Lock,
     GM_KEY_Print = XKB_KEY_Sys_Req,
@@ -248,7 +248,7 @@ enum KeyCode {
     GM_KEY_BackSpace = VK_BACK,
 
     GM_KEY_Tab = VK_TAB,
-    GM_KEY_Return = VK_RETURN,
+    GM_KEY_Enter = VK_RETURN,
     GM_KEY_Pause = VK_PAUSE,
     GM_KEY_Scroll_Lock = VK_SCROLL,
     GM_KEY_Print = VK_PRINT,
