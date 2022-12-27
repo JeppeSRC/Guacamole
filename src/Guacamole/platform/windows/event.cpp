@@ -79,20 +79,15 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
             break;
         }
 
-       /* case WM_KEYDOWN: {
+        case WM_SIZE: {
+            uint16_t width = l & 0xFFFF;
+            uint16_t height = (l >> 16);
 
-            KeyPressedEvent evnt((uint32_t)w);
-            
+            WindowResizeEvent evnt(width, height);
+
             DispatchEvent(&evnt);
             break;
         }
-
-        case WM_KEYUP: {
-            KeyReleasedEvent evnt((uint32_t)w);
-
-            DispatchEvent(&evnt);
-            break;
-        }*/
 
         case WM_INPUT: {
             UINT size;
