@@ -168,7 +168,7 @@ GraphicsPipeline::GraphicsPipeline(Device* device, const GraphicsPipelineInfo& i
     dsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dsInfo.pNext = nullptr;
     dsInfo.flags = 0;
-    dsInfo.dynamicStateCount = 1;
+    dsInfo.dynamicStateCount = 2;
     dsInfo.pDynamicStates = dynamicStates;
 
     VkGraphicsPipelineCreateInfo pInfo;
