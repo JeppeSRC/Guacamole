@@ -144,24 +144,16 @@ void SceneRenderer::BeginScene(const Camera& camera) {
 
     CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
 
-    VkExtent2D screenSize = mSwapchain->GetExtent();
-
-    VkViewport viewPort;
-
-    viewPort.width = (float)screenSize.width;
-    viewPort.height = (float)screenSize.height;
-    viewPort.x = 0;
-    viewPort.y = 0;
-    viewPort.minDepth = 0.001f;
-    viewPort.maxDepth = 1;
+    const VkViewport& viewport = camera.GetViewport();
 
     VkRect2D rect;
 
     rect.offset.x = 0;
     rect.offset.y = 0;
-    rect.extent = screenSize;
+    rect.extent.width = viewport.width;
+    rect.extent.height = viewport.height;
     
-    vkCmdSetViewport(cmd->GetHandle(), 0, 1, &viewPort);
+    vkCmdSetViewport(cmd->GetHandle(), 0, 1, &viewport);
     vkCmdSetScissor(cmd->GetHandle(), 0, 1, &rect);
 
     Renderer::BeginRenderpass(cmd, mRenderpass);

@@ -39,10 +39,30 @@ public:
 
     inline const glm::mat4& GetProjection() const { return mProjectionMatrix; }
     inline const glm::mat4& GetView() const { return mViewMatrix; }
-    inline void SetProjection(const glm::mat4& projection) { mProjectionMatrix = projection; }
-    inline void SetView(const glm::mat4& view) { mViewMatrix = view; }
+    inline void SetView(const glm::mat4& view) { mViewMatrix = view;  }
+
+    inline void SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth) { 
+        mViewport = { x, y, width, height, minDepth, maxDepth }; 
+    }
+
+    inline void SetViewport(float width, float height) { 
+        mViewport.width = width; mViewport.height = height; 
+    }
+
+    void SetPerspective(float fov, float aspect, float zNear, float zFar);
+    void SetAspect(float aspect);
+    void SetFov(float fov);
+
+    inline const VkViewport& GetViewport() const { return mViewport; }
 
 protected:
+    VkViewport mViewport;
+
+    float mFov;
+    float mAspect;
+    float mNear;
+    float mFar;
+
     glm::mat4 mProjectionMatrix;
     glm::mat4 mViewMatrix;
 

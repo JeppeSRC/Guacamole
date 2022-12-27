@@ -122,12 +122,8 @@ public:
         });
 
         cam.mPrimary = true;
-        cam.mFov = 70.0f;
-        cam.mAspect = (float)1280/720;
-        cam.mNear = 0.0001f;
-        cam.mFar = 100.0f;
-
-        cam.GenerateProjection();
+        cam.mCamera.SetPerspective(70.f, (float)windowSpec.Width / windowSpec.Height, 0.001f, 100.0f);
+        cam.mCamera.SetViewport(windowSpec.Width, windowSpec.Height);
 
         camTrans.mScale = glm::vec3(1.0f);
         camTrans.mRotation = glm::vec3(0.0f);
@@ -147,6 +143,8 @@ public:
     }
 
     bool OnKeyPressed(KeyPressedEvent* e) override {
+        const char* desc = Input::GetKeyInfo(e->mKey)->mString;
+        GM_LOG_DEBUG("Key: {:02x} {}", e->mKey, desc);
         return false;
     }
 
@@ -155,6 +153,8 @@ public:
     }
 
     bool OnButtonPressed(ButtonPressedEvent* e) override {
+        const char* desc = Input::GetKeyInfo(e->mButton)->mString;
+        GM_LOG_DEBUG("Button: {:02x} {}", e->mButton, desc);
         return false;
     }
 

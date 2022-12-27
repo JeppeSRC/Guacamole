@@ -75,15 +75,7 @@ struct CameraComponent {
     Camera mCamera;
     
     bool mPrimary;
-
-    float mFov;
-    float mAspect;
-    float mNear;
-    float mFar;
-
-    void GenerateProjection() {
-        mCamera.SetProjection(glm::perspective(mFov, mAspect, mNear, mFar));
-    }
+  
 };
 
 struct MaterialComponent {

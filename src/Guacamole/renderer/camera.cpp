@@ -30,11 +30,28 @@ SOFTWARE.
 namespace Guacamole {
 
 Camera::Camera() : mProjectionMatrix(1.0f), mViewMatrix(1.0f) {
-    
+    SetViewport(0, 0, 0, 0, 0.001f, 1.0f);
 }
 
 Camera::~Camera() {
 
+}
+
+void Camera::SetPerspective(float fov, float aspect, float zNear, float zFar) {
+    mFov = fov;
+    mAspect = aspect;
+    mNear = zNear;
+    mFar = zFar;
+
+    mProjectionMatrix = glm::perspective(fov, aspect, zNear, zFar);
+}
+
+void Camera::SetAspect(float aspect) {
+    SetPerspective(mFov, aspect, mNear, mFar);
+}
+
+void Camera::SetFov(float fov) {
+    SetPerspective(fov, mAspect, mNear, mFar);
 }
 
 }
