@@ -88,13 +88,11 @@ public:
 
 class MouseMovedEvent : public Event {
 public:
-    MouseMovedEvent(uint32_t x, uint32_t y, int32_t dx, int32_t dy) : mX(x), mY(y), mDeltaX(dx), mDeltaY(dy) {}
+    MouseMovedEvent(int32_t dx, int32_t dy) : mDeltaX(dx), mDeltaY(dy) {}
 
     inline EventType GetType() const override { return EventType::MouseMoved; }
 
 public:
-    uint32_t mX;
-    uint32_t mY;
     int32_t mDeltaX;
     int32_t mDeltaY;
 };
@@ -140,6 +138,9 @@ private:
 private:
     static std::vector<std::pair<EventType, std::function<bool(Event*)>>> mCallbacks;
 
+    static int32_t mLastMouseX;
+    static int32_t mLastMouseY;
+
 #if defined(GM_LINUX)
 public:
     static xkb_state* GetState() { return mState; }
@@ -155,6 +156,7 @@ private:
     static Window* mWindow;
 public:
     static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
+    static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
 #endif
 };
 

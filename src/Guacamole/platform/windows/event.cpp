@@ -38,22 +38,25 @@ Window* EventManager::mWindow = nullptr;
 void EventManager::Init(const Window* window) {
     mWindow = const_cast<Window*>(window); // Dirty solution for the moment
 
-    RAWINPUTDEVICE rid;
+    RAWINPUTDEVICE rid[2];
 
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x06;
-    rid.dwFlags = 0;
-    rid.hwndTarget = mWindow->GetHWND();
+    rid[0].usUsagePage = 0x01;
+    rid[0].usUsage = 0x06;
+    rid[0].dwFlags = RIDEV_NOLEGACY;
+    rid[0].hwndTarget = 0;
 
-    if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+    rid[1].usUsagePage = 0x01;
+    rid[1].usUsage = 0x02;
+    rid[1].dwFlags = 0;
+    rid[1].hwndTarget = 0;
+
+    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
         DWORD error = GetLastError();
 
         GM_LOG_CRITICAL("Failed to register input devices: 0x{:0x08}", error);
         return;
     }
 }
-
-
 
 void EventManager::ProcessEvents(Window* window) {
     MSG msg;
@@ -133,9 +136,42 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
                     DispatchEvent(&evnt);
                 }
 
-                delete[] data;
+            } else if (raw->header.dwType == RIM_TYPEMOUSE) {
+                RAWMOUSE& mouse = raw->data.mouse;
+                
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_1_DOWN, RI_MOUSE_BUTTON_1_UP, GM_BUTTON_Left);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_2_DOWN, RI_MOUSE_BUTTON_2_UP, GM_BUTTON_Right);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_3_DOWN, RI_MOUSE_BUTTON_3_UP, GM_BUTTON_Middle);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP, GM_BUTTON_Back);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP, GM_BUTTON_Forward);
+
+                MouseMovedEvent evnt(mouse.lLastX, mouse.lLastY);
+
+                if (mouse.usFlags & MOUSE_MOVED) {
+                    bool isVirtualDesktop = (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP);
+
+                    int width = GetSystemMetrics(isVirtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
+                    int height = GetSystemMetrics(isVirtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
+
+                    POINT point;
+
+                    point.x = long((mouse.lLastX / 65535.0f) * width);
+                    point.y = long((mouse.lLastY / 65535.0f) * height);
+
+                    ScreenToClient(mWindow->GetHWND(), &point);
+
+                    evnt.mDeltaX = mLastMouseX - point.x;
+                    evnt.mDeltaY = mLastMouseY - point.y;
+                    mLastMouseX = point.x;
+                    mLastMouseY = point.y;
+
+                    DispatchEvent(&evnt);
+                } else if (mouse.lLastX != 0 && mouse.lLastY != 0) { // MOUSE_MOVE_RELATIVE
+                    DispatchEvent(&evnt);
+                }
             }
 
+            delete[] data;
             break;
         }
 
@@ -143,8 +179,26 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
         
     }
 
-
     return DefWindowProc(hwnd, msg, w, l);
+}
+
+void EventManager::CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode) {
+    if (buttonFlags & (down | up)) {
+        bool pressed = buttonFlags & down;
+        uint32_t button = keyCode;
+
+        Input::OnKey(button, pressed);
+
+        if (pressed) {
+            ButtonPressedEvent evnt(button);
+
+            DispatchEvent(&evnt);
+        } else {
+            ButtonReleasedEvent evnt(button);
+
+            DispatchEvent(&evnt);
+        }
+    }
 }
 
 }

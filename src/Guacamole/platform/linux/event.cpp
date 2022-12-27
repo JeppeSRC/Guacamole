@@ -92,9 +92,9 @@ void EventManager::ProcessEvents(Window* window) {
             case XCB_BUTTON_PRESS: {
                 xcb_button_press_event_t* pressed = (xcb_button_press_event_t*)e;
                 
-                ButtonPressedEvent evnt(pressed->detail  | GM_BUTTON_OFFSET);
+                ButtonPressedEvent evnt(pressed->detail  | GM_BUTTON_PREFIX);
 
-                Input::OnKey(pressed->detail | GM_BUTTON_OFFSET, true);
+                Input::OnKey(pressed->detail | GM_BUTTON_PREFIX, true);
                 DispatchEvent(&evnt);
 
                 break;
@@ -103,9 +103,9 @@ void EventManager::ProcessEvents(Window* window) {
             case XCB_BUTTON_RELEASE: {
                 xcb_button_release_event_t* released = (xcb_button_release_event_t*)e;
 
-                ButtonPressedEvent evnt(released->detail | GM_BUTTON_OFFSET);
+                ButtonPressedEvent evnt(released->detail | GM_BUTTON_PREFIX);
 
-                Input::OnKey(released->detail | GM_BUTTON_OFFSET, false);
+                Input::OnKey(released->detail | GM_BUTTON_PREFIX, false);
                 DispatchEvent(&evnt);
 
                 break;
@@ -116,12 +116,11 @@ void EventManager::ProcessEvents(Window* window) {
                 
                 uint32_t x = motion->event_x;
                 uint32_t y =  motion->event_y;
-                int32_t dx = x - Input::mMouseX;
-                int32_t dy = y - Input::mMouseY;
+                int32_t dx = mLastMouseX - x;
+                int32_t dy = mLastMouseY - y;
 
-                MouseMovedEvent evnt(x, y, dx, dx);
+                MouseMovedEvent evnt(dx, dx);
 
-                Input::OnMouse(motion->event_x, motion->event_y);
                 DispatchEvent(&evnt);
                 break;
             }

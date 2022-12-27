@@ -33,7 +33,7 @@ namespace Guacamole {
 void Input::AddKey(uint32_t scanCode) {
     Key key;
 
-    key.mKeyCode = (scanCode & 0x6900) ? scanCode & 0x0f : xkb_state_key_get_one_sym(EventManager::GetState(), scanCode);
+    key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode & : xkb_state_key_get_one_sym(EventManager::GetState(), scanCode);
     key.mScanCode = scanCode;
     key.mPressed = false;
     GetKeyString(key);

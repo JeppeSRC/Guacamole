@@ -24,14 +24,14 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Gucaumole/core/input.h>
+#include <Guacamole/core/input.h>
 
 namespace Guacamole {
 
 void Input::AddKey(uint32_t scanCode) {
     Key key;
 
-    key.mKeyCode = MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
+    key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode : MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
     key.mKeyCode |= (scanCode & 0xE100);
     key.mScanCode = scanCode;
     key.mPressed = false;

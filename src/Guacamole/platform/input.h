@@ -26,21 +26,21 @@ SOFTWARE.
 
 namespace Guacamole {
 
+#define GM_BUTTON_PREFIX 0x6900
+
 #if defined(GM_LINUX)
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
-#define GM_BUTTON_OFFSET 0x6900
 
 enum KeyCode {
-    GM_BUTTON_Left = 0x01,
-    GM_BUTTON_Middle = 0x02,
-    GM_BUTTON_Right = 0x03,
-    GM_BUTTON_Scroll_Up = 0x04,
-    GM_BUTTON_Scroll_Down = 0x05,
-    GM_BUTTON_Back = 0x08,
-    GM_BUTTON_Forward = 0x09,
-
+    GM_BUTTON_Left = 0x01 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Middle = 0x02 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Right = 0x03 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Scroll_Up = 0x04 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Scroll_Down = 0x05 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Back = 0x08 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Forward = 0x09 | GM_BUTTON_PREFIX,
 
     GM_KEY_KP_Enter = XKB_KEY_KP_Enter,
 
@@ -175,6 +175,14 @@ enum KeyCode {
 #define GM_VK_EXTENDED 0xE000
 
 enum KeyCode {
+    GM_BUTTON_Left = 0x01 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Middle = 0x02 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Right = 0x03 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Scroll_Up = 0x04 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Scroll_Down = 0x05 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Back = 0x08 | GM_BUTTON_PREFIX,
+    GM_BUTTON_Forward = 0x09 | GM_BUTTON_PREFIX,
+
     GM_KEY_KP_Enter = VK_RETURN | GM_VK_EXTENDED,
 
     GM_KEY_KP_Delete = VK_DELETE,
