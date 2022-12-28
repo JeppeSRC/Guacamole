@@ -266,7 +266,6 @@ int main() {
     spec.Windowed = true;
     spec.Title = "Dope TItle";
     
-    
     Guacamole::Window window(spec);
 
     ContextSpec cSpec;
@@ -425,6 +424,11 @@ int main() {
 
                 VkCommandBuffer handle = cmd->GetHandle();
 
+                VkViewport viewport{0, 0, 1280, 720, 0.001f, 1.0f};
+                VkRect2D scissor{0, 0, 1280, 720};
+
+                vkCmdSetViewport(handle, 0, 1, &viewport);
+                vkCmdSetScissor(handle, 0, 1, &scissor);
                 vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, gPipeline.GetHandle());
 
                 pass.Begin(cmd);
@@ -445,6 +449,7 @@ int main() {
 
                 swapchain->Present();
             }
+
 
         }
 
