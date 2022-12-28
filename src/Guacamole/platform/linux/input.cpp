@@ -30,6 +30,21 @@ SOFTWARE.
 
 namespace Guacamole {
 
+void Input::CaptureInput() {
+    if (mInputCapture) return;
+
+    mInputCapture = true;
+
+
+}
+
+void Input::ReleaseInput() {
+    if (!mInputCapture) return;
+
+    mInputCapture = false;
+
+}
+
 void Input::AddKey(uint32_t scanCode) {
     Key key;
 
