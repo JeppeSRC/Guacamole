@@ -104,29 +104,6 @@ public:
         CameraComponent& cam = c.AddComponent<CameraComponent>();
         TransformComponent& camTrans = c.AddComponent<TransformComponent>();
 
-      /*  c.AddComponent<ScriptComponent>([](Entity* entity, float ts) {
-            TransformComponent& trans = entity->GetComponent<TransformComponent>();
-            
-            glm::mat4 view = glm::toMat4(glm::quat(trans.mRotation));
-
-            glm::vec3 forward = view[2];
-            glm::vec3 right = view[0];
-
-
-            forward *= ts * 1.5;
-            right *= ts * 1.5;
-
-            if (Input::IsVKeyPressed(GM_KEY_W))
-                trans.mTranslation -= forward;
-            else if (Input::IsVKeyPressed(GM_KEY_S))
-                trans.mTranslation += forward;
-
-            if (Input::IsVKeyPressed(GM_KEY_D))
-                trans.mTranslation += right;
-            else if (Input::IsVKeyPressed(GM_KEY_A))
-                trans.mTranslation -= right;
-        });*/
-
         class CameraController : public NativeScript {
         public:
             bool OnWindowResize(WindowResizeEvent* e) override {
@@ -219,10 +196,18 @@ public:
 
     void OnUpdate(float ts) override {
         mScene->OnUpdate(ts);
+        mTime += ts;
+
+        if (mTime >= 1.0f) {
+            GM_LOG_INFO("[TestApp] FPS: {}", mFps);
+            mFps = 0;
+            mTime -= 1.0f;
+        }
     }
 
     void OnRender() override {
         mScene->OnRender();
+        mFps++;
     }
 
     void OnShutdown() override {
@@ -255,6 +240,9 @@ public:
 
 private:
     Scene* mScene;
+
+    float mTime;
+    uint16_t mFps;
 };
 
 int main() {
