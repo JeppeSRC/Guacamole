@@ -34,6 +34,8 @@ std::unordered_map<uint32_t, Input::Key> Input::mKeys;
 std::unordered_map<uint32_t, uint32_t> Input::mScanCodes;
 std::unordered_map<uint32_t, const char*> Input::mKeyCodeStrings;
 
+bool Input::mInputCapture = false;
+
 #define ADD(key, string) mKeyCodeStrings[key] = string
 #define ADD_RANGE(start, end) for (uint32_t i = (start); i <= (end); i++) { AddKey(i); }
 

@@ -29,8 +29,6 @@ SOFTWARE.
 
 namespace Guacamole {
 
-bool Input::mInputCapture = false;
-
 void Input::CaptureInput() {
     if (mInputCapture) return;
 
