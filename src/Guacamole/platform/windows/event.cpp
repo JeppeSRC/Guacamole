@@ -162,7 +162,7 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
                     mLastMouseY = point.y;
 
                     DispatchEvent(&evnt);
-                } else if (mouse.lLastX != 0 && mouse.lLastY != 0) { // MOUSE_MOVE_RELATIVE
+                } else if (mouse.lLastX != 0 ||  mouse.lLastY != 0) { // MOUSE_MOVE_RELATIVE
                     DispatchEvent(&evnt);
                 }
             }
