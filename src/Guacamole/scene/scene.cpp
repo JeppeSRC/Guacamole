@@ -69,10 +69,7 @@ void Scene::OnRender() {
 
     for (auto entity : cameraView) {
         CameraComponent& c = cameraView.get<CameraComponent>(entity);
-        TransformComponent& trans = cameraView.get<TransformComponent>(entity);
-
-        c.mCamera.SetView(trans.GetView());
-
+        
         if (c.mPrimary) {
             cam = c.mCamera;
         }
