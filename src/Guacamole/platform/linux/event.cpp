@@ -40,7 +40,8 @@ int32_t EventManager::mKeyboardID;
 xkb_keymap* EventManager::mKeymap;
 xkb_state* EventManager::mState;
 
-void EventManager::Init(const Window* window) {
+void EventManager::Init(Window* window) {
+    mWindow = window;
 
     xcb_connection_t* conn = window->GetXCBConnection();
 
@@ -68,6 +69,7 @@ void EventManager::ProcessEvents(Window* window) {
     while ((e = xcb_poll_for_event(conn))) {
         switch (e->response_type & 0x7F) {
             case XCB_KEY_PRESS: {
+                if (!Input::mInputCapture) break;
                 xcb_key_press_event_t* pressed = (xcb_key_press_event_t*)e;
                 
                 KeyPressedEvent evnt(pressed->detail);
@@ -79,6 +81,7 @@ void EventManager::ProcessEvents(Window* window) {
             }
 
             case XCB_KEY_RELEASE: {
+                if (!Input::mInputCapture) break;
                 xcb_key_release_event_t* released = (xcb_key_release_event_t*)e;
                 
                 KeyReleasedEvent evnt(released->detail);
@@ -94,6 +97,12 @@ void EventManager::ProcessEvents(Window* window) {
                 
                 ButtonPressedEvent evnt(pressed->detail  | GM_BUTTON_PREFIX);
 
+                if (!Input::mInputCapture) {
+                    if (evnt.mButton != GM_BUTTON_Left) break;
+
+                    Input::CaptureInput();
+                }
+
                 Input::OnKey(pressed->detail | GM_BUTTON_PREFIX, true);
                 DispatchEvent(&evnt);
 
@@ -101,6 +110,7 @@ void EventManager::ProcessEvents(Window* window) {
             }
 
             case XCB_BUTTON_RELEASE: {
+                if (!Input::mInputCapture) break;
                 xcb_button_release_event_t* released = (xcb_button_release_event_t*)e;
 
                 ButtonPressedEvent evnt(released->detail | GM_BUTTON_PREFIX);
@@ -112,6 +122,7 @@ void EventManager::ProcessEvents(Window* window) {
             }
 
             case XCB_MOTION_NOTIFY: {
+                if (!Input::mInputCapture) break;
                 xcb_motion_notify_event_t* motion = (xcb_motion_notify_event_t*)e;
                 
                 uint32_t x = motion->event_x;
@@ -120,8 +131,29 @@ void EventManager::ProcessEvents(Window* window) {
                 int32_t dy = mLastMouseY - y;
 
                 MouseMovedEvent evnt(dx, dx);
+                uint32_t xMiddle = window->GetWidth() / 2;
+                uint32_t yMiddle = window->GetHeight() / 2;
 
                 DispatchEvent(&evnt);
+
+                xcb_connection_t* conn = window->GetXCBConnection();
+                xcb_window_t win = window->GetXCBWindow();
+
+                xcb_void_cookie_t cock = xcb_warp_pointer_checked(conn, win, win, 0, 0, window->GetWidth(), window->GetHeight(), xMiddle, yMiddle);
+
+                xcb_generic_error_t* err = xcb_request_check(conn, cock);
+
+                if (err) {
+                    GM_LOG_CRITICAL("[EventManager] Error (0x{:04x}) calling xcb_warp_pointer_checked()", err->error_code);
+                    free(err);
+                }
+
+
+                break;
+            }
+
+            case XCB_FOCUS_OUT: {
+                Input::ReleaseInput();
                 break;
             }
 

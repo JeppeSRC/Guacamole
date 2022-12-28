@@ -24,9 +24,11 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/core/video/window.h>
 #include <Guacamole/core/input.h>
 #include <Guacamole/core/video/event.h>
 #include <xkbcommon/xkbcommon-x11.h>
+#include <xcb/xfixes.h>
 
 namespace Guacamole {
 
@@ -34,8 +36,17 @@ void Input::CaptureInput() {
     if (mInputCapture) return;
 
     mInputCapture = true;
+    xcb_connection_t* conn = EventManager::mWindow->GetXCBConnection();
 
+    xcb_void_cookie_t cookie = xcb_xfixes_hide_cursor_checked(conn, EventManager::mWindow->GetXCBWindow());
+    xcb_generic_error_t* err = xcb_request_check(conn, cookie);
 
+    if (err) {
+        GM_LOG_CRITICAL("[Input] Error (0x{:04x}) calling xcb_xfixes_hide_cursor_checked()", err->error_code);
+        free(err);
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse captured!");
 }
 
 void Input::ReleaseInput() {
@@ -43,6 +54,17 @@ void Input::ReleaseInput() {
 
     mInputCapture = false;
 
+    xcb_connection_t* conn = EventManager::mWindow->GetXCBConnection();
+
+    xcb_void_cookie_t cookie = xcb_xfixes_show_cursor_checked(conn, EventManager::mWindow->GetXCBWindow());
+    xcb_generic_error_t* err = xcb_request_check(conn, cookie);
+
+    if (err) {
+        GM_LOG_CRITICAL("[Input] Error (0x{:04x}) calling xcb_xfixes_show_cursor_checked()", err->error_code);
+        free(err);
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse released!");
 }
 
 void Input::AddKey(uint32_t scanCode) {

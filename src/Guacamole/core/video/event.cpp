@@ -33,6 +33,8 @@ std::vector<std::pair<EventType, std::function<bool(Event*)>>> EventManager::mCa
 int32_t EventManager::mLastMouseX = 0;
 int32_t EventManager::mLastMouseY = 0;
 
+Window* EventManager::mWindow = nullptr;
+
 void EventManager::AddListener(EventType type, bool(*callback)(Event*)) {
     mCallbacks.emplace_back(type, callback);
 }

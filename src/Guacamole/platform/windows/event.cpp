@@ -35,10 +35,8 @@ namespace Guacamole {
 
 Window* EventManager::mWindow = nullptr;
 
-void EventManager::Init(const Window* window) {
-    mWindow = const_cast<Window*>(window); // Dirty solution for the moment
-
-    
+void EventManager::Init(Window* window) {
+    mWindow = window;
 }
 
 void EventManager::ProcessEvents(Window* window) {

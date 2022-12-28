@@ -87,7 +87,8 @@ project "Guacamole"
             "xcb",
             "xcb-randr",
             "xkbcommon",
-            "xkbcommon-x11"
+            "xkbcommon-x11",
+            "xcb-xfixes"
         }
 
         removefiles {

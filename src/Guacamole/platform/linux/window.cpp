@@ -26,8 +26,9 @@ SOFTWARE.
 
 #include <Guacamole/core/video/window.h>
 #include <Guacamole/core/video/monitor.h>
-
 #include <Guacamole/core/video/event.h>
+
+#include <xcb/xfixes.h>
 
 namespace Guacamole {
 
@@ -105,6 +106,8 @@ Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
     mShouldClose = false;
 
     EventManager::Init(this);
+
+    xcb_xfixes_query_version_cookie_t xfixesCookie = xcb_xfixes_query_version(mConnection, 4, 0);
 }
 
 Window::~Window() {

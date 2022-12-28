@@ -121,7 +121,7 @@ public:
 class Window;
 class EventManager {
 public:
-    static void Init(const Window* window);
+    static void Init(Window* window);
     static void ProcessEvents(Window* window);
     static void Shutdown();
 
@@ -140,7 +140,8 @@ private:
 
     static int32_t mLastMouseX;
     static int32_t mLastMouseY;
-
+    
+    static Window* mWindow;
 #if defined(GM_LINUX)
 public:
     static xkb_state* GetState() { return mState; }
@@ -152,8 +153,6 @@ private:
     static xkb_state* mState;
 
 #elif defined(GM_WINDOWS)
-private:
-    static Window* mWindow;
 public:
     static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
     static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
