@@ -125,21 +125,22 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
 
 bool Application::OnEvent(Event* e) {
     switch (e->GetType()) {
-        case EventType::KeyPressed:
-            return OnKeyPressed((KeyPressedEvent*)e);
-            break;
+        case EventType::KeyPressed: {
+            KeyPressedEvent* evnt = (KeyPressedEvent*)e;
+
+            // Hardcoded for now
+            if (Input::GetScanCode(GM_KEY_Escape) == evnt->mKey) Input::ReleaseInput();
+
+            return OnKeyPressed(evnt);
+        }
         case EventType::KeyReleased:
             return OnKeyReleased((KeyReleasedEvent*)e);
-            break;
         case EventType::ButtonPressed:
             return OnButtonPressed((ButtonPressedEvent*)e);
-            break;
         case EventType::ButtonReleased:
             return OnButtonReleased((ButtonReleasedEvent*)e);
-            break;
         case EventType::MouseMoved:
             return OnMouseMoved((MouseMovedEvent*)e);
-            break;
     }
 
     return false;

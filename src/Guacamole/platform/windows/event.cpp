@@ -38,29 +38,19 @@ Window* EventManager::mWindow = nullptr;
 void EventManager::Init(const Window* window) {
     mWindow = const_cast<Window*>(window); // Dirty solution for the moment
 
-    RAWINPUTDEVICE rid[2];
-
-    rid[0].usUsagePage = 0x01;
-    rid[0].usUsage = 0x06;
-    rid[0].dwFlags = RIDEV_NOLEGACY;
-    rid[0].hwndTarget = 0;
-
-    rid[1].usUsagePage = 0x01;
-    rid[1].usUsage = 0x02;
-    rid[1].dwFlags = 0;
-    rid[1].hwndTarget = 0;
-
-    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
-        DWORD error = GetLastError();
-
-        GM_LOG_CRITICAL("Failed to register input devices: 0x{:0x08}", error);
-        return;
-    }
+    
 }
 
 void EventManager::ProcessEvents(Window* window) {
     MSG msg;
 
+    if (Input::mInputCapture) {
+        POINT p;
+        p.x = window->GetWidth() / 2;
+        p.y = window->GetWidth() / 2;
+
+        ClientToScreen(window->GetHWND(), &p);
+        SetCursorPos(p.x, p.y);
     while (PeekMessage(&msg, window->GetHWND(), 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -86,6 +76,15 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
             WindowResizeEvent evnt(width, height);
 
             DispatchEvent(&evnt);
+            break;
+        }
+        case WM_LBUTTONDOWN: {
+            Input::CaptureInput();
+            break;
+        }
+
+        case WM_KILLFOCUS: {
+            Input::ReleaseInput();
             break;
         }
 

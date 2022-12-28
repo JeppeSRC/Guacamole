@@ -157,10 +157,6 @@ void Input::Shutdown() {
 
 }
 
-bool Input::IsVKeyPressed(uint32_t keyCode) {
-    uint32_t scanCode = mScanCodes[keyCode];
-    return IsKeyPressed(scanCode);
-}
 
 bool Input::IsKeyPressed(uint32_t scanCode) {
     auto it = mKeys.find(scanCode);
@@ -168,6 +164,11 @@ bool Input::IsKeyPressed(uint32_t scanCode) {
     if (it == mKeys.end()) return false;
 
     return it->second.mPressed;
+}
+
+bool Input::IsVKeyPressed(uint32_t keyCode) {
+    uint32_t scanCode = mScanCodes[keyCode];
+    return IsKeyPressed(scanCode);
 }
 
 const Input::Key* Input::GetKeyInfo(uint32_t scanCode) {

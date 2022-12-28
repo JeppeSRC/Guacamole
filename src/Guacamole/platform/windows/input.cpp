@@ -25,8 +25,67 @@ SOFTWARE.
 #include <Guacamole.h>
 
 #include <Guacamole/core/input.h>
+#include <Guacamole/core/video/window.h>
 
 namespace Guacamole {
+
+bool Input::mInputCapture = false;
+
+void Input::CaptureInput() {
+    if (mInputCapture) return;
+
+    mInputCapture = true;
+    ShowCursor(false);
+
+    RAWINPUTDEVICE rid[2];
+
+    rid[0].usUsagePage = 0x01;
+    rid[0].usUsage = 0x06;
+    rid[0].dwFlags = RIDEV_NOLEGACY;
+    rid[0].hwndTarget = 0;
+
+    rid[1].usUsagePage = 0x01;
+    rid[1].usUsage = 0x02;
+    rid[1].dwFlags = 0;
+    rid[1].hwndTarget = 0;
+
+    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
+        DWORD error = GetLastError();
+
+        GM_LOG_CRITICAL("Failed to register input devices: 0x{:0x08}", error);
+        return;
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse captured!");
+}
+
+void Input::ReleaseInput() {
+    if (!mInputCapture) return;
+
+    mInputCapture = false;
+    ShowCursor(true);
+
+    RAWINPUTDEVICE rid[2];
+
+    rid[0].usUsagePage = 0x01;
+    rid[0].usUsage = 0x06;
+    rid[0].dwFlags = RIDEV_REMOVE;
+    rid[0].hwndTarget = 0;
+
+    rid[1].usUsagePage = 0x01;
+    rid[1].usUsage = 0x02;
+    rid[1].dwFlags = RIDEV_REMOVE;
+    rid[1].hwndTarget = 0;
+
+    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
+        DWORD error = GetLastError();
+
+        GM_LOG_CRITICAL("Failed to remove input devices: 0x{:0x08}", error);
+        return;
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse released!");
+}
 
 void Input::AddKey(uint32_t scanCode) {
     Key key;

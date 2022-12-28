@@ -158,6 +158,8 @@ public:
     static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
     static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
 #endif
+
+    friend class Input;
 };
 
 
