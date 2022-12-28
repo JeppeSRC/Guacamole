@@ -63,12 +63,6 @@ struct TransformComponent {
                glm::toMat4(glm::quat(mRotation)) *
                glm::scale(glm::mat4(1.0f), mScale);
     }
-
-    glm::mat4 GetView() const {
-        return glm::translate(glm::mat4(1.0f), -mTranslation) *
-               glm::toMat4(glm::quat(mRotation)) *
-               glm::scale(glm::mat4(1.0f), mScale);
-    }
 };
 
 struct CameraComponent {
