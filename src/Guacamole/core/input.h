@@ -52,6 +52,7 @@ public:
 
     static bool IsKeyPressed(uint32_t scanCode);
     static bool IsVKeyPressed(uint32_t keyCode);
+    static uint32_t GetScanCode(uint32_t keyCode);
     static const Key* GetKeyInfo(uint32_t scanCode);
 
 private:

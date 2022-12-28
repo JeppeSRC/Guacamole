@@ -171,6 +171,10 @@ bool Input::IsVKeyPressed(uint32_t keyCode) {
     return IsKeyPressed(scanCode);
 }
 
+uint32_t Input::GetScanCode(uint32_t keyCode) {
+    return mScanCodes[keyCode];
+}
+
 const Input::Key* Input::GetKeyInfo(uint32_t scanCode) {
     auto it = mKeys.find(scanCode);
     
