@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include "scene.h"
 #include "entity.h"
+#include "nativescript.h"
 
 #include <Guacamole/core/application.h>
 #include <Guacamole/vulkan/swapchain.h>
@@ -49,7 +50,13 @@ void Scene::OnUpdate(float ts) {
 
         ScriptComponent& script = view.get<ScriptComponent>(entity);
 
-        script.mScript(&e, ts);
+        if (!script.mScript) {
+            script.mScript = script.CreateScript();
+            script.mScript->mEntity = e;
+            script.mScript->OnCreate();
+        }
+
+        script.mScript->OnUpdate(ts);
     }
 }
 

@@ -1,6 +1,6 @@
 /*
 MIT License
-
+a
 Copyright (c) 2022 Jesper
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,50 +26,38 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "scene.h"
-#include "components.h"
+#include "entity.h"
 
 namespace Guacamole {
-    
-class Entity {
+
+class NativeScript {
 public:
-    Entity() : mScene(nullptr), mHandle(entt::null) {}
-    Entity(entt::entity handle, Scene* scene) : mHandle(handle), mScene(scene) {}
+    virtual ~NativeScript() {}
 
-    template<typename T, typename... Args>
-    T& AddComponent(Args&&... args) {
-        GM_ASSERT_MSG(!HasComponent<T>(), "Component already exist!");
-        return mScene->mRegistry.emplace<T>(mHandle, args...);
-    }
+    bool OnEvent(Event*);
 
-    template<typename K>
-    void AddScript() {
-        AddComponent<ScriptComponent>().Bind<K>();
-    }
+protected:
+    virtual bool OnKeyPressed(KeyPressedEvent*) { return false; }
+    virtual bool OnKeyReleased(KeyReleasedEvent*) { return false; }
+    virtual bool OnButtonPressed(ButtonPressedEvent*) { return false; }
+    virtual bool OnButtonReleased(ButtonReleasedEvent*) { return false; }
+    virtual bool OnMouseMoved(MouseMovedEvent*) { return false; }
+    virtual bool OnWindowResize(WindowResizeEvent*) { return false; }
 
-    template<typename T>
-    bool HasComponent() {
-        return mScene->mRegistry.all_of<T>(mHandle);
-    }
+    virtual void OnCreate() {}
+    virtual void OnDestroy() {}
+    virtual void OnUpdate(float ts) {}
 
     template<typename T>
     T& GetComponent() {
-        GM_ASSERT_MSG(HasComponent<T>(), "Component doesn't exist!");
-        return mScene->mRegistry.get<T>(mHandle);
+        return mEntity.GetComponent<T>();
     }
 
-    template<typename T>
-    void RemoveCompoent() {
-        GM_ASSERT_MSG(HasComponent<T>(), "Component doesn't exist!");
-        mScene->mRegistry.remove<T>(mHandle);
-    }
-
-    inline entt::entity GetHandle() const { return mHandle; }
-    inline Scene* GetScene() const { return mScene; }
+    void AddEvent(EventType type);
 
 private:
-    entt::entity mHandle;
-    Scene* mScene;
+    Entity mEntity;
+    friend class Scene;
 };
 
 }

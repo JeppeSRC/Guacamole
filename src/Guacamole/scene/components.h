@@ -82,14 +82,18 @@ struct MaterialComponent {
     AssetHandle mMaterial;
 };
 
-class Entity;
+class NativeScript;
 struct ScriptComponent {
-    typedef void(*FPN_ScriptUpdate)(Entity* entity, float ts);
+    NativeScript* mScript = nullptr;
 
-    ScriptComponent(FPN_ScriptUpdate fn) : mScript(fn) {}
+    NativeScript* (*CreateScript)();
+    void (*DestroyScript)(ScriptComponent*);
 
-
-    FPN_ScriptUpdate mScript;
+    template<typename T>
+    void Bind() {
+        CreateScript = []() { return static_cast<NativeScript*>(new T()); };
+        DestroyScript = [](ScriptComponent* comp) { delete comp->mScript; comp->mScript = nullptr; };
+    }
 };
 
 }
