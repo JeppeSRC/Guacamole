@@ -33,7 +33,8 @@ namespace Guacamole {
     
 class Entity {
 public:
-    Entity(Scene* scene, entt::entity handle) : mScene(scene), mHandle(handle) {}
+    Entity() : mScene(nullptr), mHandle(entt::null) {}
+    Entity(entt::entity handle, Scene* scene) : mHandle(handle), mScene(scene) {}
 
     template<typename T, typename... Args>
     T& AddComponent(Args&&... args) {

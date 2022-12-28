@@ -45,7 +45,7 @@ void Scene::OnUpdate(float ts) {
     auto view = mRegistry.view<ScriptComponent>();
 
     for (auto entity : view) {
-        Entity e(this, entity);
+        Entity e(entity, this);
 
         ScriptComponent& script = view.get<ScriptComponent>(entity);
 
@@ -88,7 +88,7 @@ void Scene::OnRender() {
 }
 
 Entity Scene::CreateEntity(const std::string& name) {
-    Entity ent(this, mRegistry.create());
+    Entity ent(mRegistry.create(), this);
 
     ent.AddComponent<IdComponent>();
 
