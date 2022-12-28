@@ -127,12 +127,16 @@ void EventManager::ProcessEvents(Window* window) {
                 
                 uint32_t x = motion->event_x;
                 uint32_t y =  motion->event_y;
-                int32_t dx = mLastMouseX - x;
-                int32_t dy = mLastMouseY - y;
 
-                MouseMovedEvent evnt(dx, dx);
                 uint32_t xMiddle = window->GetWidth() / 2;
                 uint32_t yMiddle = window->GetHeight() / 2;
+                
+                if (x == xMiddle && y == yMiddle) break;
+
+                int32_t dx = x - xMiddle;
+                int32_t dy = y - yMiddle;
+
+                MouseMovedEvent evnt(dx, dy);
 
                 DispatchEvent(&evnt);
 
