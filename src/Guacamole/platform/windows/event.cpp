@@ -143,7 +143,7 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
 
                 MouseMovedEvent evnt(mouse.lLastX, mouse.lLastY);
 
-                if (mouse.usFlags & MOUSE_MOVED) {
+                if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
                     bool isVirtualDesktop = (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP);
 
                     int width = GetSystemMetrics(isVirtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
