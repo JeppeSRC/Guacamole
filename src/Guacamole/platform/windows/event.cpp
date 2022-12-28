@@ -51,6 +51,8 @@ void EventManager::ProcessEvents(Window* window) {
 
         ClientToScreen(window->GetHWND(), &p);
         SetCursorPos(p.x, p.y);
+    }
+
     while (PeekMessage(&msg, window->GetHWND(), 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
