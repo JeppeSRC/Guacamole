@@ -47,7 +47,8 @@ SOFTWARE.
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 #include <Guacamole/renderer/meshfactory.h>
 #include <Guacamole/renderer/material.h>
-#include <Guacamole/scene/nativescript.h>
+#include <Guacamole/scene/scripts/nativescript.h>
+#include <Guacamole/scene/scripts/cameracontroller.h>
 
 using namespace Guacamole;
 
@@ -74,7 +75,7 @@ public:
 
         mScene = new Scene(this);
 
-        AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), false);
+        AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), true);
         AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
 
         Entity e0 = mScene->CreateEntity("first");
@@ -104,86 +105,7 @@ public:
         CameraComponent& cam = c.AddComponent<CameraComponent>();
         TransformComponent& camTrans = c.AddComponent<TransformComponent>();
 
-        class CameraController : public NativeScript {
-        public:
-            bool OnWindowResize(WindowResizeEvent* e) override {
-                CameraComponent& camComp = GetComponent<CameraComponent>();
-
-                float width = (float)e->mWidth;
-                float height = (float)e->mHeight;
-
-                camComp.mCamera.SetViewport(width, height);
-                camComp.mCamera.SetAspect(width / height);
-
-                return false;
-            }
-
-            bool OnMouseMoved(MouseMovedEvent* e) override {
-                TransformComponent& trans = GetComponent<TransformComponent>();
-               
-                trans.mRotation.y += (float)e->mDeltaX * mSensitivity;
-                trans.mRotation.x += (float)e->mDeltaY * -mSensitivity;
-
-                return false;
-            }
-
-
-        protected:
-            void OnCreate() override {
-                AddEvent(EventType::WindowResize);
-                AddEvent(EventType::MouseMoved);
-
-                mForward = Input::GetScanCode(GM_KEY_W);
-                mBack = Input::GetScanCode(GM_KEY_S);
-                mRight = Input::GetScanCode(GM_KEY_D);
-                mLeft = Input::GetScanCode(GM_KEY_A);
-            }
-
-            void OnDestroy() override {
-                GM_LOG_DEBUG("CameraController destroy");
-            }
-
-            void OnUpdate(float ts) override {
-                TransformComponent& trans = GetComponent<TransformComponent>();
-                Camera& camera = GetComponent<CameraComponent>().mCamera;
-                
-                glm::mat4 rot(1.0f);
-                rot = glm::rotate(rot, trans.mRotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
-                rot = glm::rotate(rot, trans.mRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
-
-                glm::vec3 forward = rot[2];
-                glm::vec3 right = rot[0];
-
-                glm::vec3 adj = glm::vec3(mSpeed, 0.0f, -mSpeed) * ts;
-                forward *= adj;
-                right *= adj;
-
-
-                if (Input::IsKeyPressed(mForward))
-                    trans.mTranslation += forward;
-                else if (Input::IsKeyPressed(mBack))
-                    trans.mTranslation -= forward;
-
-                if (Input::IsKeyPressed(mRight))
-                    trans.mTranslation += right;
-                else if (Input::IsKeyPressed(mLeft))
-                    trans.mTranslation -= right;
-
-                camera.SetView(rot * glm::translate(glm::mat4(1.0f), -trans.mTranslation));
-
-            }
-        private:
-            uint32_t mForward;
-            uint32_t mBack;
-            uint32_t mRight;
-            uint32_t mLeft;
-
-            float mSpeed = 1.5f;
-            float mSensitivity = 0.001f;
-
-        };
-
-        c.AddScript<CameraController>();
+        c.AddScript<Script::CameraController>();
 
         cam.mPrimary = true;
         cam.mCamera.SetPerspective(70.0f, (float)windowSpec.Width / windowSpec.Height, 0.001f, 100.0f);
@@ -203,6 +125,8 @@ public:
             mFps = 0;
             mTime -= 1.0f;
         }
+
+
     }
 
     void OnRender() override {
@@ -254,7 +178,6 @@ int main() {
     TestApp app(appSpec);
 
     app.Run();
-
     return 0;
 
     spdlog::set_level(spdlog::level::debug);
