@@ -65,7 +65,8 @@ project "Guacamole"
     pchsource "src/Guacamole.cpp"
 
     defines {
-        "SPDLOG_COMPILED_LIB"
+        "SPDLOG_COMPILED_LIB",
+        "GLM_FORCE_DEPTH_ZERO_TO_ONE"
     }
 
     files {
