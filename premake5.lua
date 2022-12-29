@@ -75,10 +75,18 @@ project "Guacamole"
     }
 
     filter "system:linux" 
-    
+
+        buildoptions {
+            "-flto",
             "-Wall",
             "-Wno-reorder",
             "-Wno-misleading-indentation"
+        }
+        
+        linkoptions {
+            "-flto"
+        }
+
         defines {
             "GM_LINUX",
             "VK_USE_PLATFORM_XCB_KHR",
