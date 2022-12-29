@@ -6,7 +6,7 @@
         {
             "label": "build (Debug)",
             "type": "shell",
-            "command": "make -j4",
+            "command": "make -j12",
             "group": "build",
             "options": {
                 "cwd": "${workspaceFolder}/build/"
@@ -15,7 +15,7 @@
         {
             "label": "build (Release)",
             "type": "shell",
-            "command": "make config=Release -j4",
+            "command": "make config=Release -j12",
             "group": "build",
             "options": {
                 "cwd": "${workspaceFolder}/build/"
