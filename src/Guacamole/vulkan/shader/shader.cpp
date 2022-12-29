@@ -390,7 +390,6 @@ void Shader::CreateDescriptorSetLayouts() {
         mDescriptorSetLayouts.emplace_back(0, new DescriptorSetLayout(mDevice));
     }
 
-    uint32_t index = 0;
     for (auto& [set, binding] : sets) {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
         std::vector<UniformBaseType*> uniforms;

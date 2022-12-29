@@ -76,6 +76,7 @@ project "Guacamole"
 
     filter "system:linux" 
     
+            "-Wall",
         defines {
             "GM_LINUX",
             "VK_USE_PLATFORM_XCB_KHR",

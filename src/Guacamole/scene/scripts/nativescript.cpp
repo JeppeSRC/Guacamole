@@ -42,6 +42,8 @@ bool NativeScript::OnEvent(Event* e) {
             return OnMouseMoved((MouseMovedEvent*)e);
         case EventType::WindowResize:
             return OnWindowResize((WindowResizeEvent*)e);
+        default:
+            GM_ASSERT_MSG(false, "Not implemented");
     }
 
     return false;

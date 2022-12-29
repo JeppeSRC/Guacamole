@@ -116,9 +116,9 @@ uint64_t GetFormatSize(VkFormat format) {
         case VK_FORMAT_R32G32B32A32_UINT:
         case VK_FORMAT_R32G32B32A32_SFLOAT:
             return 16;
+        default:
+            GM_ASSERT_MSG(false, "Format not implemented");
     }
-
-    GM_ASSERT_MSG(false, "Format not implemented");
 
     return 0;
 }
@@ -166,9 +166,10 @@ const char* GetVkResultString(VkResult result) {
         YEET(VK_OPERATION_DEFERRED_KHR);
         YEET(VK_OPERATION_NOT_DEFERRED_KHR);
         YEET(VK_ERROR_COMPRESSION_EXHAUSTED_EXT);
+        default:
+            GM_ASSERT_MSG(false, "Not implemented");
     }
 
-    GM_ASSERT(false);
     return "unkown";
 }
 

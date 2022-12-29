@@ -107,7 +107,7 @@ Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
 
     EventManager::Init(this);
 
-    xcb_xfixes_query_version_cookie_t xfixesCookie = xcb_xfixes_query_version(mConnection, 4, 0);
+    xcb_xfixes_query_version(mConnection, 4, 0);
 }
 
 Window::~Window() {

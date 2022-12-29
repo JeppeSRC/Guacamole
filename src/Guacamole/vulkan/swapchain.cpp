@@ -156,12 +156,6 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
         mSwapchainImageViews.push_back(view);
     }
 
-    VkSemaphoreCreateInfo spInfo;
-
-    spInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    spInfo.pNext = nullptr;
-    spInfo.flags = 0;
-
     mSemaphores.Init((SWAPCHAIN_AUX_SEMAPHORES + 1) * imageCount + 1);
 
     mCommandPool = new CommandPool(mDevice);

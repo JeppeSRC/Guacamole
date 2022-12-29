@@ -61,7 +61,7 @@ PipelineLayout::PipelineLayout(Device* device, const std::vector<DescriptorSetLa
 
     lInfo.pSetLayouts = tmp.data();
     lInfo.pushConstantRangeCount = (uint32_t)pushConstants.size();
-    lInfo.pPushConstantRanges = pushConstants.data();nullptr;
+    lInfo.pPushConstantRanges = pushConstants.data();
 
     VK(vkCreatePipelineLayout(mDevice->GetHandle(), &lInfo, nullptr, &mLayoutHandle));
 }

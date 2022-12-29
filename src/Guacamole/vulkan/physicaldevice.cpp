@@ -83,7 +83,7 @@ uint32_t PhysicalDevice::GetQueueIndex(VkQueueFlags queues) const {
 bool PhysicalDevice::GetDevicePresentationSupport(const Window* window) const {
     uint32_t index = GetQueueIndex(VK_QUEUE_GRAPHICS_BIT);
 
-    if (index == ~0) return false;
+    if (index == ~0ul) return false;
 
     return GetQueuePresentationSupport(window, index);
 }

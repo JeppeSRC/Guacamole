@@ -49,6 +49,8 @@ const char* vkEnumToString(VkPhysicalDeviceType type) {
         MAKE_CASE(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
         MAKE_CASE(VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU);
         MAKE_CASE(VK_PHYSICAL_DEVICE_TYPE_CPU);
+        default:
+            return "(null)";        
     }
 
     return "(null)";

@@ -98,7 +98,7 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
 
     Context::Init(cs);
 
-    if (appSpec.deviceIndex == ~0) {
+    if (appSpec.deviceIndex == ~0ul) {
         mMainDevice = Context::CreateDevice(mWindow);
     } else {
         mMainDevice = Context::CreateDevice(appSpec.deviceIndex);
@@ -141,6 +141,8 @@ bool Application::OnEvent(Event* e) {
             return OnButtonReleased((ButtonReleasedEvent*)e);
         case EventType::MouseMoved:
             return OnMouseMoved((MouseMovedEvent*)e);
+        default:
+            GM_ASSERT_MSG(false, "Ont implemented yet");
     }
 
     return false;

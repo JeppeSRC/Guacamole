@@ -44,9 +44,9 @@ void Context::Init(const ContextSpec& spec) {
 
     uint32_t minVersion = GM_VK_MIN_VERSION;
 
-    uint32_t a = VK_API_VERSION_VARIANT(version);
-    uint32_t major = VK_API_VERSION_MAJOR(version);
-    uint32_t minor = VK_API_VERSION_MINOR(version);
+    //uint32_t a = VK_API_VERSION_VARIANT(version);
+    //uint32_t major = VK_API_VERSION_MAJOR(version);
+    //uint32_t minor = VK_API_VERSION_MINOR(version);
 
     GM_ASSERT(version >= minVersion);
     
