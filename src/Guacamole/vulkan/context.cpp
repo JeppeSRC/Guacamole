@@ -48,7 +48,7 @@ void Context::Init(const ContextSpec& spec) {
     //uint32_t major = VK_API_VERSION_MAJOR(version);
     //uint32_t minor = VK_API_VERSION_MINOR(version);
 
-    GM_ASSERT(version >= minVersion);
+    GM_VERIFY(version >= minVersion);
     
     EnumerateLayersAndExtensions();
 
