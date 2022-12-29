@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include "entity.h"
+#include <Guacamole/scene/entity.h>
 
 namespace Guacamole {
 

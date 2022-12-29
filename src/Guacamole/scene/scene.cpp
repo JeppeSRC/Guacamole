@@ -26,10 +26,10 @@ SOFTWARE.
 
 #include "scene.h"
 #include "entity.h"
-#include "nativescript.h"
 
 #include <Guacamole/core/application.h>
 #include <Guacamole/vulkan/swapchain.h>
+#include <Guacamole/scene/scripts/nativescript.h>
 
 namespace Guacamole {
 
