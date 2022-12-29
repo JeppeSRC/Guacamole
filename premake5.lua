@@ -77,6 +77,8 @@ project "Guacamole"
     filter "system:linux" 
     
             "-Wall",
+            "-Wno-reorder",
+            "-Wno-misleading-indentation"
         defines {
             "GM_LINUX",
             "VK_USE_PLATFORM_XCB_KHR",
