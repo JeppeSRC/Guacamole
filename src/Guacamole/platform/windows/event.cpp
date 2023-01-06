@@ -33,8 +33,6 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Window* EventManager::mWindow = nullptr;
-
 void EventManager::Init(Window* window) {
     mWindow = window;
 }
@@ -71,7 +69,7 @@ LRESULT EventManager::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
 
         case WM_SIZE: {
             uint16_t width = l & 0xFFFF;
-            uint16_t height = (l >> 16);
+            uint16_t height = uint16_t(l >> 16);
 
             WindowResizeEvent evnt(width, height);
 

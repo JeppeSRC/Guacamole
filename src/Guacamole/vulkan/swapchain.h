@@ -62,7 +62,7 @@ public:
     VkExtent2D GetExtent() { return msInfo.imageExtent; }
     std::vector<VkImageView> GetImageViews() { return mSwapchainImageViews; }
     uint32_t GetCurrentImageIndex() { return mCurrentImageIndex; }
-    uint32_t GetFramesInFlight() { return mSwapchainImages.size(); }
+    uint32_t GetFramesInFlight() { return (uint32_t)mSwapchainImages.size(); }
     CommandBuffer* GetRenderCommandBuffer() { return mCommandBuffers[mCurrentImageIndex]; }
 
     void AddFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer);

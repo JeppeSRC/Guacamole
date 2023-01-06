@@ -116,7 +116,7 @@ bool Shader::Source::Load() {
 
         std::vector<uint32_t> spirv(result.begin(), result.end());
 
-        mShaderSourceSize = spirv.size() * 4;
+        mShaderSourceSize = (uint32_t)spirv.size() * 4;
         mShaderSource = new uint32_t[mShaderSourceSize / 4];
         memcpy(mShaderSource, (uint32_t*)spirv.data(), mShaderSourceSize);
     }
@@ -302,7 +302,7 @@ void Shader::ReflectStages() {
 
             uint32_t index = 0;
             uint32_t offset = 0;
-            for (uint64_t i = 0; i < type.member_types.size(); i++) {
+            for (uint32_t i = 0; i < type.member_types.size(); i++) {
                 spirv_cross::TypeID id = type.member_types[i];
                 spirv_cross::SPIRType memberType = compiler.get_type(id);
                 UniformBufferType::Member member;
@@ -333,7 +333,7 @@ void Shader::ReflectStages() {
 
         for (auto& push : resources.push_constant_buffers) {
             spirv_cross::SPIRType type = compiler.get_type(push.type_id);
-            uint32_t size = compiler.get_declared_struct_size(type);
+            uint32_t size = (uint32_t)compiler.get_declared_struct_size(type);
 
             mPushConstants.push_back({ShaderStageToVkShaderStage(shader.mStage), 0, size});
         }

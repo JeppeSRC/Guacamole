@@ -234,7 +234,7 @@ void Texture2D::LoadImageInternal(uint8_t* data, uint64_t size) {
     int32_t height;
     int32_t channels;
 
-    uint8_t* pixels = stbi_load_from_memory(data, size, &width, &height, &channels, 4);
+    uint8_t* pixels = stbi_load_from_memory(data, (int32_t)size, &width, &height, &channels, 4);
 
     if (pixels == nullptr) {
         GM_LOG_CRITICAL("stbi_load_from_memory({0}, {1}, {2}, {3}, {4}, {5}) failed", uint64_t(data), size, width, height, channels, 4);

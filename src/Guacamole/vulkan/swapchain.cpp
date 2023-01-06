@@ -236,7 +236,7 @@ bool Swapchain::Resize(uint32_t width, uint32_t height) {
     vkDestroySwapchainKHR(mDevice->GetHandle(), mSwapchainHandle, nullptr);
     mSwapchainHandle = newHandle;
 
-    uint32_t imageCount = mSwapchainImages.size();
+    uint32_t imageCount = (uint32_t)mSwapchainImages.size();
     VK(vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchainHandle, &imageCount, mSwapchainImages.data()));
 
     for (uint32_t i = 0; i < imageCount; i++) {

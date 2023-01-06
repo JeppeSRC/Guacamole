@@ -123,10 +123,8 @@ public:
         if (mTime >= 1.0f) {
             GM_LOG_INFO("[TestApp] FPS: {}", mFps);
             mFps = 0;
-            mTime -= 1.0f;
+            mTime = 0.0f;
         }
-
-
     }
 
     void OnRender() override {
@@ -165,7 +163,7 @@ public:
 private:
     Scene* mScene;
 
-    float mTime;
+    float mTime = 0.0f;
     uint16_t mFps;
 };
 
