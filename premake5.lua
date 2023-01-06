@@ -122,7 +122,13 @@ project "Guacamole"
             "src/Guacamole/platform/linux/**.cpp",
             "src/Guacamole/platform/android/**.cpp"
         }
-        
+
+        filter {"system:windows", "Release"}
+            buildoptions {
+                "/Ob2",
+                "/Ot",
+                "/Oy"
+            }        
     filter {}
 
     
@@ -145,7 +151,7 @@ project "Guacamole"
         "spdlog"
     }
 
-    filter {"debug", "system:windows"}
+    filter {"Debug", "system:windows"}
 
         links {
             "spirv-cross-cored",
@@ -153,7 +159,7 @@ project "Guacamole"
             "shaderc_sharedd"
         }
 
-    filter {"release", "system:windows"}
+    filter {"Release", "system:windows"}
         links {
             "spirv-cross-core",
             "spirv-cross-glsl",
