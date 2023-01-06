@@ -27,6 +27,8 @@ SOFTWARE.
 #include "cameracontroller.h"
 
 #include <Guacamole/core/input.h>
+#include <Guacamole/core/math/math.h>
+#include <Guacamole/util/timer.h>
 
 namespace Guacamole { namespace Script {
 
@@ -45,8 +47,8 @@ bool CameraController::OnWindowResize(WindowResizeEvent* e) {
 bool CameraController::OnMouseMoved(MouseMovedEvent* e) {
     TransformComponent& trans = GetComponent<TransformComponent>();
     
-    trans.mRotation.y += (float)e->mDeltaX * mSensitivity;
-    trans.mRotation.x += (float)e->mDeltaY * -mSensitivity;
+    trans.mRotation.y -= (float)e->mDeltaX * mSensitivity;
+    trans.mRotation.x += (float)e->mDeltaY * mSensitivity;
 
     return false;
 }
@@ -74,26 +76,25 @@ void CameraController::OnUpdate(float ts) {
 }
 
 void CameraController::UpdateCamera(float ts, bool lockY, Camera& camera, TransformComponent& transform) {
-    glm::mat4 rot(1.0f);
-    rot = glm::rotate(rot, transform.mRotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
-    rot = glm::rotate(rot, transform.mRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    mat4 rot(1.0f);
 
+    rot = mat4::RotateXY(transform.mRotation);
 
-    glm::vec4 adj = glm::vec4(mSpeed, mSpeed, mSpeed, 0.0f) * ts;
-    glm::mat4 inverse = glm::inverse(rot);
-    glm::vec3 forward = inverse[2] * adj;
-    glm::vec3 right = inverse[0] * adj;
-    glm::vec3 up = inverse[1] * adj;
+    vec4 adj = vec4(mSpeed, mSpeed, mSpeed, 0.0f) * ts;
+    mat4 inverse = mat4::Inverse(rot);
+    vec3 forward = inverse.Col(2) * adj;
+    vec3 right = inverse.Col(0) * adj;
+    vec3 up = inverse.Col(1) * adj;
 
     if (lockY) {
-        up = glm::vec3(0.0f, mSpeed * ts, 0.0f);
+        up = vec3(0.0f, mSpeed * ts, 0.0f);
         forward.y = 0.0f;
     }
 
     if (Input::IsKeyPressed(mForward))
-        transform.mTranslation -= forward;
-    else if (Input::IsKeyPressed(mBack))
         transform.mTranslation += forward;
+    else if (Input::IsKeyPressed(mBack))
+        transform.mTranslation -= forward;
 
     if (Input::IsKeyPressed(mRight))
         transform.mTranslation += right;
@@ -106,7 +107,7 @@ void CameraController::UpdateCamera(float ts, bool lockY, Camera& camera, Transf
         transform.mTranslation += up;
     }
 
-    camera.SetView(glm::translate(rot, -transform.mTranslation));
+    camera.SetView(rot * mat4::Translate(-transform.mTranslation));
 }
 
 } }

@@ -26,14 +26,10 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <glm/glm.hpp>
-#include <glm/matrix.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
-
 #include <Guacamole/core/uuid.h>
 #include <Guacamole/asset/asset.h>
 #include <Guacamole/renderer/camera.h>
+#include <Guacamole/core/math/vec.h>
 
 namespace Guacamole {
 
@@ -54,14 +50,14 @@ struct SpriteComponent {
 };
 
 struct TransformComponent {
-    glm::vec3 mTranslation;
-    glm::vec3 mRotation;
-    glm::vec3 mScale;
+    vec3 mTranslation;
+    vec3 mRotation;
+    vec3 mScale;
 
-    glm::mat4 GetTransform() const {
-        return glm::translate(glm::mat4(1.0f), mTranslation) *
-               glm::toMat4(glm::quat(mRotation)) *
-               glm::scale(glm::mat4(1.0f), mScale);
+    mat4 GetTransform() const {
+        return mat4::Translate(mTranslation) *
+               mat4::RotateXY(mRotation) *
+               mat4::Scale(mScale);
     }
 };
 

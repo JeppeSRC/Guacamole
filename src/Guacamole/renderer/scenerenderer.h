@@ -44,8 +44,8 @@ class Scene;
 class SceneRenderer {
 private:
 struct SceneData {
-    glm::mat4 mProjection;
-    glm::mat4 mView;
+    mat4 mProjection;
+    mat4 mView;
 };
 
 public:

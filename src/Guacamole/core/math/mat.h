@@ -22,21 +22,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include <Guacamole/asset/asset.h>
-#include <Guacamole/core/math/vec.h>
+#include "vec.h"
+
+#define MC(m, col, row) m[row + col * 4]
+#define MR(m, col, row) m[col + row * 4]
 
 namespace Guacamole {
 
-class Material : public Asset {
+class mat4 {
 public:
-    Material(vec4 albedo, AssetHandle texture = AssetHandle::Null());
+    union {
+        vec4 col[4];
+        float m[16];
+    };
 
-    AssetHandle mTextureHandle;
-    vec4 mAlbedo;
+    mat4(float diag = 1.0f);
+    mat4(const mat4& o);
+
+    inline float& operator[](uint64_t index) { return m[index]; }
+    inline float operator[](uint64_t index) const { return m[index]; }
+    inline vec4& Col(uint64_t index) { return col[index]; }
+    inline vec4 Col(uint64_t index) const { return col[index]; }
+
+    void operator=(const mat4& r);
+    mat4 operator*(const mat4& r) const;
+    vec4 operator*(const vec4& r) const;
+
+    static mat4 Scale(const vec3& scale);
+    static mat4 Translate(const vec3& translation);
+    static mat4 RotateXY(const vec3& rotation);
+    static mat4 Perspective(float fov, float aspect, float zNear, float zFar);
+    static mat4 Transpose(const mat4& m);
+    static mat4 Inverse(const mat4& m);
+    static mat4 Mul_ColCol(const mat4& l, const mat4& r);
+    static mat4 Mul_RowCol(const mat4& l, const mat4& r);
 };
 
 }

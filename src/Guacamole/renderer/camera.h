@@ -26,9 +26,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <glm/glm.hpp>
-#include <glm/matrix.hpp>
-#include <glm/ext.hpp>
+#include <Guacamole/core/math/mat.h>
 
 namespace Guacamole {
 
@@ -37,9 +35,9 @@ public:
     Camera();
     ~Camera();
 
-    inline const glm::mat4& GetProjection() const { return mProjectionMatrix; }
-    inline const glm::mat4& GetView() const { return mViewMatrix; }
-    inline void SetView(const glm::mat4& view) { mViewMatrix = view;  }
+    inline const mat4& GetProjection() const { return mProjectionMatrix; }
+    inline const mat4& GetView() const { return mViewMatrix; }
+    inline void SetView(const mat4& view) { mViewMatrix = view;  }
 
     inline void SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth) { 
         mViewport = { x, y, width, height, minDepth, maxDepth }; 
@@ -63,8 +61,8 @@ protected:
     float mNear;
     float mFar;
 
-    glm::mat4 mProjectionMatrix;
-    glm::mat4 mViewMatrix;
+    mat4 mProjectionMatrix;
+    mat4 mViewMatrix;
 
 };
 

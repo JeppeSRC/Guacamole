@@ -79,7 +79,7 @@ SceneRenderer::SceneRenderer(Scene* scene) :
         UniformBufferSet* set = new UniformBufferSet(mDevice, mSwapchain->GetFramesInFlight());
         mUniformBufferSetPool.push_back(set);
 
-        set->Create(1, sizeof(glm::vec4));
+        set->Create(1, sizeof(vec4));
     }
 
     mStagingCommandBuffer = mCommandPool.AllocateCommandBuffer(true);
@@ -150,8 +150,8 @@ void SceneRenderer::BeginScene(const Camera& camera) {
 
     rect.offset.x = 0;
     rect.offset.y = 0;
-    rect.extent.width = viewport.width;
-    rect.extent.height = viewport.height;
+    rect.extent.width = (uint32_t)viewport.width;
+    rect.extent.height = (uint32_t)viewport.height;
     
     vkCmdSetViewport(cmd->GetHandle(), 0, 1, &viewport);
     vkCmdSetScissor(cmd->GetHandle(), 0, 1, &rect);
@@ -181,8 +181,8 @@ void SceneRenderer::SubmitMesh(const MeshComponent& mesh, const TransformCompone
     vkCmdBindVertexBuffers(cmdHandle, 0, 1, &meshAsset->GetVBOHandle(), &offset);
     vkCmdBindIndexBuffer(cmdHandle, meshAsset->GetIBOHandle(), 0, meshAsset->GetIndexType());
 
-    glm::mat4 trans = transform.GetTransform();
-    vkCmdPushConstants(cmdHandle, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &trans);
+    mat4 trans = transform.GetTransform();
+    vkCmdPushConstants(cmdHandle, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &trans);
 
     Material* materialAsset = AssetManager::GetAsset<Material>(material.mMaterial);
     Texture2D* tex = AssetManager::GetAsset<Texture2D>(materialAsset->mTextureHandle);
@@ -226,7 +226,7 @@ void SceneRenderer::SubmitMesh(const MeshComponent& mesh, const TransformCompone
     vkUpdateDescriptorSets(mDevice->GetHandle(), 2, write, 0, 0);
     vkCmdBindDescriptorSets(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 1, 1, &setHandle, 0, 0);
 
-    memcpy(mStagingBuffer.Allocate(sizeof(glm::vec4), buffer), &materialAsset->mAlbedo, sizeof(glm::mat4));
+    memcpy(mStagingBuffer.Allocate(sizeof(vec4), buffer), &materialAsset->mAlbedo, sizeof(mat4));
 
     vkCmdBindPipeline(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline->GetHandle());
     vkCmdDrawIndexed(cmdHandle, meshAsset->GetIndexCount(), 1, 0, 0, 0);

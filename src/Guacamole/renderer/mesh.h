@@ -26,17 +26,16 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <glm/glm.hpp>
-
 #include <Guacamole/vulkan/buffer/buffer.h>
 #include <Guacamole/asset/asset.h>
+#include <Guacamole/core/math/vec.h>
 
 namespace Guacamole {
 
 struct Vertex {
-    glm::vec3 Position;
-    glm::vec3 Normal;
-    glm::vec2 UV;
+    vec3 Position;
+    vec3 Normal;
+    vec2 UV;
 };
 
 class Device;
@@ -59,7 +58,7 @@ private:
     Mesh(Device* device);
 
     void CreateVBO(Vertex* data, uint64_t count);
-    void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
+    void CreateIBO(void* data, uint32_t count, VkIndexType indexType);
     void LoadFromFile(const std::filesystem::path& path);
 
     VertexBuffer* mVBO;

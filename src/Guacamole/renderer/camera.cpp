@@ -43,7 +43,7 @@ void Camera::SetPerspective(float fov, float aspect, float zNear, float zFar) {
     mNear = zNear;
     mFar = zFar;
 
-    mProjectionMatrix = glm::perspective(fov, aspect, zNear, zFar);
+    mProjectionMatrix = mat4::Perspective(fov, aspect, zNear, zFar);
 }
 
 void Camera::SetAspect(float aspect) {

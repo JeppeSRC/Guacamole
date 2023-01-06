@@ -39,8 +39,6 @@ SOFTWARE.
 #include <Guacamole/scene/scene.h>
 #include <Guacamole/scene/entity.h>
 #include <time.h>
-#include <glm/glm.hpp>
-#include <glm/ext/matrix_transform.hpp>
 #include <Guacamole/core/application.h>
 #include <Guacamole/core/input.h>
 #include <Guacamole/util/timer.h>
@@ -57,7 +55,14 @@ public:
     TestApp(ApplicationSpec& spec) : Application(spec) {}
 
     void OnInit() override {
+
         spdlog::set_level(spdlog::level::debug);
+
+        mat4 rot = mat4::RotateXY(vec3(2.0f, 0.0f, 0.0f));
+
+        mat4 inv = mat4::Inverse(rot);
+
+        mat4 ident = rot * inv;
 
         WindowSpec windowSpec;
 
@@ -76,7 +81,7 @@ public:
         mScene = new Scene(this);
 
         AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), true);
-        AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
+        AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
 
         Entity e0 = mScene->CreateEntity("first");
 
@@ -88,7 +93,7 @@ public:
         protected:
             void OnUpdate(float ts) override {
                 TransformComponent& trans = GetComponent<TransformComponent>();
-                trans.mRotation.y += ts * 0.2;
+                trans.mRotation.y += ts * 0.2f;
             }
         };
 
@@ -96,9 +101,9 @@ public:
 
         mesh.mMesh = MeshFactory::GetQuadAsset();
         mat.mMaterial = matAsset;
-        trans.mScale = glm::vec3(1.0f, 1.0f, 1.0f);
-        trans.mRotation = glm::vec3(0.0f, 1.0f, 0.0f * 3.1415f / 4.0f);
-        trans.mTranslation = glm::vec3(0.0f, 0.0f, -2);
+        trans.mScale = vec3(1.0f, 1.0f, 1.0f);
+        trans.mRotation = vec3(0.0f, 0.0f, 0.0f);
+        trans.mTranslation = vec3(0.0f, 0.0f, 2.0f);
 
         Entity c = mScene->CreateEntity("camera");
 
@@ -109,11 +114,11 @@ public:
 
         cam.mPrimary = true;
         cam.mCamera.SetPerspective(70.0f, (float)windowSpec.Width / windowSpec.Height, 0.001f, 100.0f);
-        cam.mCamera.SetViewport(windowSpec.Width, windowSpec.Height);
+        cam.mCamera.SetViewport((float)windowSpec.Width, (float)windowSpec.Height);
 
-        camTrans.mScale = glm::vec3(1.0f);
-        camTrans.mRotation = glm::vec3(0.0f);
-        camTrans.mTranslation = glm::vec3(0.0f, 0.0f, -0.5f);
+        camTrans.mScale = vec3(1.0f);
+        camTrans.mRotation = vec3(0.0f);
+        camTrans.mTranslation = vec3(0.0f, 0.0f, -0.0f);
     }
 
     void OnUpdate(float ts) override {
@@ -168,6 +173,7 @@ private:
 };
 
 int main() {
+
     GM_LOG_INFO("Start...");
     ApplicationSpec appSpec;
 

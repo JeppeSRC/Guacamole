@@ -22,21 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <Guacamole.h>
 
-#include <Guacamole/asset/asset.h>
-#include <Guacamole/core/math/vec.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#define GM_TO_RADIANS(x) (x * (float(M_PI) / 180.0f))
 
 namespace Guacamole {
-
-class Material : public Asset {
-public:
-    Material(vec4 albedo, AssetHandle texture = AssetHandle::Null());
-
-    AssetHandle mTextureHandle;
-    vec4 mAlbedo;
-};
 
 }
