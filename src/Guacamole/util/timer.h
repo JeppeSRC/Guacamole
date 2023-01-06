@@ -35,7 +35,12 @@ class ScopedTimer {
 public:
     ScopedTimer(const char* name) : mName(name), mStart(std::chrono::high_resolution_clock::now()) { }
     ~ScopedTimer() {
-        auto end  = std::chrono::high_resolution_clock::now();
+        Stop();
+    }
+
+    void Stop() {
+        if (mName == nullptr) return;
+        auto end = std::chrono::high_resolution_clock::now();
 
         uint64_t elapsed = std::chrono::duration_cast<T>(end - mStart).count();
 
@@ -48,6 +53,7 @@ public:
         }
 
         GM_LOG_DEBUG("[ScopedTimer] {}: {}{}", mName, elapsed, suffix);
+        mName = nullptr;
     }
 
 public:
