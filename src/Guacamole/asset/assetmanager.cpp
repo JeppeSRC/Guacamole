@@ -53,8 +53,6 @@ std::mutex AssetManager::mCommandBufferMutex;
 std::unordered_map<AssetHandle, Asset*> AssetManager::mAssets;
 std::vector<Asset*> AssetManager::mAssetQueue;
 
-
-
 void AssetManager::Init(Device* device) {
     mShouldStop = false;
     mDevice = device;

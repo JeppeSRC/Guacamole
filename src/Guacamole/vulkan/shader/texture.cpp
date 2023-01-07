@@ -34,7 +34,6 @@ SOFTWARE.
 
 #include <stb_image.h>
 
-
 namespace Guacamole {
 
 Texture::Texture(Device* device, const std::filesystem::path& path) 

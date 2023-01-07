@@ -81,13 +81,15 @@ public:
 
         mScene = new Scene(this);
 
-        AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), true);
-        AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
+        AssetHandle brickTexture = AssetManager::AddAsset(new Texture2D(mMainDevice, "res/texture/brick_pavement.jpg"), false);
+        AssetHandle sheetTexture = AssetManager::AddAsset(new Texture2D(mMainDevice, "res/texture/sheet.png"), false);
+        AssetHandle sheetMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), sheetTexture), true);
+        AssetHandle brickMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), brickTexture), true);
 
         Entity cube = mScene->CreateEntity("Cube");
 
         cube.AddComponent<MeshComponent>(MeshFactory::GetQuadAsset());
-        cube.AddComponent<MaterialComponent>(matAsset);
+        cube.AddComponent<MaterialComponent>(sheetMaterial);
         cube.AddComponent<TransformComponent>(vec3(0, 0, 0));
 
         class CubeRotater : public NativeScript {
@@ -102,8 +104,8 @@ public:
 
         Entity floor = mScene->CreateEntity("Floor");
 
-        floor.AddComponent<TransformComponent>(vec3(0, -0.8f, -1), vec3(0, 0, 0), vec3(10, 10, 1));
-        floor.AddComponent<MaterialComponent>(matAsset);
+        floor.AddComponent<TransformComponent>(vec3(0, -0.8f, -1), vec3(GM_TO_RADIANS(90.0f), 0, 0), vec3(10, 10, 1));
+        floor.AddComponent<MaterialComponent>(brickMaterial);
         floor.AddComponent<MeshComponent>(MeshFactory::GetPlaneAsset());
 
         Entity cam = mScene->CreateEntity("Camera");
