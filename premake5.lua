@@ -79,7 +79,8 @@ project "Guacamole"
         buildoptions {
             "-Wall",
             "-Wno-reorder",
-            "-Wno-misleading-indentation"
+            "-Wno-misleading-indentation",
+            "-mavx2"
         }
         
         linkoptions {
@@ -127,7 +128,8 @@ project "Guacamole"
             buildoptions {
                 "/Ob2",
                 "/Ot",
-                "/Oy"
+                "/Oy",
+                "/arch:AVX2"
             }        
     filter {}
 
