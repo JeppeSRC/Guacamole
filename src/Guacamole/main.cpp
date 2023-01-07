@@ -47,6 +47,7 @@ SOFTWARE.
 #include <Guacamole/renderer/material.h>
 #include <Guacamole/scene/scripts/nativescript.h>
 #include <Guacamole/scene/scripts/cameracontroller.h>
+#include <Guacamole/core/math/math.h>
 
 using namespace Guacamole;
 
@@ -83,11 +84,11 @@ public:
         AssetHandle texAsset = AssetManager::AddAsset(new Texture2D(mMainDevice, "build/res/sheet.png"), true);
         AssetHandle matAsset = AssetManager::AddMemoryAsset(new Material(vec4(1.0f, 1.0f, 1.0f, 1.0f), texAsset), true);
 
-        Entity e0 = mScene->CreateEntity("first");
+        Entity cube = mScene->CreateEntity("Cube");
 
-        MeshComponent& mesh = e0.AddComponent<MeshComponent>();
-        MaterialComponent& mat = e0.AddComponent<MaterialComponent>();
-        TransformComponent& trans = e0.AddComponent<TransformComponent>();
+        cube.AddComponent<MeshComponent>(MeshFactory::GetQuadAsset());
+        cube.AddComponent<MaterialComponent>(matAsset);
+        cube.AddComponent<TransformComponent>(vec3(0, 0, 0));
 
         class CubeRotater : public NativeScript {
         protected:
@@ -97,28 +98,24 @@ public:
             }
         };
 
-        e0.AddScript<CubeRotater>();
+        cube.AddScript<CubeRotater>();
 
-        mesh.mMesh = MeshFactory::GetQuadAsset();
-        mat.mMaterial = matAsset;
-        trans.mScale = vec3(1.0f, 1.0f, 1.0f);
-        trans.mRotation = vec3(0.0f, 0.0f, 0.0f);
-        trans.mTranslation = vec3(0.0f, 0.0f, 2.0f);
+        Entity floor = mScene->CreateEntity("Floor");
 
-        Entity c = mScene->CreateEntity("camera");
+        floor.AddComponent<TransformComponent>(vec3(0, -0.8f, -1), vec3(0, 0, 0), vec3(10, 10, 1));
+        floor.AddComponent<MaterialComponent>(matAsset);
+        floor.AddComponent<MeshComponent>(MeshFactory::GetPlaneAsset());
 
-        CameraComponent& cam = c.AddComponent<CameraComponent>();
-        TransformComponent& camTrans = c.AddComponent<TransformComponent>();
+        Entity cam = mScene->CreateEntity("Camera");
 
-        c.AddScript<Script::CameraController>();
+        Camera camera;
 
-        cam.mPrimary = true;
-        cam.mCamera.SetPerspective(70.0f, (float)windowSpec.Width / windowSpec.Height, 0.001f, 100.0f);
-        cam.mCamera.SetViewport((float)windowSpec.Width, (float)windowSpec.Height);
+        camera.SetPerspective(70.0f, (float)windowSpec.Width / windowSpec.Height, 0.001f, 100.0f);
+        camera.SetViewport((float)windowSpec.Width, (float)windowSpec.Height);
 
-        camTrans.mScale = vec3(1.0f);
-        camTrans.mRotation = vec3(0.0f);
-        camTrans.mTranslation = vec3(0.0f, 0.0f, -0.0f);
+        cam.AddComponent<CameraComponent>(camera, true);
+        cam.AddComponent<TransformComponent>(vec3(0, 0, -1));
+        cam.AddScript<Script::CameraController>();
     }
 
     void OnUpdate(float ts) override {

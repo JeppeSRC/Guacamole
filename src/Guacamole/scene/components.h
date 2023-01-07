@@ -38,18 +38,26 @@ struct IdComponent {
 };
 
 struct TagComponent {
+    TagComponent(const std::string& tag = "") : mTag(tag) {}
+
     std::string mTag;
 };
 
 struct MeshComponent {
+    MeshComponent(AssetHandle handle = AssetHandle::Null()) : mMesh(handle) {}
     AssetHandle mMesh;
 };
 
 struct SpriteComponent {
+    SpriteComponent(AssetHandle handle = AssetHandle::Null()) : mTexture(handle) {}
+
     AssetHandle mTexture;
 };
 
 struct TransformComponent {
+    TransformComponent(const vec3& translation = vec3(0.0f), const vec3& rotation = vec3(0.0f), const vec3& scale = vec3(1.0f))
+        : mTranslation(translation), mRotation(rotation), mScale(scale) {}
+
     vec3 mTranslation;
     vec3 mRotation;
     vec3 mScale;
@@ -62,6 +70,9 @@ struct TransformComponent {
 };
 
 struct CameraComponent {
+    CameraComponent() {}
+    CameraComponent(const Camera& camera, bool primary) : mCamera(camera), mPrimary(primary) {}
+
     Camera mCamera;
     
     bool mPrimary;
@@ -69,6 +80,8 @@ struct CameraComponent {
 };
 
 struct MaterialComponent {
+    MaterialComponent(AssetHandle handle = AssetHandle::Null()) : mMaterial(handle) {}
+
     AssetHandle mMaterial;
 };
 
