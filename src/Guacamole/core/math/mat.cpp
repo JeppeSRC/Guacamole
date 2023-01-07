@@ -76,13 +76,13 @@ mat4 mat4::RotateXY(const vec3& rotation) {
     float ysin = sinf(rotation.y);
     float ycos = cosf(rotation.y);
 
-    MC(x, 1, 1) = xcos;  MC(x, 2, 1) = -xsin;
-    MC(x, 1, 2) = xsin;  MC(x, 2, 2) = xcos;
+    MR(x, 1, 1) = xcos;  MR(x, 2, 1) = -xsin;
+    MR(x, 1, 2) = xsin;  MR(x, 2, 2) = xcos;
 
     MC(y, 0, 0) = ycos;  MC(y, 2, 0) = ysin;
     MC(y, 0, 2) = -ysin; MC(y, 2, 2) = ycos;
 
-    return Mul_ColCol(x, y);
+    return Mul_RowCol(x, y);
 }
 
 mat4 mat4::Perspective(float fov, float aspect, float zNear, float zFar) {
@@ -122,6 +122,7 @@ mat4 mat4::Inverse(const mat4& m) {
     * */
 
 #if defined(GM_MATH_PURE) || 1
+
 
 #pragma region row0
     // MR is used to transpose it as it's written
