@@ -424,10 +424,10 @@ vec4 mat4::operator*(const vec4& r) const {
     __m128 col2 = _mm_loadu_ps(m+8);
     __m128 col3 = _mm_loadu_ps(m+12);
 
-    __m128 vecX = _mm_set_ps(r.x, r.x, r.x, r.x);
-    __m128 vecY = _mm_set_ps(r.y, r.y, r.y, r.y);
-    __m128 vecZ = _mm_set_ps(r.z, r.z, r.z, r.z);
-    __m128 vecW = _mm_set_ps(r.w, r.w, r.w, r.w);
+    __m128 vecX = _mm_set_ps1(r.x);
+    __m128 vecY = _mm_set_ps1(r.y);
+    __m128 vecZ = _mm_set_ps1(r.z);
+    __m128 vecW = _mm_set_ps1(r.w);
 
     __m128 res = _mm_mul_ps(col0, vecX);
     res = _mm_fmadd_ps(col1, vecY, res);
@@ -461,8 +461,8 @@ mat4 mat4::Mul_ColCol(const mat4&l, const mat4& r) {
     __m128 col2 = _mm_loadu_ps(r.m + 8);
     __m128 col3 = _mm_loadu_ps(r.m + 12);
 
-    {
     // First row
+    {
         __m128 row0 = _mm_set_ps(l.m[3 * 4], l.m[2 * 4], l.m[1 * 4], l.m[0]);
 
         __m128 m00 = _mm_mul_ps(row0, col0);
@@ -479,8 +479,9 @@ mat4 mat4::Mul_ColCol(const mat4&l, const mat4& r) {
         ret[0 + 2 * 4] = M128(res, 2);
         ret[0 + 3 * 4] = M128(res, 3);
     }
-    {
+
     // Second row
+    {
         __m128 row1 = _mm_set_ps(l.m[1 + 3 * 4], l.m[1 + 2 * 4], l.m[1 + 1 * 4], l.m[1 + 0]);
 
         __m128 m10 = _mm_mul_ps(row1, col0);
@@ -498,8 +499,8 @@ mat4 mat4::Mul_ColCol(const mat4&l, const mat4& r) {
         ret[1 + 3 * 4] = M128(res, 3);
     }
 
-    {
     // Third row
+    {
         __m128 row2 = _mm_set_ps(l.m[2 + 3 * 4], l.m[2 + 2 * 4], l.m[2 + 1 * 4], l.m[2 + 0]);
 
         __m128 m20 = _mm_mul_ps(row2, col0);
@@ -517,8 +518,9 @@ mat4 mat4::Mul_ColCol(const mat4&l, const mat4& r) {
         ret[2 + 3 * 4] = M128(res, 3);
     }
 
+    // Fourth row
     {
-// Fourth row
+
         __m128 row3 = _mm_set_ps(l.m[3 + 3 * 4], l.m[3 + 2 * 4], l.m[3 + 1 * 4], l.m[3 + 0]);
 
         __m128 m30 = _mm_mul_ps(row3, col0);
