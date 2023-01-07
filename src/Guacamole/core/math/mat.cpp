@@ -125,6 +125,12 @@ mat4 mat4::Inverse(const mat4& m) {
 
 #pragma region row0
     // MR is used to transpose it as it's written
+    float m22m33 = MC(m, 2, 2) * MC(m, 3, 3);
+    float m23m32 = MC(m, 2, 3) * MC(m, 3, 2);
+    float m12m33 = MC(m, 1, 2) * MC(m, 3, 3);
+    float m13m32 = MC(m, 1, 3) * MC(m, 3, 2);
+    float m12m23 = MC(m, 1, 2) * MC(m, 2, 3);
+    float m13m22 = MC(m, 1, 3) * MC(m, 2, 2);
 
     /*
     * m11 m21 m31
@@ -132,9 +138,14 @@ mat4 mat4::Inverse(const mat4& m) {
     * m13 m23 m33
     * */
 
-    MR(ret, 0, 0) = MC(m, 1, 1) * (MC(m, 2, 2) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 2)) -
-                    MC(m, 2, 1) * (MC(m, 1, 2) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 2)) + 
-                    MC(m, 3, 1) * (MC(m, 1, 2) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 2));  
+    MR(ret, 0, 0) = MC(m, 1, 1) * (m22m33 - m23m32) -
+                    MC(m, 2, 1) * (m12m33 - m13m32) +
+                    MC(m, 3, 1) * (m12m23 - m13m22);
+
+    float m02m33 = MC(m, 0, 2) * MC(m, 3, 3);
+    float m03m32 = MC(m, 0, 3) * MC(m, 3, 2);
+    float m02m23 = MC(m, 0, 2) * MC(m, 2, 3);
+    float m03m22 = MC(m, 0, 3) * MC(m, 2, 2);
 
    /*
     * m01 m21 m31
@@ -142,9 +153,12 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m23 m33
     * */
 
-    MR(ret, 1, 0) = -(MC(m, 0, 1) * (MC(m, 2, 2) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 2)) -
-                      MC(m, 2, 1) * (MC(m, 0, 2) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 2)) +
-                      MC(m, 3, 1) * (MC(m, 0, 2) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 2)));
+    MR(ret, 1, 0) = -(MC(m, 0, 1) * (m22m33 - m23m32) -
+                      MC(m, 2, 1) * (m02m33 - m03m32) +
+                      MC(m, 3, 1) * (m02m23 - m03m22));
+
+    float m02m13 = MC(m, 0, 2) * MC(m, 1, 3);
+    float m03m12 = MC(m, 0, 3) * MC(m, 1, 2);
 
    /*
     * m01 m11 m31
@@ -152,9 +166,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m33
     * */
 
-    MR(ret, 2, 0) = MC(m, 0, 1) * (MC(m, 1, 2) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 2)) -
-                    MC(m, 1, 1) * (MC(m, 0, 2) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 2)) +
-                    MC(m, 3, 1) * (MC(m, 0, 2) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 2));
+    MR(ret, 2, 0) = MC(m, 0, 1) * (m12m33 - m13m32) -
+                    MC(m, 1, 1) * (m02m33 - m03m32) +
+                    MC(m, 3, 1) * (m02m13 - m03m12);
 
    /*
     * m01 m11 m21
@@ -162,9 +176,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m23
     * */
 
-    MR(ret, 3, 0) = -(MC(m, 0, 1) * (MC(m, 1, 2) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 2)) -
-                      MC(m, 1, 1) * (MC(m, 0, 2) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 2)) +
-                      MC(m, 2, 1) * (MC(m, 0, 2) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 2)));
+    MR(ret, 3, 0) = -(MC(m, 0, 1) * (m12m23 - m13m22) -
+                      MC(m, 1, 1) * (m02m23 - m03m22) +
+                      MC(m, 2, 1) * (m02m13 - m03m12));
 
 #pragma endregion
 
@@ -175,9 +189,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m13 m23 m33
     * */
 
-    MR(ret, 0, 1) = -(MC(m, 1, 0) * (MC(m, 2, 2) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 2)) -
-                      MC(m, 2, 0) * (MC(m, 1, 2) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 2)) +
-                      MC(m, 3, 0) * (MC(m, 1, 2) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 2)));
+    MR(ret, 0, 1) = -(MC(m, 1, 0) * (m22m33 - m23m32) -
+                      MC(m, 2, 0) * (m12m33 - m13m32) +
+                      MC(m, 3, 0) * (m12m23 - m13m22));
 
    /*
     * m00 m20 m30
@@ -186,9 +200,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * */
 
 
-    MR(ret, 1, 1) = MC(m, 0, 0) * (MC(m, 2, 2) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 2)) -
-                    MC(m, 2, 0) * (MC(m, 0, 2) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 2)) +
-                    MC(m, 3, 0) * (MC(m, 0, 2) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 2));
+    MR(ret, 1, 1) = MC(m, 0, 0) * (m22m33 - m23m32) -
+                    MC(m, 2, 0) * (m02m33 - m03m32) +
+                    MC(m, 3, 0) * (m02m23 - m03m22);
 
    /*
     * m00 m10 m30
@@ -196,9 +210,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m33
     * */
 
-    MR(ret, 2, 1) = -(MC(m, 0, 0) * (MC(m, 1, 2) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 2)) -
-                      MC(m, 1, 0) * (MC(m, 0, 2) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 2)) +
-                      MC(m, 3, 0) * (MC(m, 0, 2) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 2)));
+    MR(ret, 2, 1) = -(MC(m, 0, 0) * (m12m33 - m13m32) -
+                      MC(m, 1, 0) * (m02m33 - m03m32) +
+                      MC(m, 3, 0) * (m02m13 - m03m12));
 
    /*
     * m00 m10 m20 
@@ -206,22 +220,36 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m23 
     * */
 
-    MR(ret, 3, 1) = MC(m, 0, 0) * (MC(m, 1, 2) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 2)) -
-                    MC(m, 1, 0) * (MC(m, 0, 2) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 2)) +
-                    MC(m, 2, 0) * (MC(m, 0, 2) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 2));
+    MR(ret, 3, 1) = MC(m, 0, 0) * (m12m23 - m13m22) -
+                    MC(m, 1, 0) * (m02m23 - m03m22) +
+                    MC(m, 2, 0) * (m02m13 - m03m12);
 
 #pragma endregion
 
 #pragma region row2
+
+    float m21m33 = MC(m, 2, 1) * MC(m, 3, 3);
+    float m23m31 = MC(m, 2, 3) * MC(m, 3, 1);
+    float m11m33 = MC(m, 1, 1) * MC(m, 3, 3);
+    float m13m31 = MC(m, 1, 3) * MC(m, 3, 1);
+    float m11m23 = MC(m, 1, 1) * MC(m, 2, 3);
+    float m13m21 = MC(m, 1, 3) * MC(m, 2, 1);
+
    /*
     * m10 m20 m30
     * m11 m21 m31
     * m13 m23 m33
     * */
 
-    MR(ret, 0, 2) = MC(m, 1, 0) * (MC(m, 2, 1) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 1)) -
-                    MC(m, 2, 0) * (MC(m, 1, 1) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 1)) +
-                    MC(m, 3, 0) * (MC(m, 1, 1) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 1));
+    MR(ret, 0, 2) = MC(m, 1, 0) * (m21m33 - m23m31) -
+                    MC(m, 2, 0) * (m11m33 - m13m31) +
+                    MC(m, 3, 0) * (m11m23 - m13m21);
+
+
+    float m01m33 = MC(m, 0, 1) * MC(m, 3, 3);
+    float m03m31 = MC(m, 0, 3) * MC(m, 3, 1);
+    float m01m23 = MC(m, 0, 1) * MC(m, 2, 3);
+    float m03m21 = MC(m, 0, 3) * MC(m, 2, 1);
 
    /*
     * m00 m20 m30
@@ -229,9 +257,12 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m23 m33
     * */
 
-    MR(ret, 1, 2) = -(MC(m, 0, 0) * (MC(m, 2, 1) * MC(m, 3, 3) - MC(m, 2, 3) * MC(m, 3, 1)) -
-                      MC(m, 2, 0) * (MC(m, 0, 1) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 1)) +
-                      MC(m, 3, 0) * (MC(m, 0, 1) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 1)));
+    MR(ret, 1, 2) = -(MC(m, 0, 0) * (m21m33 - m23m31) -
+                      MC(m, 2, 0) * (m01m33 - m03m31) +
+                      MC(m, 3, 0) * (m01m23 - m03m21));
+
+    float m01m13 = MC(m, 0, 1) * MC(m, 1, 3);
+    float m03m11 = MC(m, 0, 3) * MC(m, 1, 1);
 
    /*
     * m00 m10 m30
@@ -239,9 +270,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m33
     * */
 
-    MR(ret, 2, 2) = MC(m, 0, 0) * (MC(m, 1, 1) * MC(m, 3, 3) - MC(m, 1, 3) * MC(m, 3, 1)) -
-                    MC(m, 1, 0) * (MC(m, 0, 1) * MC(m, 3, 3) - MC(m, 0, 3) * MC(m, 3, 1)) +
-                    MC(m, 3, 0) * (MC(m, 0, 1) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 1));
+    MR(ret, 2, 2) = MC(m, 0, 0) * (m11m33 - m13m31) -
+                    MC(m, 1, 0) * (m01m33 - m03m31) +
+                    MC(m, 3, 0) * (m01m13 - m03m11);
 
    /*
     * m00 m10 m20
@@ -249,14 +280,21 @@ mat4 mat4::Inverse(const mat4& m) {
     * m03 m13 m23
     * */
 
-    MR(ret, 3, 2) = -(MC(m, 0, 0) * (MC(m, 1, 1) * MC(m, 2, 3) - MC(m, 1, 3) * MC(m, 2, 1)) -
-                      MC(m, 1, 0) * (MC(m, 0, 1) * MC(m, 2, 3) - MC(m, 0, 3) * MC(m, 2, 1)) +
-                      MC(m, 2, 0) * (MC(m, 0, 1) * MC(m, 1, 3) - MC(m, 0, 3) * MC(m, 1, 1)));
+    MR(ret, 3, 2) = -(MC(m, 0, 0) * (m11m23 - m13m21) -
+                      MC(m, 1, 0) * (m01m23 - m03m21) +
+                      MC(m, 2, 0) * (m01m13 - m03m11));
 
 
 #pragma endregion
 
 #pragma region row3
+
+    float m21m32 = MC(m, 2, 1) * MC(m, 3, 2);
+    float m22m31 = MC(m, 2, 2) * MC(m, 3, 1);
+    float m11m32 = MC(m, 1, 1) * MC(m, 3, 2);
+    float m12m31 = MC(m, 1, 2) * MC(m, 3, 1);
+    float m11m22 = MC(m, 1, 1) * MC(m, 2, 2);
+    float m12m21 = MC(m, 1, 2) * MC(m, 2, 1);
 
    /*
     * m10 m20 m30
@@ -264,29 +302,35 @@ mat4 mat4::Inverse(const mat4& m) {
     * m12 m22 m32
     * */
 
-    MR(ret, 0, 3) = -(MC(m, 1, 0) * (MC(m, 2, 1) * MC(m, 3, 2) - MC(m, 2, 2) * MC(m, 3, 1)) -
-                      MC(m, 2, 0) * (MC(m, 1, 1) * MC(m, 3, 2) - MC(m, 1, 2) * MC(m, 3, 1)) +
-                      MC(m, 3, 0) * (MC(m, 1, 1) * MC(m, 2, 2) - MC(m, 1, 2) * MC(m, 2, 1)));
+    MR(ret, 0, 3) = -(MC(m, 1, 0) * (m21m32 - m22m31) -
+                      MC(m, 2, 0) * (m11m32 - m12m31) +
+                      MC(m, 3, 0) * (m11m22 - m12m21));
 
+    float m01m32 = MC(m, 0, 1) * MC(m, 3, 2);
+    float m02m31 = MC(m, 0, 2) * MC(m, 3, 1);
+    float m01m22 = MC(m, 0, 1) * MC(m, 2, 2);
+    float m02m21 = MC(m, 0, 2) * MC(m, 2, 1);
    /*
     * m00 m20 m30
     * m01 m21 m31
     * m02 m22 m32
     * */
 
-    MR(ret, 1, 3) = MC(m, 0, 0) * (MC(m, 2, 1) * MC(m, 3, 2) - MC(m, 2, 2) * MC(m, 3, 1)) -
-                    MC(m, 2, 0) * (MC(m, 0, 1) * MC(m, 3, 2) - MC(m, 0, 2) * MC(m, 3, 1)) +
-                    MC(m, 3, 0) * (MC(m, 0, 1) * MC(m, 2, 2) - MC(m, 0, 2) * MC(m, 2, 1));
+    MR(ret, 1, 3) = MC(m, 0, 0) * (m21m32 - m22m31) -
+                    MC(m, 2, 0) * (m01m32 - m02m31) +
+                    MC(m, 3, 0) * (m01m22 - m02m21);
 
+    float m01m12 = MC(m, 0, 1) * MC(m, 1, 2);
+    float m02m11 = MC(m, 0, 2) * MC(m, 1, 1);
    /*
     * m00 m10 m30
     * m01 m11 m31
     * m02 m12 m32
     * */
 
-    MR(ret, 2, 3) = -(MC(m, 0, 0) * (MC(m, 1, 1) * MC(m, 3, 2) - MC(m, 1, 2) * MC(m, 3, 1)) -
-                      MC(m, 1, 0) * (MC(m, 0, 1) * MC(m, 3, 2) - MC(m, 0, 2) * MC(m, 3, 1)) +
-                      MC(m, 3, 0) * (MC(m, 0, 1) * MC(m, 1, 2) - MC(m, 0, 2) * MC(m, 1, 1)));
+    MR(ret, 2, 3) = -(MC(m, 0, 0) * (m11m32 - m12m31) -
+                      MC(m, 1, 0) * (m01m32 - m02m31) +
+                      MC(m, 3, 0) * (m01m12 - m02m11));
 
    /*
     * m00 m10 m20
@@ -294,9 +338,9 @@ mat4 mat4::Inverse(const mat4& m) {
     * m02 m12 m22
     * */
 
-    MR(ret, 3, 3) = MC(m, 0, 0) * (MC(m, 1, 1) * MC(m, 2, 2) - MC(m, 1, 2) * MC(m, 2, 1)) -
-                    MC(m, 1, 0) * (MC(m, 0, 1) * MC(m, 2, 2) - MC(m, 0, 2) * MC(m, 2, 1)) +
-                    MC(m, 2, 0) * (MC(m, 0, 1) * MC(m, 1, 2) - MC(m, 0, 2) * MC(m, 1, 1));
+    MR(ret, 3, 3) = MC(m, 0, 0) * (m11m22 - m12m21) -
+                    MC(m, 1, 0) * (m01m22 - m02m21) +
+                    MC(m, 2, 0) * (m01m12 - m02m11);
 
 #pragma endregion
 
@@ -313,7 +357,44 @@ mat4 mat4::Inverse(const mat4& m) {
     }
 
 #else
-
+/*
+float m22m33 = MC(m, 2, 2) * MC(m, 3, 3);
+float m23m32 = MC(m, 2, 3) * MC(m, 3, 2);
+float m12m33 = MC(m, 1, 2) * MC(m, 3, 3);
+float m13m32 = MC(m, 1, 3) * MC(m, 3, 2);
+float m12m23 = MC(m, 1, 2) * MC(m, 2, 3);
+float m13m22 = MC(m, 1, 3) * MC(m, 2, 2);
+float m02m33 = MC(m, 0, 2) * MC(m, 3, 3);
+float m03m32 = MC(m, 0, 3) * MC(m, 3, 2);
+float m02m23 = MC(m, 0, 2) * MC(m, 2, 3);
+float m03m22 = MC(m, 0, 3) * MC(m, 2, 2);
+float m02m13 = MC(m, 0, 2) * MC(m, 1, 3);
+float m03m12 = MC(m, 0, 3) * MC(m, 1, 2);
+float m21m33 = MC(m, 2, 1) * MC(m, 3, 3);
+float m23m31 = MC(m, 2, 3) * MC(m, 3, 1);
+float m11m33 = MC(m, 1, 1) * MC(m, 3, 3);
+float m13m31 = MC(m, 1, 3) * MC(m, 3, 1);
+float m11m23 = MC(m, 1, 1) * MC(m, 2, 3);
+float m13m21 = MC(m, 1, 3) * MC(m, 2, 1);
+float m01m33 = MC(m, 0, 1) * MC(m, 3, 3);
+float m03m31 = MC(m, 0, 3) * MC(m, 3, 1);
+float m01m23 = MC(m, 0, 1) * MC(m, 2, 3);
+float m03m21 = MC(m, 0, 3) * MC(m, 2, 1);
+float m01m13 = MC(m, 0, 1) * MC(m, 1, 3);
+float m03m11 = MC(m, 0, 3) * MC(m, 1, 1);
+float m21m32 = MC(m, 2, 1) * MC(m, 3, 2);
+float m22m31 = MC(m, 2, 2) * MC(m, 3, 1);
+float m11m32 = MC(m, 1, 1) * MC(m, 3, 2);
+float m12m31 = MC(m, 1, 2) * MC(m, 3, 1);
+float m11m22 = MC(m, 1, 1) * MC(m, 2, 2);
+float m12m21 = MC(m, 1, 2) * MC(m, 2, 1);
+float m01m32 = MC(m, 0, 1) * MC(m, 3, 2);
+float m02m31 = MC(m, 0, 2) * MC(m, 3, 1);
+float m01m22 = MC(m, 0, 1) * MC(m, 2, 2);
+float m02m21 = MC(m, 0, 2) * MC(m, 2, 1);
+float m01m12 = MC(m, 0, 1) * MC(m, 1, 2);
+float m02m11 = MC(m, 0, 2) * MC(m, 1, 1);
+*/
 #endif
 
     return ret;
