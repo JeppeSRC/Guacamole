@@ -540,4 +540,105 @@ mat4 mat4::Mul_ColCol(const mat4&l, const mat4& r) {
     return ret;
 }
 
+mat4 mat4::Mul_RowCol(const mat4& l, const mat4& r) {
+    mat4 ret(0.0f);
+
+#if defined(GM_MATH_PURE)
+
+    for (uint32_t col = 0; col < 4; col++) {
+        for (uint32_t row = 0; row < 4; row++) {
+            for (uint32_t i = 0; i < 4; i++) {
+                ret[row + col * 4] += l[i + row * 4] * r[i + col * 4];
+            }
+        }
+    }
+
+#else
+
+    __m128 col0 = _mm_loadu_ps(r.m);
+    __m128 col1 = _mm_loadu_ps(r.m + 4);
+    __m128 col2 = _mm_loadu_ps(r.m + 8);
+    __m128 col3 = _mm_loadu_ps(r.m + 12);
+
+    // First row
+    {
+        __m128 row0 = _mm_loadu_ps(l.m);
+
+        __m128 m00 = _mm_mul_ps(row0, col0);
+        __m128 m01 = _mm_mul_ps(row0, col1);
+        __m128 m02 = _mm_mul_ps(row0, col2);
+        __m128 m03 = _mm_mul_ps(row0, col3);
+
+        __m128 m00_01 = _mm_hadd_ps(m00, m01);
+        __m128 m02_03 = _mm_hadd_ps(m02, m03);
+        __m128 res = _mm_hadd_ps(m00_01, m02_03);
+
+        ret[0 + 0 * 4] = M128(res, 0);
+        ret[0 + 1 * 4] = M128(res, 1);
+        ret[0 + 2 * 4] = M128(res, 2);
+        ret[0 + 3 * 4] = M128(res, 3);
+    }
+
+    // Second row
+    {
+        __m128 row1 = _mm_loadu_ps(l.m+4);
+
+        __m128 m10 = _mm_mul_ps(row1, col0);
+        __m128 m11 = _mm_mul_ps(row1, col1);
+        __m128 m12 = _mm_mul_ps(row1, col2);
+        __m128 m13 = _mm_mul_ps(row1, col3);
+
+        __m128 m10_11 = _mm_hadd_ps(m10, m11);
+        __m128 m12_13 = _mm_hadd_ps(m12, m13);
+        __m128 res = _mm_hadd_ps(m10_11, m12_13);
+
+        ret[1 + 0 * 4] = M128(res, 0);
+        ret[1 + 1 * 4] = M128(res, 1);
+        ret[1 + 2 * 4] = M128(res, 2);
+        ret[1 + 3 * 4] = M128(res, 3);
+    }
+
+    // Third row
+    {
+        __m128 row2 = _mm_loadu_ps(l.m+8);
+
+        __m128 m20 = _mm_mul_ps(row2, col0);
+        __m128 m21 = _mm_mul_ps(row2, col1);
+        __m128 m22 = _mm_mul_ps(row2, col2);
+        __m128 m23 = _mm_mul_ps(row2, col3);
+
+        __m128 m20_21 = _mm_hadd_ps(m20, m21);
+        __m128 m22_23 = _mm_hadd_ps(m22, m23);
+        __m128 res = _mm_hadd_ps(m20_21, m22_23);
+
+        ret[2 + 0 * 4] = M128(res, 0);
+        ret[2 + 1 * 4] = M128(res, 1);
+        ret[2 + 2 * 4] = M128(res, 2);
+        ret[2 + 3 * 4] = M128(res, 3);
+    }
+
+    // Fourth row
+    {
+        __m128 row3 = _mm_loadu_ps(l.m+12);
+
+        __m128 m30 = _mm_mul_ps(row3, col0);
+        __m128 m31 = _mm_mul_ps(row3, col1);
+        __m128 m32 = _mm_mul_ps(row3, col2);
+        __m128 m33 = _mm_mul_ps(row3, col3);
+
+        __m128 m30_31 = _mm_hadd_ps(m30, m31);
+        __m128 m32_33 = _mm_hadd_ps(m32, m33);
+        __m128 res = _mm_hadd_ps(m30_31, m32_33);
+
+        ret[3 + 0 * 4] = M128(res, 0);
+        ret[3 + 1 * 4] = M128(res, 1);
+        ret[3 + 2 * 4] = M128(res, 2);
+        ret[3 + 3 * 4] = M128(res, 3);
+    }
+
+#endif
+
+    return ret;
+}
+
 }
