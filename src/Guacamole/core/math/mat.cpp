@@ -91,7 +91,7 @@ mat4 mat4::Perspective(float fov, float aspect, float zNear, float zFar) {
     float tanHalfFov = tan(GM_TO_RADIANS(fov) / 2.0f);
 
     MC(ret, 0, 0) = 1.0f / (aspect * tanHalfFov);
-    MC(ret, 1, 1) = 1.0f / tanHalfFov;
+    MC(ret, 1, 1) = -1.0f / tanHalfFov;
     MC(ret, 2, 2) = zFar / (zFar - zNear);
     MC(ret, 3, 2) = -zNear * (zFar - zNear);
     MC(ret, 2, 3) = 1.0f;

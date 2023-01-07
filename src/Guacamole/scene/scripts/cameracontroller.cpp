@@ -48,7 +48,7 @@ bool CameraController::OnMouseMoved(MouseMovedEvent* e) {
     TransformComponent& trans = GetComponent<TransformComponent>();
     
     trans.mRotation.y -= (float)e->mDeltaX * mSensitivity;
-    trans.mRotation.x += (float)e->mDeltaY * mSensitivity;
+    trans.mRotation.x -= (float)e->mDeltaY * mSensitivity;
 
     return false;
 }
@@ -102,9 +102,9 @@ void CameraController::UpdateCamera(float ts, bool lockY, Camera& camera, Transf
         transform.mTranslation -= right;
 
     if (Input::IsKeyPressed(mUp)) {
-        transform.mTranslation -= up;
-    } else if (Input::IsKeyPressed(mDown)) {
         transform.mTranslation += up;
+    } else if (Input::IsKeyPressed(mDown)) {
+        transform.mTranslation -= up;
     }
 
     camera.SetView(rot * mat4::Translate(-transform.mTranslation));
