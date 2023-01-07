@@ -132,13 +132,28 @@ GraphicsPipeline::GraphicsPipeline(Device* device, const GraphicsPipelineInfo& i
     dssInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     dssInfo.pNext = nullptr;
     dssInfo.flags = 0;
-    dssInfo.depthBoundsTestEnable = false;
-    dssInfo.depthWriteEnable = false;
+    dssInfo.depthTestEnable = true;
+    dssInfo.depthWriteEnable = true;
     dssInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     dssInfo.depthBoundsTestEnable = false;
     dssInfo.stencilTestEnable = false;
+    dssInfo.front.failOp = VK_STENCIL_OP_ZERO;
+    dssInfo.front.passOp = VK_STENCIL_OP_KEEP;
+    dssInfo.front.depthFailOp = VK_STENCIL_OP_ZERO;
+    dssInfo.front.compareOp = VK_COMPARE_OP_ALWAYS;
+    dssInfo.front.compareMask = 0;
+    dssInfo.front.writeMask = 0;
+    dssInfo.front.reference = 0;
+    dssInfo.back.failOp = VK_STENCIL_OP_ZERO;
+    dssInfo.back.passOp = VK_STENCIL_OP_KEEP;
+    dssInfo.back.depthFailOp = VK_STENCIL_OP_ZERO;
+    dssInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    dssInfo.back.compareMask = 0;
+    dssInfo.back.writeMask = 0;
+    dssInfo.back.reference = 0;
     dssInfo.minDepthBounds = 0.0f;
     dssInfo.maxDepthBounds = 0.0f;
+    
 
     VkPipelineColorBlendAttachmentState basInfo;
 

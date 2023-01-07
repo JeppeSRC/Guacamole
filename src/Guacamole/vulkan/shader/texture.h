@@ -82,4 +82,9 @@ private:
     
 };
 
+class DepthTexture : public Texture {
+public:
+    DepthTexture(Device* device, VkFormat format, uint32_t width, uint32_t height);
+};
+
 }

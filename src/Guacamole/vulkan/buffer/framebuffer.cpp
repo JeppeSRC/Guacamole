@@ -25,18 +25,36 @@ SOFTWARE.
 #include "framebuffer.h"
 
 #include <Guacamole/vulkan/device.h>
+#include <Guacamole/vulkan/shader/texture.h>
 
 namespace Guacamole {
 
-Framebuffer::Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView) 
-        : mDevice(device), mWidth(width), mHeight(height), mRenderpassHandle(renderpassHandle) {
+Framebuffer::Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView, VkFormat depthFormat) 
+        : mDevice(device), mWidth(width), mHeight(height), mRenderpassHandle(renderpassHandle), mDepthTexture(nullptr) {
+
+    VkImageView attachments[2];
+
+    attachments[0] = imageView;
+
+    if (depthFormat != VK_FORMAT_UNDEFINED) {
+        mfbInfo.attachmentCount = 2;
+
+        switch (depthFormat) {
+            case VK_FORMAT_X8_D24_UNORM_PACK32:
+                mDepthTexture = new DepthTexture(device, depthFormat, width, height);
+                break;
+            default:
+                GM_ASSERT_MSG(false, "Format not implemented yet!");
+        }
+
+        attachments[1] = mDepthTexture->GetImageViewHandle();
+    }
             
     mfbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     mfbInfo.pNext = nullptr;
     mfbInfo.flags = 0;
     mfbInfo.renderPass = mRenderpassHandle;
-    mfbInfo.attachmentCount = 1;
-    mfbInfo.pAttachments = &imageView;
+    mfbInfo.pAttachments = attachments;
     mfbInfo.width = width;
     mfbInfo.height = height;
     mfbInfo.layers = 1;
@@ -46,14 +64,27 @@ Framebuffer::Framebuffer(Device* device, uint32_t width, uint32_t height, VkRend
 
 Framebuffer::~Framebuffer() {
     vkDestroyFramebuffer(mDevice->GetHandle(), mFramebufferHandle, nullptr);
+    delete mDepthTexture;
 }
 
 void Framebuffer::ReCreate(uint32_t width, uint32_t height, VkImageView imageView) {
     vkDestroyFramebuffer(mDevice->GetHandle(), mFramebufferHandle, nullptr);
 
+    VkImageView attachments[2];
+
+    attachments[0] = imageView;
+
+    if (mfbInfo.attachmentCount == 2) {
+        DepthTexture* tmp = mDepthTexture;
+        mDepthTexture = new DepthTexture(mDevice, tmp->GetImageInfo().format, width, height);
+        delete tmp;
+
+        attachments[1] = mDepthTexture->GetImageViewHandle();
+    }
+
     mfbInfo.width = width;
     mfbInfo.height = height;
-    mfbInfo.pAttachments = &imageView;
+    mfbInfo.pAttachments = attachments;
 
     VK(vkCreateFramebuffer(mDevice->GetHandle(), &mfbInfo, nullptr, &mFramebufferHandle));
 

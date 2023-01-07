@@ -28,6 +28,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
+class DepthTexture;
 class Device;
 class Framebuffer {
 protected:
@@ -35,12 +36,13 @@ protected:
     VkFramebufferCreateInfo mfbInfo;
     VkFramebuffer mFramebufferHandle;
     VkRenderPass mRenderpassHandle;
+    DepthTexture* mDepthTexture;
 
     uint32_t mWidth;
     uint32_t mHeight;
 
 public:
-    Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView);
+    Framebuffer(Device* device, uint32_t width, uint32_t height, VkRenderPass renderpassHandle, VkImageView imageView, VkFormat depthFormat);
     ~Framebuffer();
 
     void ReCreate(uint32_t width, uint32_t height, VkImageView imageView);
@@ -48,6 +50,7 @@ public:
     inline Device* GetDevice() const { return mDevice; }
     inline VkFramebuffer GetHandle() const { return mFramebufferHandle; }
     inline VkRenderPass GetRenderpassHandle() const { return mRenderpassHandle; }
+    inline DepthTexture* GetDepthTexture() const { return mDepthTexture; }
     inline uint32_t GetWidth() const { return mWidth; }
     inline uint32_t GetHeight() const { return mHeight; }
 

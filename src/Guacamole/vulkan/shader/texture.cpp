@@ -249,5 +249,23 @@ void Texture2D::LoadImageInternal(uint8_t* data, uint64_t size) {
     free(pixels);
 }
 
+DepthTexture::DepthTexture(Device* device, VkFormat format, uint32_t width, uint32_t height) : Texture(device, "") {
+    CreateImage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+
+    mViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    mViewInfo.pNext = nullptr;
+    mViewInfo.flags = 0;
+    mViewInfo.image = mImageHandle;
+    mViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    mViewInfo.format = format;
+    mViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+    mViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    mViewInfo.subresourceRange.baseMipLevel = 0;
+    mViewInfo.subresourceRange.levelCount = 1;
+    mViewInfo.subresourceRange.baseArrayLayer = 0;
+    mViewInfo.subresourceRange.layerCount = 1;
+
+    VK(vkCreateImageView(mDevice->GetHandle(), &mViewInfo, nullptr, &mImageViewHandle));
+}
 
 }

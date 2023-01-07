@@ -46,25 +46,40 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
     info.pNext = nullptr;
     info.flags = 0;
 
-    VkAttachmentDescription colorDesc;
+    VkAttachmentDescription attchments[2];
 
-    colorDesc.flags = 0;
-    colorDesc.format = swapchain->GetFormat();
-    colorDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    attchments[0].flags = 0;
+    attchments[0].format = swapchain->GetFormat();
+    attchments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attchments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attchments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attchments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attchments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attchments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attchments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    info.attachmentCount = 1;
-    info.pAttachments = &colorDesc;
+    attchments[1].flags = 0;
+    attchments[1].format = VK_FORMAT_X8_D24_UNORM_PACK32;
+    attchments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    attchments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attchments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attchments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attchments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attchments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attchments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    info.attachmentCount = 2;
+    info.pAttachments = attchments;
 
     VkAttachmentReference colorRef;
 
     colorRef.attachment = 0;
     colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthRef;
+
+    depthRef.attachment = 1;
+    depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subDesc;
 
@@ -75,7 +90,7 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
     subDesc.colorAttachmentCount = 1;
     subDesc.pColorAttachments = &colorRef;
     subDesc.pResolveAttachments = nullptr;
-    subDesc.pDepthStencilAttachment = nullptr;
+    subDesc.pDepthStencilAttachment = &depthRef;
     subDesc.preserveAttachmentCount = 0;
     subDesc.pPreserveAttachments = nullptr;
 
@@ -93,7 +108,7 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
     VkExtent2D extent = swapchain->GetExtent();
 
     for (uint32_t i = 0; i < imageViews.size(); i++) {
-        mFramebuffers.emplace_back(mDevice, extent.width, extent.height, mRenderpassHandle, imageViews[i]);
+        mFramebuffers.emplace_back(mDevice, extent.width, extent.height, mRenderpassHandle, imageViews[i], VK_FORMAT_X8_D24_UNORM_PACK32);
         swapchain->AddFramebuffer(i, &mFramebuffers[i]);
     }
 
@@ -110,12 +125,15 @@ BasicRenderpass::~BasicRenderpass() {
 }
 
 void BasicRenderpass::Begin(const CommandBuffer* cmd) {
-    VkClearValue clear = {};
+    VkClearValue clear[2]{};
+
+    clear[1].depthStencil.depth = 1.0f;
 
     mBeginInfo.renderArea.extent = mSwapchain->GetExtent();
     mBeginInfo.framebuffer = GetFramebufferHandle(mSwapchain->GetCurrentImageIndex());
-    mBeginInfo.clearValueCount = 1;
-    mBeginInfo.pClearValues = &clear;
+    mBeginInfo.clearValueCount = 2;
+    mBeginInfo.pClearValues = clear;
+    
     
     vkCmdBeginRenderPass(cmd->GetHandle(), &mBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
