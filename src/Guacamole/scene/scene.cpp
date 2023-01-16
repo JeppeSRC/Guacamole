@@ -29,7 +29,7 @@ SOFTWARE.
 
 #include <Guacamole/core/application.h>
 #include <Guacamole/vulkan/swapchain.h>
-#include <Guacamole/scene/scripts/nativescript.h>
+#include <Guacamole/scene/script/nativescript.h>
 
 namespace Guacamole {
 

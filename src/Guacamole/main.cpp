@@ -45,8 +45,8 @@ SOFTWARE.
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
 #include <Guacamole/renderer/meshfactory.h>
 #include <Guacamole/renderer/material.h>
-#include <Guacamole/scene/scripts/nativescript.h>
-#include <Guacamole/scene/scripts/cameracontroller.h>
+#include <Guacamole/scene/script/nativescript.h>
+#include <Guacamole/scene/script/cameracontroller.h>
 #include <Guacamole/core/math/math.h>
 
 using namespace Guacamole;
