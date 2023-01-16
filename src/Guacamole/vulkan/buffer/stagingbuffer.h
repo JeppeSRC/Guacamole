@@ -61,7 +61,7 @@ private:
 };
 
 struct StagingBufferSubmitInfo {
-    StagingBuffer* mStagingBuffer;
+    CommandBuffer* mCommandBuffer;
     VkPipelineStageFlags mStageFlags;
 };
 

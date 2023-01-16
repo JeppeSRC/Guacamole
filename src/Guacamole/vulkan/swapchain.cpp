@@ -294,7 +294,7 @@ void Swapchain::PresentInternalTimelineSemaphore() {
         std::vector<StagingBufferSubmitInfo> stagingBuffers = StagingManager::GetSubmittedStagingBuffers();
 
         for (StagingBufferSubmitInfo& buf : stagingBuffers) {
-            CommandBuffer* bufCmd = buf.mStagingBuffer->GetCommandBuffer();
+            CommandBuffer* bufCmd = buf.mCommandBuffer;
             bufCmd->End();
 
             SemaphoreTimeline* sem = (SemaphoreTimeline*)bufCmd->GetSemaphore();

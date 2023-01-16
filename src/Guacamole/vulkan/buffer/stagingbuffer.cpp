@@ -164,7 +164,7 @@ void StagingManager::SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageF
 
     StagingBufferSubmitInfo& buf = mSubmittedStagingBuffers.emplace_back();
 
-    buf.mStagingBuffer = buffer;
+    buf.mCommandBuffer = buffer->GetCommandBuffer();
     buf.mStageFlags = stageFlags;
 
     buffer->Reset();
