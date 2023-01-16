@@ -43,7 +43,7 @@ void EventManager::ProcessEvents(Window* window) {
     if (Input::mInputCapture) {
         POINT p;
         p.x = window->GetWidth() / 2;
-        p.y = window->GetWidth() / 2;
+        p.y = window->GetHeight() / 2;
 
         ClientToScreen(window->GetHWND(), &p);
         SetCursorPos(p.x, p.y);
