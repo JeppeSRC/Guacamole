@@ -59,12 +59,6 @@ public:
 
         spdlog::set_level(spdlog::level::debug);
 
-        mat4 rot = mat4::RotateXY(vec3(2.0f, 0.0f, 0.0f));
-
-        mat4 inv = mat4::Inverse(rot);
-
-        mat4 ident = rot * inv;
-
         WindowSpec windowSpec;
 
         windowSpec.Width = 1280;
