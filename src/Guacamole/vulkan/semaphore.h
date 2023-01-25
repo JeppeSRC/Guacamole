@@ -35,7 +35,7 @@ public:
 
     virtual ~Semaphore() {}
 
-    virtual void Wait() = 0;
+    virtual VkResult Wait(uint64_t timeout = ~0) = 0;
 
     inline Device* GetDevice() const { return mDevice; }
 
@@ -50,7 +50,7 @@ public:
     SemaphoreTimeline(Device* device);
     ~SemaphoreTimeline();
 
-    void Wait() override;
+    VkResult Wait(uint64_t timeout = ~0) override;
     inline uint64_t IncrementSignalCounter() { return ++mCounter; }
 
     inline const VkSemaphore& GetHandle() const { return mSemaphore; }

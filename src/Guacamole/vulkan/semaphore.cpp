@@ -67,10 +67,10 @@ SemaphoreTimeline::~SemaphoreTimeline() {
     vkDestroySemaphore(mDevice->GetHandle(), mSemaphore, nullptr);
 }
 
-void SemaphoreTimeline::Wait() {
+VkResult SemaphoreTimeline::Wait(uint64_t timeout) {
     mWaitInfo.pValues = &mCounter;
 
-    VK(vkWaitSemaphores(mDevice->GetHandle(), &mWaitInfo, ~0));
+    return vkWaitSemaphores(mDevice->GetHandle(), &mWaitInfo, timeout);
 }
 
 }
