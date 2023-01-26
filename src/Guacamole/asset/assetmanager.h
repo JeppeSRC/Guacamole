@@ -38,11 +38,9 @@ SOFTWARE.
 namespace std {
 template<>
 struct hash<Guacamole::AssetHandle> {
-
     std::size_t operator()(const Guacamole::AssetHandle& handle) const {
         return handle.m0;
     }
-
 };
 }
 
@@ -50,36 +48,36 @@ namespace Guacamole {
 
 class AssetManager {
 public:
-    struct FinishedAsset {
-        Asset* mAsset;
-        CommandBuffer* mCommandBuffer;
-    };
-
-public:
     static void Init(Device* device);
     static void Shutdown();
-    static AssetHandle AddAsset(Asset* asset, bool asyncLoad);
-    static AssetHandle AddMemoryAsset(Asset* asset, bool takeOwnershipOfMemory = true);
+
+    static AssetHandle AddNewAsset(const std::string& filename);
 
     template<typename T = Asset>
     static T* GetAsset(AssetHandle handle) { return (T*)GetAssetInternal(handle); }
-    static AssetType GetAssetType(AssetHandle handle) { return GetAssetInternal(handle)->mType; }
     static bool IsAssetLoaded(AssetHandle handle);
-    static AssetHandle GetAssetHandleFromPath(const std::filesystem::path& path);
+    static bool IsAssetDataLoaded(AssetHandle handle);
 private:
     static Asset* GetAssetInternal(AssetHandle handle);
+    static AssetData* GetAssetDataInternal(AssetHandle handle);
     
     static void QueueWorker();
-    static bool LoadAssetFunction(Asset* asset);
+    static VkPipelineStageFlags LoadAsset(AssetHandle handle);
+    static VkPipelineStageFlags LoadMeshAsset(AssetHandle handle, AssetData* assetData, File* file);
+    static VkPipelineStageFlags LoadTextureAsset(AssetHandle handle, AssetData* assetData, File* file);
+    static VkPipelineStageFlags LoadShaderAsset(AssetHandle handle, AssetData* assetData, File* file);
 
 private:
     static Device* mDevice;
     static bool mShouldStop;
     static std::thread mLoaderThread;
     static std::mutex mQueueMutex;
-    static std::mutex mCommandBufferMutex;
+    static std::mutex mAssetMutex;
+    static std::mutex mAssetDataMutex;
     static std::unordered_map<AssetHandle, Asset*> mAssets;
-    static std::vector<Asset*> mAssetQueue;
+    static std::unordered_map<AssetHandle, Asset*> mMemoryAssets;
+    static std::unordered_map<AssetHandle, AssetData*> mAssetData;
+    static std::vector<AssetHandle> mAssetQueue;
 };
 
 }

@@ -36,9 +36,8 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Texture::Texture(Device* device, const std::filesystem::path& path) 
-    : Asset(path, AssetType::Texture),
-    mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), mDevice(device) {}
+Texture::Texture(Device* device) 
+    : mImageMemory(VK_NULL_HANDLE), mImageHandle(VK_NULL_HANDLE), mImageViewHandle(VK_NULL_HANDLE), mDevice(device) {}
 
 void Texture::CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout) {
     VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -159,6 +158,14 @@ uint64_t Texture::GetImageBufferSize() const {
     return GetWidth() * GetHeight() * GetFormatSize(mImageInfo.format);
 }
 
+Texture2D::Texture2D(Device* device, uint32_t width, uint32_t height, VkFormat format) : Texture(device, "") {
+    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+    CreateImageView(format);
+}
+
+Texture2D::Texture2D(Device* device) : Texture(device) {
+
+}
 
 void Texture2D::CreateImageView(VkFormat format) {
     mViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -175,77 +182,6 @@ void Texture2D::CreateImageView(VkFormat format) {
     mViewInfo.subresourceRange.layerCount = 1;
 
     VK(vkCreateImageView(mDevice->GetHandle(), &mViewInfo, nullptr, &mImageViewHandle));
-}
-
-Texture2D::Texture2D(Device* device, uint32_t width, uint32_t height, VkFormat format) : Texture(device, "") {
-    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { width, height, 1 }, VK_IMAGE_TYPE_2D, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-    CreateImageView(format);
-
-    mFlags |= AssetFlag_Loaded;
-}
-
-Texture2D::Texture2D(Device* device, const std::filesystem::path& path) : Texture(device, path) {
-
-}
-
-bool Texture2D::Load() {
-    GM_ASSERT_MSG(!(mFlags & AssetFlag_Loaded), "Texture already loaded");
-
-    LoadImageFromFile(mFilePath);
-
-    return mFlags & AssetFlag_Loaded;
-}
-
-void Texture2D::Unload() {
-    mFlags &= ~AssetFlag_Loaded;
-}
-
-void Texture2D::LoadImageFromMemory(uint8_t* data, uint64_t size) {
-    GM_ASSERT(data);
-    GM_ASSERT(size);
-
-    LoadImageInternal(data, size);
-
-    mFlags |= AssetFlag_Loaded;
-}
-
-void Texture2D::LoadImageFromFile(const std::filesystem::path& path) {
-    GM_ASSERT(path.empty() == false);
-
-    uint64_t fileSize = 0;
-
-    uint8_t* data = Util::ReadFile(path, &fileSize);
-
-    if (data == nullptr) return;
-
-    LoadImageInternal(data, fileSize);
-
-    mFlags |= AssetFlag_Loaded;
-
-    delete data;
-}
-
-void Texture2D::LoadImageInternal(uint8_t* data, uint64_t size) {
-    GM_ASSERT(data);
-    GM_ASSERT(size);
-
-    int32_t width;
-    int32_t height;
-    int32_t channels;
-
-    uint8_t* pixels = stbi_load_from_memory(data, (int32_t)size, &width, &height, &channels, 4);
-
-    if (pixels == nullptr) {
-        GM_LOG_CRITICAL("stbi_load_from_memory({0}, {1}, {2}, {3}, {4}, {5}) failed", uint64_t(data), size, width, height, channels, 4);
-        return;
-    }
-
-    CreateImage(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { (uint32_t)width, (uint32_t)height, 1 }, VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
-    CreateImageView(VK_FORMAT_R8G8B8A8_UNORM);
-
-    memcpy(StagingManager::GetCommonStagingBuffer()->AllocateImage(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, this), pixels, width * height * 4);
-
-    free(pixels);
 }
 
 DepthTexture::DepthTexture(Device* device, VkFormat format, uint32_t width, uint32_t height) : Texture(device, "") {

@@ -42,8 +42,8 @@ protected:
     
     void Create(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+    Buffer() {}
 public:
-    Buffer(VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Buffer(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Buffer(Buffer&& other);
     Buffer(const Buffer& other) = delete; // No copies allowed
@@ -76,7 +76,7 @@ public:
 
 class UniformBuffer : public Buffer {
 public:
-    UniformBuffer() : Buffer(), mBinding(0) {}
+    //UniformBuffer() : Buffer(), mBinding(0) {}
     UniformBuffer(Device* device, uint64_t size, uint32_t binding) : Buffer(device, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, size), mBinding(binding) {}
 
 private:
@@ -85,18 +85,26 @@ private:
 
 class IndexBuffer : public Buffer {
 public:
-    IndexBuffer(Device* device, uint32_t count, VkIndexType type);
+    IndexBuffer(Device* device, uint64_t count, VkIndexType type);
 
     inline uint32_t GetCount() const { return mCount; }
     inline VkIndexType GetIndexType() const { return mIndexType; }
 private:
-    uint32_t mCount;
+    uint64_t mCount;
     VkIndexType mIndexType;
 };
 
 class VertexBuffer : public Buffer {
 public:
-    VertexBuffer(Device* device, uint64_t size) : Buffer(device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, size) {}
+    VertexBuffer(Device* device, uint64_t vertexCount, uint32_t vertexSize) 
+        : Buffer(device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexCount * vertexSize), 
+        mVertexCount(vertexCount), mVertexSize(vertexSize) {}
+
+    inline uint64_t GetVertexCount() const { return mVertexCount; }
+    inline uint32_t GetVertexSize() const { return mVertexSize; }
+private:
+    uint64_t mVertexCount;
+    uint32_t mVertexSize;
 };
 
 }

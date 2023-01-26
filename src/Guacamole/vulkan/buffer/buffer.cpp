@@ -59,10 +59,6 @@ void Buffer::Create(Device* device, VkBufferUsageFlags usage, uint64_t size, VkM
     mDevice = device;
 }
 
-Buffer::Buffer(VkMemoryPropertyFlags flags) : mBufferSize(0), mMappedMemory(nullptr), mBufferFlags(flags) {
-
-}
-
 Buffer::Buffer(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemoryPropertyFlags flags) : 
     mBufferSize(size), mMappedMemory(nullptr), mBufferFlags(flags) {
 
@@ -72,7 +68,7 @@ Buffer::Buffer(Device* device, VkBufferUsageFlags usage, uint64_t size, VkMemory
 
 Buffer::Buffer(Buffer&& other) : 
     mBufferHandle(other.mBufferHandle), mBufferMemory(other.mBufferMemory), mBufferFlags(other.mBufferFlags),
-    mBufferSize(other.mBufferSize), mMappedMemory(other.mMappedMemory) 
+    mBufferSize(other.mBufferSize), mMappedMemory(other.mMappedMemory), mDevice(other.mDevice)
 {
     other.mBufferHandle = VK_NULL_HANDLE;
     other.mMappedMemory = VK_NULL_HANDLE;
@@ -107,7 +103,7 @@ uint32_t Buffer::GetMemoryIndex(const VkPhysicalDeviceMemoryProperties props, ui
     return ~0;
 }
 
-IndexBuffer::IndexBuffer(Device* device, uint32_t count, VkIndexType type) : Buffer(), mCount(count), mIndexType(type) {
+IndexBuffer::IndexBuffer(Device* device, uint64_t count, VkIndexType type) : mCount(count), mIndexType(type) {
     uint64_t size = count;
 
     switch (type) {

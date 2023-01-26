@@ -26,55 +26,44 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-
-#include <filesystem>
-
-#include "assetheader.h"
-#include <Guacamole/core/uuid.h>
+#define GM_ASSET_SIGNATURE 0x454C4F4D //MOLE
+#define GM_ASSET_VERSION 0x0001
 
 namespace Guacamole {
 
-using AssetHandle = UUID;
-
-enum AssetFlags {
-    AssetFlag_Loaded = 0x01, 
-    AssetFlag_Loading = 0x02, 
-    AssetFlag_DataLoaded = 0x04,
-    AssetFlag_MemoryAsset = 0x08,
-    AssetFlag_HostData = 0x10,
-    AssetFlag_DeviceData = 0x20
+enum class AssetType : uint32_t {
+    None,
+    Mesh,
+    Shader,
+    Scene,
+    Texture,
+    Audio,
+    Material
 };
 
-class Asset {
-protected:
-    AssetHandle mHandle;
-
-    friend class AssetManager;
-public:
-    virtual ~Asset() {}
-
-    inline virtual AssetType GetAssetType() const = 0;
-    static AssetType GetStaticType() { return AssetType::None; }
-
-    inline AssetHandle GetHandle() const { return mHandle; }
+struct AssetHeader {
+    uint32_t Signature = GM_ASSET_SIGNATURE; 
+    uint16_t Version = GM_ASSET_VERSION;
+    AssetType Type;
 };
 
-class AssetData {
-public:
-    AssetHandle mHandle;
-    std::string mFilename;
-    AssetType mType;
-    uint32_t mFlags;
-
-    void* mHostBuffer;
-    Buffer* mDeviceBuffer;
-
-    uint8_t mAssetTypeData[48];
-
-    inline bool CheckFlags(uint32_t flags) const { return (mFlags & flags) == flags; }
-
-    friend class AssetManager;
+struct MeshHeader {
+    uint64_t DataSize;
+    uint32_t VertexSize;
+    uint64_t VertexCount;
+    VkIndexType IndexType;
+    uint64_t IndexCount;
 };
 
+struct ShaderHeader {
+    uint32_t Size;
+    uint8_t IsCompiled;
+};
+
+struct TextureHeader {
+    uint32_t Width;
+    uint32_t Height;
+    VkFormat Format;
+};
 
 }

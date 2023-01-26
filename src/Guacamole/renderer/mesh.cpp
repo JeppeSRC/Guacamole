@@ -31,57 +31,39 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Mesh::Mesh(Device* device, const std::filesystem::path& file) 
-    : Asset(file, AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr), mDevice(device) {}
-
 Mesh::~Mesh() {
     delete mVBO;
     delete mIBO;
 }
 
-bool Mesh::Load() {
-    LoadFromFile(mFilePath);
-    return false;
-}
-
-void Mesh::Unload() {
-    delete mVBO;
-    delete mIBO;
-}
-
 Mesh::Mesh(Device* device) 
-    : Asset("", AssetType::Mesh), mVBO(nullptr), 
-      mIBO(nullptr), mDevice(device) {
-
-    mFlags |= AssetFlag_Loaded;
+    : mVBO(nullptr), mIBO(nullptr), mDevice(device) {
 }
 
-void Mesh::CreateVBO(Vertex* data, uint64_t count) {
+void Mesh::CreateVBO(void* data, uint64_t count, uint32_t vertexSize) {
     GM_ASSERT(mVBO == nullptr);
 
-    uint64_t size = count * sizeof(Vertex);
+    mVBO = new VertexBuffer(mDevice, count, vertexSize);
 
-    mVBO = new VertexBuffer(mDevice, size);
-
-    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mVBO), data, size);
+    if (data) {
+        uint64_t size = mVBO->GetSize();
+        memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mVBO), data, size);
+    }
 }
 
-void Mesh::CreateIBO(void* data, uint32_t count, VkIndexType indexType) {
+void Mesh::CreateIBO(void* data, uint64_t count, VkIndexType indexType) {
     GM_ASSERT(mIBO == nullptr);
 
     mIBO = new IndexBuffer(mDevice, count, indexType);
 
-    uint64_t size = mIBO->GetSize();
-
-    memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mIBO), data, size);
+    if (data) {
+        uint64_t size = mIBO->GetSize();
+        memcpy(StagingManager::GetCommonStagingBuffer()->Allocate(size, mIBO), data, size);
+    }
 }
 
 
-void Mesh::LoadFromFile(const std::filesystem::path& path) {
-    GM_ASSERT(false);
-}
-
+/*
 Mesh* Mesh::GenerateQuad(Device* device) {
     Vertex vertices[4 * 6] = {
         // Front
@@ -155,6 +137,6 @@ Mesh* Mesh::GeneratePlane(Device* device) {
     mesh->mFlags |= AssetFlag_Loaded;
 
     return mesh;
-}
+}*/
 
 }

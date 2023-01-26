@@ -41,11 +41,11 @@ struct Vertex {
 class Device;
 class Mesh : public Asset {
 public:
-    Mesh(Device* device, const std::filesystem::path& file);
+    Mesh(Device* device);
     ~Mesh();
 
-    bool Load() override;
-    void Unload() override;
+    void CreateVBO(void* data, uint64_t count, uint32_t vertexSize);
+    void CreateIBO(void* data, uint64_t count, VkIndexType indexType);
 
     inline VertexBuffer* GetVBO() const { return mVBO; }
     inline IndexBuffer* GetIBO() const { return mIBO; }
@@ -54,20 +54,13 @@ public:
     inline VkIndexType GetIndexType() const { return mIBO->GetIndexType(); }
     inline uint32_t GetIndexCount() const { return mIBO->GetCount(); }
 
+    AssetType GetAssetType() const override { return AssetType::Mesh; }
+
 private:
-    Mesh(Device* device);
-
-    void CreateVBO(Vertex* data, uint64_t count);
-    void CreateIBO(void* data, uint32_t count, VkIndexType indexType);
-    void LoadFromFile(const std::filesystem::path& path);
-
     VertexBuffer* mVBO;
     IndexBuffer* mIBO;
     Device* mDevice;
 
-public:
-    static Mesh* GenerateQuad(Device* device);
-    static Mesh* GeneratePlane(Device* device);
 };
 
 }

@@ -40,7 +40,6 @@ public:
     StagingBuffer(Device* device, uint64_t mSize, CommandBuffer* commandBuffer = nullptr);
     ~StagingBuffer();
 
-    void Begin();
     void* Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffset = 0);
     void* AllocateImage(VkImageLayout oldLayout, VkImageLayout newLayout, Texture* texture, uint32_t mip = 0);
     void Reset();
@@ -68,16 +67,17 @@ struct StagingBufferSubmitInfo {
 class StagingManager {
 public:
     // Called once per thread if the common buffer is used on that thread
-    static void AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size, bool beginCommandBuffer);
+    static void AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size);
+    static void SetCommonStagingBuffer(std::thread::id id, StagingBuffer* buffer);
     static void Shutdown();
 
     static void SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageFlags stageFlags);
     static std::vector<StagingBufferSubmitInfo> GetSubmittedStagingBuffers(bool clear = true);
-    static StagingBuffer* GetCommonStagingBuffer() { return mCommonStagingBuffers[std::this_thread::get_id()].first; }
+    static StagingBuffer* GetCommonStagingBuffer() { return mCommonStagingBuffers[std::this_thread::get_id()]; }
 
 
 private:
-    static std::unordered_map<std::thread::id, std::pair<StagingBuffer*, CommandPool*>> mCommonStagingBuffers;
+    static std::unordered_map<std::thread::id, StagingBuffer*> mCommonStagingBuffers;
     static std::vector<StagingBufferSubmitInfo> mSubmittedStagingBuffers;
 
     

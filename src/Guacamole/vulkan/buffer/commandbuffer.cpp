@@ -31,12 +31,14 @@ SOFTWARE.
 
 namespace Guacamole {
 
-CommandBuffer::CommandBuffer(Device* device, VkCommandBuffer Handle) : mCommandBufferHandle(Handle), mUsed(false), mDevice(device) {
+CommandBuffer::CommandBuffer(Device* device, const CommandPool* pool, VkCommandBuffer Handle) 
+    : mCommandBufferHandle(Handle), mUsed(false), mPool(pool), mDevice(device) {
     mSemaphore = Semaphore::Create(device);
 }
 
 CommandBuffer::~CommandBuffer() {
     delete mSemaphore;
+    vkFreeCommandBuffers(mDevice->GetHandle(), mPool->GetHandle(), 1, &mCommandBufferHandle);
 }
 
 
@@ -68,7 +70,7 @@ void CommandBuffer::End() const {
 }
 
 void CommandBuffer::Wait() const {
-    mSemaphore->Wait();
+    VK(mSemaphore->Wait());
 }
 
 CommandPool::CommandPool(Device* device) : mDevice(device) {
@@ -106,7 +108,7 @@ std::vector<CommandBuffer*> CommandPool::AllocateCommandBuffers(uint32_t num, bo
     std::vector<CommandBuffer*> result;
 
     for (uint32_t i = 0; i < num; i++) {
-        result.push_back(new CommandBuffer(mDevice, buffers[i]));
+        result.push_back(new CommandBuffer(mDevice, this, buffers[i]));
     }
 
     delete[] buffers;

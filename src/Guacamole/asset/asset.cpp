@@ -24,26 +24,11 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/util/util.h>
+#include <Guacamole/util/file.h>
 
 #include "asset.h"
+#include <Guacamole/vulkan/shader/texture.h>
 
 namespace Guacamole {
-
-Asset::Asset(const std::filesystem::path& filePath, AssetType type) 
-    : mHandle(), mFilePath(filePath), mFlags(0), mType(type) {}
-
-Asset::~Asset() {
-  
-}
-
-bool Asset::Load() {
-    GM_ASSERT_MSG(false, "Asset::Load not implemented");
-    return false;
-} 
-
-void Asset::Unload() {
-    GM_ASSERT_MSG(false, "Asset::Unload not implemented");
-}
 
 }

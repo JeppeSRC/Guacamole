@@ -28,7 +28,10 @@ SOFTWARE.
 
 #include <Guacamole/vulkan/buffer/commandbuffer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
+#include <Guacamole/vulkan/shader/texture.h>
+#include <Guacamole/renderer/mesh.h>
 #include <Guacamole/vulkan/device.h>
+#include <Guacamole/util/file.h>
 
 #if defined(GM_LINUX)
 
@@ -49,9 +52,12 @@ Device* AssetManager::mDevice;
 bool AssetManager::mShouldStop;
 std::thread AssetManager::mLoaderThread;
 std::mutex AssetManager::mQueueMutex;
-std::mutex AssetManager::mCommandBufferMutex;
+std::mutex AssetManager::mAssetMutex;
+std::mutex AssetManager::mAssetDataMutex;
 std::unordered_map<AssetHandle, Asset*> AssetManager::mAssets;
-std::vector<Asset*> AssetManager::mAssetQueue;
+std::unordered_map<AssetHandle, Asset*> AssetManager::mMemoryAssets;
+std::unordered_map<AssetHandle, AssetData*> AssetManager::mAssetData;
+std::vector<AssetHandle> AssetManager::mAssetQueue;
 
 void AssetManager::Init(Device* device) {
     mShouldStop = false;
@@ -63,100 +69,111 @@ void AssetManager::Shutdown() {
     mShouldStop = true;
     mLoaderThread.join();
 
+    /*
     for (auto [handle, asset] : mAssets) {
         if (asset->mFlags & AssetFlag_MemoryAsset) {
             if (asset->mFlags & AssetFlag_OwnsMemory) delete asset;
         } else {
             delete asset;
         }
-    }
+    }*/
 }
 
-AssetHandle AssetManager::AddAsset(Asset* asset, bool asyncLoad) {
-    AssetHandle handle = asset->mHandle;
+AssetHandle AssetManager::AddNewAsset(const std::string& filename) {
+    AssetData* data = new AssetData;
+    data->mFilename = filename;
+    data->mType = AssetType::None;
+    data->mFlags = 0;
+    data->mHostBuffer = nullptr;
+    data->mDeviceBuffer = nullptr;
 
-    if (asset->mFilePath.empty()) {
-        GM_LOG_CRITICAL("Asset \"AssetHandle: 0x{:08x}\" has no path!", handle);
-        return AssetHandle::Null();
-    }
+    memset(data->mAssetTypeData, 0, sizeof(data->mAssetTypeData));
 
-    AssetHandle tmp = GetAssetHandleFromPath(asset->mFilePath);
-
-    if (tmp != AssetHandle::Null()) {
-        GM_LOG_CRITICAL("Asset Path: \"{}\" already exist!", asset->GetPathAsString().c_str());
-        return tmp;
-    }
-
-    mAssets[handle] = asset;
-    
-    GM_LOG_DEBUG("Added asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
-
-    if (asyncLoad) {
-        mQueueMutex.lock();
-        asset->mFlags |= AssetFlag_Loading;
-        mAssetQueue.push_back(asset);
-        mQueueMutex.unlock();
-        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Added To Queue!", asset->GetPathAsString().c_str(), handle);
-    } else {
-        asset->Load();
-        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
-    }
-
-    return handle;
-}
-
-AssetHandle AssetManager::AddMemoryAsset(Asset* asset, bool takeOwnershipOfMemory) {
-    AssetHandle handle = asset->mHandle;
-
-    if (mAssets.find(handle) != mAssets.end()) {
-        GM_LOG_CRITICAL("Asset \"AssetHandle: 0x{:08x}\" already exist!", handle);
-        return AssetHandle::Null();
-    }
-
-    mAssets[handle] = asset;
-
-    asset->mFlags |= AssetFlag_MemoryAsset;
-
-    if (takeOwnershipOfMemory) {
-        asset->mFlags |= AssetFlag_OwnsMemory;
-    }
-
-    GM_LOG_DEBUG("Added Asset \"AssetHandle: {:08x}\"", handle);
-
-    return handle;
+    mAssetDataMutex.lock();
+    mAssetData[data->mHandle] = data;
+    mAssetDataMutex.unlock();
 }
 
 Asset* AssetManager::GetAssetInternal(AssetHandle handle) {
-    const auto& itr = mAssets.find(handle);
+    mAssetMutex.lock();
+    const auto itr = mAssets.find(handle);
+    const auto end = mAssets.end();
+    mAssetMutex.unlock();
 
-    if (itr == mAssets.end()) {
-        GM_LOG_CRITICAL("Asset [handle: {:08x}] doesn't exist", handle);
-        return nullptr;
+    if (itr == end) {
+
+        const auto& memitr = mMemoryAssets.find(handle);
+
+        if (memitr == mMemoryAssets.end()) {
+            GM_LOG_CRITICAL("Asset [handle: {:08x}] doesn't exist", handle);
+            return nullptr;
+        }
+
+        return memitr->second;
     }
 
     Asset* asset = itr->second;
-
+    /*
     while (!asset->IsLoaded()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    }*/
 
     return asset;
 }
 
-bool AssetManager::IsAssetLoaded(AssetHandle handle) {
-    return mAssets.at(handle)->IsLoaded();
+AssetData* AssetManager::GetAssetDataInternal(AssetHandle handle) {
+    mAssetDataMutex.lock();
+    auto itr = mAssetData.find(handle);
+    auto end = mAssetData.end();
+    mAssetDataMutex.unlock();
+
+    GM_ASSERT(itr != end);
+
+    return itr->second;
 }
 
-AssetHandle AssetManager::GetAssetHandleFromPath(const std::filesystem::path& path) {
-    for (auto [handle, asset] : mAssets) {
-        if (asset->mFilePath == path) return handle;
-    }
+bool AssetManager::IsAssetLoaded(AssetHandle handle) {
+    return GetAssetDataInternal(handle)->mFlags & AssetFlag_Loaded;
+}
 
-    return AssetHandle::Null();
+bool AssetManager::IsAssetDataLoaded(AssetHandle handle) {
+    return GetAssetDataInternal(handle)->mFlags & AssetFlag_DataLoaded;
 }
 
 void AssetManager::QueueWorker() {
-    StagingManager::AllocateCommonStagingBuffer(mDevice, std::this_thread::get_id(), 24000000, true); // 24MB
+    CommandPool pool(mDevice);
+    StagingBuffer* buffer = new StagingBuffer(mDevice, 1000000);
+    StagingManager::SetCommonStagingBuffer(std::this_thread::get_id(), buffer);
+
+    constexpr uint32_t DEFAULT_CMD_BUFFER_COUNT = 3;
+
+    std::vector<CommandBuffer*> commandBuffers = pool.AllocateCommandBuffers(DEFAULT_CMD_BUFFER_COUNT, true);
+
+    auto GetCmd = [&pool, &commandBuffers]() -> CommandBuffer* {
+        for (CommandBuffer* cmd : commandBuffers) {
+            VkResult res = cmd->GetSemaphore()->Wait(0);
+
+            switch (res) {
+                case VK_SUCCESS:
+                    return cmd;
+                case VK_TIMEOUT:
+                    continue;
+                default:
+                    VK(res);
+            }
+        }
+
+        CommandBuffer* newCmd = pool.AllocateCommandBuffer(true);
+
+        commandBuffers.push_back(newCmd);
+
+        return newCmd;
+    };
+
+    CommandBuffer* cmd = GetCmd();
+    cmd->Begin(true);
+
+    buffer->SetCommandBuffer(cmd);
 
     while (!mShouldStop) {
         mQueueMutex.lock();
@@ -167,40 +184,118 @@ void AssetManager::QueueWorker() {
             continue;
         }
 
-        StagingBuffer* buf = StagingManager::GetCommonStagingBuffer();
-
-        buf->Begin();
-
-        Asset* currentAsset = mAssetQueue.front();
+        AssetHandle asset = mAssetQueue.front();
 
         mAssetQueue.erase(mAssetQueue.begin());
         mQueueMutex.unlock();
 
-        bool usedBuffer = LoadAssetFunction(currentAsset);
-        currentAsset->mFlags &= ~AssetFlag_Loading;
+        VkPipelineStageFlags stage = LoadAsset(asset);
 
-        if (usedBuffer) {
-            StagingManager::SubmitStagingBuffer(buf, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-        } else {
-            buf->GetCommandBuffer()->End();
+        if (stage != VK_PIPELINE_STAGE_NONE) {
+            StagingManager::SubmitStagingBuffer(buffer, stage);
+
+            cmd = GetCmd();
+            cmd->Begin(true);
+            buffer->SetCommandBuffer(cmd);
         }
     }
 }
 
-bool AssetManager::LoadAssetFunction(Asset* asset) {
-    AssetHandle handle = asset->mHandle;
+VkPipelineStageFlags AssetManager::LoadAsset(AssetHandle handle) {
+    AssetData* assetData = GetAssetDataInternal(handle);
 
-    GM_LOG_DEBUG("Loading asset Path: \"{}\" AssetHandle: 0x{:08x}", asset->GetPathAsString().c_str(), handle);
-
-    bool usedBuffer = asset->Load();
-
-    if (asset->IsLoaded()) {
-        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Loaded!", asset->GetPathAsString().c_str(), handle);
-    } else {
-        GM_LOG_DEBUG("Asset Path: \"{}\" AssetHandle: 0x{:08x} Not loaded!", asset->GetPathAsString().c_str(), handle);
+    if (assetData->CheckFlags(AssetFlag_DataLoaded)) {
+        switch (assetData->mType) {
+            case AssetType::Mesh:
+                return LoadMeshAsset(handle, assetData, nullptr);
+            case AssetType::Texture:
+                return LoadTextureAsset(handle, assetData, nullptr);
+            case AssetType::Shader:
+                return LoadShaderAsset(handle, assetData, nullptr);
+            default:
+                GM_ASSERT(false);
+        }
     }
 
-    return usedBuffer;
+    File file(assetData->mFilename);
+    file.Open();
+
+    AssetHeader hdr;
+
+    file.Read(&hdr, sizeof(AssetHeader), 0);
+
+    if (hdr.Signature != GM_ASSET_SIGNATURE) {
+        GM_LOG_WARNING("[AssetManager] Invalid signature, content may not load properly. File \"{}\"", assetData->mFilename);
+    }
+
+    GM_VERIFY_MSG(hdr.Version == GM_ASSET_VERSION, "Version missmatch");
+
+    switch (hdr.Type) {
+        case AssetType::Mesh:
+            return LoadMeshAsset(handle, assetData, &file);
+        case AssetType::Texture:
+            return LoadTextureAsset(handle, assetData, &file);
+        case AssetType::Shader:
+            return LoadShaderAsset(handle, assetData, &file);
+        default:
+            GM_ASSERT(false);
+    }
+}
+
+VkPipelineStageFlags AssetManager::LoadMeshAsset(AssetHandle handle, AssetData* assetData, File* file) {
+    GM_ASSERT(sizeof(AssetData::mAssetTypeData) <= sizeof(MeshHeader));
+    MeshHeader* mhdr = (MeshHeader*)assetData->mAssetTypeData;
+
+    if (file) {
+        assetData->mType = AssetType::Mesh;
+
+        file->Read(mhdr, sizeof(MeshHeader));
+
+        assetData->mDeviceBuffer = new Buffer(mDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, mhdr->DataSize + 8, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        uint8_t* data = (uint8_t*)assetData->mDeviceBuffer->Map();
+
+        uint64_t vboSize = mhdr->VertexCount * mhdr->VertexSize;
+        uint64_t iboSize = mhdr->DataSize - vboSize;
+        file->Read(data, vboSize);
+
+        vboSize += 8;
+        vboSize &= ~7ULL;
+
+        file->Read(data + vboSize, iboSize);
+        file->Close();
+
+        assetData->mDeviceBuffer->Unmap();
+    }
+
+    Mesh* mesh = new Mesh(mDevice);
+
+    mesh->CreateVBO(nullptr, mhdr->VertexCount, mhdr->VertexSize);
+    mesh->CreateIBO(nullptr, mhdr->IndexCount, mhdr->IndexType);
+
+    CommandBuffer* cmd = StagingManager::GetCommonStagingBuffer()->GetCommandBuffer();
+
+    VkBufferCopy region;
+
+    region.srcOffset = 0;
+    region.dstOffset = 0;
+    region.size = mesh->GetVBO()->GetSize();
+
+    vkCmdCopyBuffer(cmd->GetHandle(), assetData->mDeviceBuffer->GetHandle(), mesh->GetVBOHandle(), 1, &region);
+
+    region.srcOffset = (region.size + 8) & ~7ULL;
+    region.size = mesh->GetIBO()->GetSize();
+
+    vkCmdCopyBuffer(cmd->GetHandle(), assetData->mDeviceBuffer->GetHandle(), mesh->GetIBOHandle(), 1, &region);
+
+    return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+}
+
+VkPipelineStageFlags AssetManager::LoadTextureAsset(AssetHandle handle, AssetData* assetData, File* file) {
+    return VK_PIPELINE_STAGE_NONE;
+}
+
+VkPipelineStageFlags AssetManager::LoadShaderAsset(AssetHandle handle, AssetData* assetData, File* file) {
+    return VK_PIPELINE_STAGE_NONE;
 }
 
 }

@@ -37,7 +37,7 @@ namespace Guacamole {
 class Device;
 class Texture : public Asset {
 protected:
-    Texture(Device* device, const std::filesystem::path& path);
+    Texture(Device* device);
 
     void CreateImage(VkImageUsageFlags usage, VkExtent3D extent, VkImageType imageType, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout initialLayout);
 
@@ -69,17 +69,15 @@ protected:
 class Texture2D : public Texture {
 public:
     Texture2D(Device* device,uint32_t width, uint32_t height, VkFormat format);
-    Texture2D(Device* device,const std::filesystem::path& path);
+    Texture2D(Device* device);
 
-    bool Load() override;
-    void Unload() override;
+    AssetType GetAssetType() const override { return AssetType::Texture; }
+    static AssetType GetStaticType() { return AssetType::Texture; }
 
-    void LoadImageFromMemory(uint8_t* data, uint64_t size);
-    void LoadImageFromFile(const std::filesystem::path& path);
 private:
     void CreateImageView(VkFormat format);
-    void LoadImageInternal(uint8_t* data, uint64_t size);
     
+    friend class Asset;
 };
 
 class DepthTexture : public Texture {

@@ -43,13 +43,8 @@ StagingBuffer::~StagingBuffer() {
     mBuffer.Unmap();
 }
 
-void StagingBuffer::Begin() {
-    mCommandBuffer->Wait();
-    mCommandBuffer->Begin(true);
-}
-
 void* StagingBuffer::Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffset) {
-    GM_ASSERT_MSG(size + mAllocated <= GetSize(), "Buffer size exceeded");
+    GM_ASSERT_MSG(size + mAllocated + 7 <= GetSize(), "Buffer size exceeded");
     GM_ASSERT_MSG((bufferOffset + size) <= buffer->GetSize(), "Offset + size larager than buffer size");
 
     mAllocated += 8;
@@ -72,7 +67,7 @@ void* StagingBuffer::Allocate(uint64_t size, Buffer* buffer, uint64_t bufferOffs
 
 void* StagingBuffer::AllocateImage(VkImageLayout oldLayout, VkImageLayout newLayout, Texture* texture, uint32_t mip) {
     uint64_t size = texture->GetImageBufferSize();
-    GM_ASSERT_MSG(size + mAllocated <= GetSize(), "Buffer size exceeded");
+    GM_ASSERT_MSG(size + mAllocated + 15 <= GetSize(), "Buffer size exceeded");
 
     uint64_t texelSize = GetFormatSize(texture->GetViewInfo().format);
     uint64_t mask = ~15ULL;
@@ -109,15 +104,15 @@ void StagingBuffer::Reset() {
     mAllocated = 0;
 }
 
-std::unordered_map<std::thread::id, std::pair<StagingBuffer*, CommandPool*>> StagingManager::mCommonStagingBuffers;
+std::unordered_map<std::thread::id, StagingBuffer*> StagingManager::mCommonStagingBuffers;
 std::vector<StagingBufferSubmitInfo> StagingManager::mSubmittedStagingBuffers;
 
-void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size, bool beginCommandBuffer) {
+void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id id, uint64_t size) {
     auto it = mCommonStagingBuffers.find(id);
 
     if (it != mCommonStagingBuffers.end()) {
         // Buffer already exist
-        StagingBuffer*& buffer = it->second.first;
+        StagingBuffer*& buffer = it->second;
 
         if (size > buffer->GetSize()) {
             // Only reallocate if size requested is larger
@@ -126,29 +121,23 @@ void StagingManager::AllocateCommonStagingBuffer(Device* device, std::thread::id
             delete buffer;
             
             buffer = new StagingBuffer(device, size, cmd);
-
-            if (beginCommandBuffer)
-                buffer->Begin();
         }
 
         return;
     }
 
-    CommandPool* pool = new CommandPool(device);
-    StagingBuffer* buffer = new StagingBuffer(device, size, pool->AllocateCommandBuffers(1, true)[0]);
+    StagingBuffer* buffer = new StagingBuffer(device, size);
 
-    mCommonStagingBuffers[id] = {buffer, pool};
+    mCommonStagingBuffers[id] = buffer;
+}
 
-    if (beginCommandBuffer)
-        buffer->Begin();
+void StagingManager::SetCommonStagingBuffer(std::thread::id id, StagingBuffer* buffer) {
+    mCommonStagingBuffers[id] = buffer;
 }
 
 void StagingManager::Shutdown() {
     for (auto [id, buf] : mCommonStagingBuffers) {
-        buf.first->GetCommandBuffer()->Wait();
-        delete buf.first->GetCommandBuffer();
-        delete buf.first;
-        delete buf.second;
+        delete buf;
     }
 
     mCommonStagingBuffers.clear();
@@ -166,8 +155,6 @@ void StagingManager::SubmitStagingBuffer(StagingBuffer* buffer, VkPipelineStageF
 
     buf.mCommandBuffer = buffer->GetCommandBuffer();
     buf.mStageFlags = stageFlags;
-
-    buffer->Reset();
 }
 
 
