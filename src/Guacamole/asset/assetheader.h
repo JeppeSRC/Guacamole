@@ -31,39 +31,5 @@ SOFTWARE.
 
 namespace Guacamole {
 
-enum class AssetType : uint32_t {
-    None,
-    Mesh,
-    Shader,
-    Scene,
-    Texture,
-    Audio,
-    Material
-};
-
-struct AssetHeader {
-    uint32_t Signature = GM_ASSET_SIGNATURE; 
-    uint16_t Version = GM_ASSET_VERSION;
-    AssetType Type;
-};
-
-struct MeshHeader {
-    uint64_t DataSize;
-    uint32_t VertexSize;
-    uint64_t VertexCount;
-    VkIndexType IndexType;
-    uint64_t IndexCount;
-};
-
-struct ShaderHeader {
-    uint32_t Size;
-    uint8_t IsCompiled;
-};
-
-struct TextureHeader {
-    uint32_t Width;
-    uint32_t Height;
-    VkFormat Format;
-};
 
 }

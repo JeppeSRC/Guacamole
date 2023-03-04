@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Guacamole/core/uuid.h>
 #include <Guacamole/vulkan/buffer/commandbuffer.h>
+#include <Guacamole/util/file.h>
 
 #include <unordered_map>
 #include <thread>
@@ -46,38 +47,5 @@ struct hash<Guacamole::AssetHandle> {
 
 namespace Guacamole {
 
-class AssetManager {
-public:
-    static void Init(Device* device);
-    static void Shutdown();
-
-    static AssetHandle AddNewAsset(const std::string& filename);
-
-    template<typename T = Asset>
-    static T* GetAsset(AssetHandle handle) { return (T*)GetAssetInternal(handle); }
-    static bool IsAssetLoaded(AssetHandle handle);
-    static bool IsAssetDataLoaded(AssetHandle handle);
-private:
-    static Asset* GetAssetInternal(AssetHandle handle);
-    static AssetData* GetAssetDataInternal(AssetHandle handle);
-    
-    static void QueueWorker();
-    static VkPipelineStageFlags LoadAsset(AssetHandle handle);
-    static VkPipelineStageFlags LoadMeshAsset(AssetHandle handle, AssetData* assetData, File* file);
-    static VkPipelineStageFlags LoadTextureAsset(AssetHandle handle, AssetData* assetData, File* file);
-    static VkPipelineStageFlags LoadShaderAsset(AssetHandle handle, AssetData* assetData, File* file);
-
-private:
-    static Device* mDevice;
-    static bool mShouldStop;
-    static std::thread mLoaderThread;
-    static std::mutex mQueueMutex;
-    static std::mutex mAssetMutex;
-    static std::mutex mAssetDataMutex;
-    static std::unordered_map<AssetHandle, Asset*> mAssets;
-    static std::unordered_map<AssetHandle, Asset*> mMemoryAssets;
-    static std::unordered_map<AssetHandle, AssetData*> mAssetData;
-    static std::vector<AssetHandle> mAssetQueue;
-};
 
 }

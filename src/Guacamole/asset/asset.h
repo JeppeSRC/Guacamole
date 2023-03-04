@@ -35,45 +35,6 @@ SOFTWARE.
 namespace Guacamole {
 
 using AssetHandle = UUID;
-
-enum AssetFlags {
-    AssetFlag_Loaded = 0x01, 
-    AssetFlag_Loading = 0x02, 
-    AssetFlag_DataLoaded = 0x04,
-    AssetFlag_MemoryAsset = 0x08,
-    AssetFlag_HostData = 0x10,
-    AssetFlag_DeviceData = 0x20
-};
-
-class Asset {
-protected:
-    AssetHandle mHandle;
-
-    friend class AssetManager;
-public:
-    virtual ~Asset() {}
-
-    inline virtual AssetType GetAssetType() const = 0;
-    static AssetType GetStaticType() { return AssetType::None; }
-
-    inline AssetHandle GetHandle() const { return mHandle; }
-};
-
-class AssetData {
-public:
-    AssetHandle mHandle;
-    std::string mFilename;
-    AssetType mType;
-    uint32_t mFlags;
-
-    void* mHostBuffer;
-    Buffer* mDeviceBuffer;
-
-    uint8_t mAssetTypeData[48];
-
-    inline bool CheckFlags(uint32_t flags) const { return (mFlags & flags) == flags; }
-
-    friend class AssetManager;
 };
 
 
