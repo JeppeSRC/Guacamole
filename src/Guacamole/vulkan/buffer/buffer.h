@@ -87,7 +87,7 @@ class IndexBuffer : public Buffer {
 public:
     IndexBuffer(Device* device, uint64_t count, VkIndexType type);
 
-    inline uint32_t GetCount() const { return mCount; }
+    inline uint64_t GetCount() const { return mCount; }
     inline VkIndexType GetIndexType() const { return mIndexType; }
 private:
     uint64_t mCount;
