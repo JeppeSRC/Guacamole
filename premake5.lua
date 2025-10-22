@@ -66,7 +66,6 @@ project "Guacamole"
 
     defines {
         "SPDLOG_COMPILED_LIB",
-        "GLM_FORCE_DEPTH_ZERO_TO_ONE"
     }
 
     files {
