@@ -31,7 +31,7 @@ SOFTWARE.
 #include <Guacamole/vulkan/device.h>
 
 #if defined(GM_LINUX)
-
+/*
 namespace std {
     template<>
     struct hash<std::filesystem::path> {
@@ -39,7 +39,7 @@ namespace std {
             return hash_value(path);
         }
     };
-}
+}*/
 
 #endif
 
