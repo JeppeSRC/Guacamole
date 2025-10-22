@@ -138,7 +138,6 @@ project "Guacamole"
     includedirs {
         "src/",
         "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.glfw}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.stb}"
