@@ -32,6 +32,8 @@ SOFTWARE.
 #include <memory.h>
 #include <filesystem>
 
+#include <immintrin.h>
+
 #include <Guacamole/core/log.h>
 #include <Guacamole/vulkan/platform.h>
 #include <Guacamole/platform/input.h>
