@@ -98,7 +98,7 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
 
     Context::Init(cs);
 
-    if (appSpec.deviceIndex == ~0ul) {
+    if (appSpec.deviceIndex == ~0u) {
         mMainDevice = Context::CreateDevice(mWindow);
     } else {
         mMainDevice = Context::CreateDevice(appSpec.deviceIndex);
