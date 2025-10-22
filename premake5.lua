@@ -79,7 +79,8 @@ project "Guacamole"
             "-Wall",
             "-Wno-reorder",
             "-Wno-misleading-indentation",
-            "-mavx2"
+            "-mavx2",
+            "-mfma"
         }
         
         linkoptions {
