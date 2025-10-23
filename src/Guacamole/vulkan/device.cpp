@@ -29,8 +29,12 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Device::Device(PhysicalDevice* physicalDevice) : mParent(physicalDevice), mEnabledFeatures(0) {
+Device::Device(PhysicalDevice* physicalDevice) : mParent(physicalDevice), mEnabledFeatures(FeatureTimelineSemaphore) {
     GM_ASSERT(physicalDevice != nullptr)
+
+    if (!mParent->IsFeatureSupported(FeatureTimelineSemaphore)) {
+        GM_ASSERT_MSG(false, "TimelineSemaphores not supported!")
+    }
 
     std::vector<VkDeviceQueueCreateInfo> queues;
 
@@ -65,44 +69,19 @@ Device::Device(PhysicalDevice* physicalDevice) : mParent(physicalDevice), mEnabl
 
     extensions.push_back("VK_KHR_swapchain");
 
-    VkPhysicalDeviceVulkan12Features features12 = {};
-    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline = {};
-
     VkPhysicalDeviceFeatures2 features2 = {};
-
-    features2.features.samplerAnisotropy = mParent->IsFeatureSupported(FeatureAnisotropicSampling);
+    VkPhysicalDeviceVulkan12Features features12 = {};
 
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
-    features2.pNext = nullptr;
+    features2.pNext = &features12;
+    features2.features.samplerAnisotropy = mParent->IsFeatureSupported(FeatureAnisotropicSampling);
+
+    if (features2.features.samplerAnisotropy) 
+        mEnabledFeatures |= FeatureAnisotropicSampling;
     
-    if (GM_VK_MIN_VERSION < VK_API_VERSION_1_2) {
-        timeline.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
-        timeline.pNext = nullptr;
-        timeline.timelineSemaphore = true;
-
-        if (physicalDevice->IsExtensionSupported("VK_KHR_timeline_semaphore")) {
-            extensions.push_back("VK_KHR_timeline_semaphore");
-
-            features2.pNext = &timeline;
-
-            mEnabledFeatures |= FeatureTimelineSemaphore;
-        } else {
-            GM_LOG_WARNING("\"{0}\" does not support VK_KHR_timeline_semaphore", physicalDevice->GetProperties().deviceName);
-        }
-    } else {
-        features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        features12.pNext = nullptr;
-
-        features12.timelineSemaphore = mParent->IsFeatureSupported(FeatureTimelineSemaphore);
-
-        if (features12.timelineSemaphore) {
-            mEnabledFeatures = FeatureTimelineSemaphore;
-        } else {
-            GM_LOG_WARNING("[Device] Device {} doesn't support timeline semaphores", mParent->GetProperties().deviceName);
-        }
-
-        features2.pNext = &features12;
-    }
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.pNext = nullptr;
+    features12.timelineSemaphore = true;
 
     VkDeviceCreateInfo info;
 
