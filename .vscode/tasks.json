@@ -6,7 +6,7 @@
         {
             "label": "build (Debug)",
             "type": "shell",
-            "command": "make -j12",
+            "command": "make -j20",
             "group": "build",
             "options": {
                 "cwd": "${workspaceFolder}/build/"
@@ -15,7 +15,16 @@
         {
             "label": "build (Release)",
             "type": "shell",
-            "command": "make config=Release -j12",
+            "command": "make config=release -j20",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/build/"
+            }
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "make clean",
             "group": "build",
             "options": {
                 "cwd": "${workspaceFolder}/build/"
