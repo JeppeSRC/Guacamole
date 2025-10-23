@@ -60,6 +60,7 @@ private:
     static std::vector<Device*> mDevices;
 
     static VkInstance mInstance;
+    static VkDebugUtilsMessengerEXT mMessenger;
 
     static PhysicalDevice* GetFirstSupportedPhysicalDevice(const Window* window);
     static void EnumerateLayersAndExtensions();

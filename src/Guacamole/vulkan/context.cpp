@@ -35,6 +35,30 @@ std::vector<PhysicalDevice*> Context::mPhysicalDevices;
 std::vector<Device*> Context::mDevices;
 
 VkInstance Context::mInstance;
+VkDebugUtilsMessengerEXT Context::mMessenger;
+
+VkBool32 VKAPI_PTR VkDebugMessagerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
+    if (callbackData->pMessage == nullptr) return false;
+
+    switch (severity) {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            GM_LOG_CRITICAL("[ValidationLayer] {}", callbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            GM_LOG_WARNING("[ValidationLayer] {}", callbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            GM_LOG_INFO("[ValidationLayer] {}", callbackData->pMessage);
+            break;
+        default:
+            GM_LOG_INFO("[ValidationLayer_] {}", callbackData->pMessage);
+    }
+
+    return false;
+}
+
+PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessenger;
+PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessenger;
 
 void Context::Init(const ContextSpec& spec) {
     ScopedTimer timer1("Context::Init");
@@ -44,9 +68,10 @@ void Context::Init(const ContextSpec& spec) {
 
     uint32_t minVersion = GM_VK_MIN_VERSION;
 
-    //uint32_t a = VK_API_VERSION_VARIANT(version);
-    //uint32_t major = VK_API_VERSION_MAJOR(version);
-    //uint32_t minor = VK_API_VERSION_MINOR(version);
+    uint32_t major = VK_API_VERSION_MAJOR(version);
+    uint32_t minor = VK_API_VERSION_MINOR(version);
+
+    GM_LOG_DEBUG("Max Instance Version: {}.{}", major, minor);
 
     GM_VERIFY(version >= minVersion);
     
@@ -56,7 +81,7 @@ void Context::Init(const ContextSpec& spec) {
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pNext = nullptr;
-    appInfo.apiVersion = version;
+    appInfo.apiVersion = minVersion;
     appInfo.pApplicationName = spec.applicationName.c_str();
     appInfo.engineVersion = 0;
     appInfo.pEngineName = "Guacamole";
@@ -67,29 +92,58 @@ void Context::Init(const ContextSpec& spec) {
     instanceInfo.pNext = nullptr;
     instanceInfo.pApplicationInfo = &appInfo;
     instanceInfo.flags = 0;
+    instanceInfo.enabledLayerCount = 0;
+    instanceInfo.ppEnabledLayerNames = nullptr;
+
+    std::vector<const char*> extensions {"VK_KHR_surface"};
+
+#if defined(GM_LINUX)
+    extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+#elif defined(GM_WINDOWS)
+    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#endif
+
+
+    bool dbgEnabled = false;
+
+    #if 1
 
     const char* layer = "VK_LAYER_KHRONOS_validation";
+    const char* dbgExtension = "VK_EXT_debug_utils";
 
     if (IsLayerSupported(layer)) {
         instanceInfo.enabledLayerCount = 1;
         instanceInfo.ppEnabledLayerNames = &layer;
+
+        extensions.push_back(dbgExtension);
+        dbgEnabled = true;
     } else {
         GM_LOG_WARNING("VK_LAYER_KHRONOS_validation not supported");
-        instanceInfo.enabledLayerCount = 0;
-        instanceInfo.ppEnabledLayerNames = nullptr;
     }
-
-    uint32_t count = 2;
-#if defined(GM_LINUX)
-    const char* ext[] = {"VK_KHR_surface", VK_KHR_XCB_SURFACE_EXTENSION_NAME };
-#elif defined(GM_WINDOWS)
-    const char* ext[] = { "VK_KHR_surface", VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
 #endif
-
-    instanceInfo.enabledExtensionCount = count;
-    instanceInfo.ppEnabledExtensionNames = ext;
+    instanceInfo.enabledExtensionCount = extensions.size();
+    instanceInfo.ppEnabledExtensionNames = extensions.data();
 
     VK(vkCreateInstance(&instanceInfo, nullptr, &mInstance));
+
+    vkCreateDebugUtilsMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(mInstance, "vkCreateDebugUtilsMessengerEXT");
+    vkDestroyDebugUtilsMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(mInstance, "vkDestroyDebugUtilsMessengerEXT");
+
+    if (dbgEnabled) {
+        VkDebugUtilsMessengerCreateInfoEXT dbgCreate;
+
+        dbgCreate.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        dbgCreate.pNext = nullptr;
+        dbgCreate.flags = 0;
+        dbgCreate.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+        dbgCreate.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        dbgCreate.pfnUserCallback = VkDebugMessagerCallback;
+        dbgCreate.pUserData = nullptr;
+        
+        VK(vkCreateDebugUtilsMessenger(mInstance, &dbgCreate, nullptr, &mMessenger));
+    }
 
     EnumeratePhysicalDevices();
 }
@@ -103,6 +157,7 @@ void Context::Shutdown() {
 
     mDevices.clear();
 
+    vkDestroyDebugUtilsMessenger(mInstance, mMessenger, nullptr);
     vkDestroyInstance(mInstance, nullptr);
 }
 
@@ -196,7 +251,7 @@ void Context::EnumerateLayersAndExtensions() {
         mInstanceLayers.push_back(std::move(layer));
     }
 
-    delete props;
+    delete[] props;
 }
 
 bool Context::IsLayerSupported(const char* layerName) {
@@ -256,7 +311,7 @@ void Context::EnumeratePhysicalDevices() {
         mPhysicalDevices.push_back(new PhysicalDevice(devices[i]));
     }
 
-    delete devices;
+    delete[] devices;
 }
 
 }
