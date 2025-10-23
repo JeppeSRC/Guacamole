@@ -17,6 +17,3 @@ IncludeDir["stb"] = "libs/stb"
 
 LibDir = {}
 LibDir["Vulkan"] = "%{LD_LIBRARY_PATH}"
-
-Lib = {}
---Lib["Vulkan"] = "vulkan-1"
