@@ -59,7 +59,7 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
     attchments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     attchments[1].flags = 0;
-    attchments[1].format = VK_FORMAT_X8_D24_UNORM_PACK32;
+    attchments[1].format = VK_FORMAT_D16_UNORM;
     attchments[1].samples = VK_SAMPLE_COUNT_1_BIT;
     attchments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attchments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -108,7 +108,7 @@ BasicRenderpass::BasicRenderpass(Swapchain* swapchain, Device* device) : Renderp
     VkExtent2D extent = swapchain->GetExtent();
 
     for (uint32_t i = 0; i < imageViews.size(); i++) {
-        mFramebuffers.emplace_back(mDevice, extent.width, extent.height, mRenderpassHandle, imageViews[i], VK_FORMAT_X8_D24_UNORM_PACK32);
+        mFramebuffers.emplace_back(mDevice, extent.width, extent.height, mRenderpassHandle, imageViews[i], VK_FORMAT_D16_UNORM);
         swapchain->AddFramebuffer(i, &mFramebuffers[i]);
     }
 

@@ -38,15 +38,8 @@ Framebuffer::Framebuffer(Device* device, uint32_t width, uint32_t height, VkRend
 
     if (depthFormat != VK_FORMAT_UNDEFINED) {
         mfbInfo.attachmentCount = 2;
-
-        switch (depthFormat) {
-            case VK_FORMAT_X8_D24_UNORM_PACK32:
-                mDepthTexture = new DepthTexture(device, depthFormat, width, height);
-                break;
-            default:
-                GM_ASSERT_MSG(false, "Format not implemented yet!");
-        }
-
+        
+        mDepthTexture = new DepthTexture(device, depthFormat, width, height);
         attachments[1] = mDepthTexture->GetImageViewHandle();
     }
             
