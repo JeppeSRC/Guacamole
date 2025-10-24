@@ -69,7 +69,6 @@ public:
     void RemoveFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer);
 
 private:
-    void PresentInternalTimelineSemaphore();
     bool OnEvent(Event* event);
 private:
     Window* mWindow;

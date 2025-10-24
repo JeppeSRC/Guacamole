@@ -205,10 +205,6 @@ bool Swapchain::Begin() {
     return false;
 }
 
-void Swapchain::Present() {
-    if (mDevice->GetFeatures() & Device::FeatureTimelineSemaphore) PresentInternalTimelineSemaphore();
-}
-
 bool Swapchain::Resize(uint32_t width, uint32_t height) {
     mDevice->WaitQueueIdle();
 
@@ -274,9 +270,7 @@ void Swapchain::RemoveFramebuffer(uint32_t viewIndex, Framebuffer* framebuffer) 
     }
 }
 
-void Swapchain::PresentInternalTimelineSemaphore() {
-    GM_ASSERT(mDevice->GetFeatures() & Device::FeatureTimelineSemaphore);
-
+void Swapchain::Present() {
     std::vector<VkSemaphore> renderWaitSemaphores({ mImageSemaphore });
     std::vector<VkPipelineStageFlags> renderWaitStageFlags({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
 
