@@ -51,6 +51,12 @@ project "spdlog"
             "libs/spdlog/src/**.cpp"
         }
 
+        filter {"system:windows", "Debug"}
+
+            buildoptions {
+                "/MD"
+            }
+
 group ""
 
 project "Guacamole"
@@ -116,7 +122,11 @@ project "Guacamole"
         }
         
         links {
-            "vulkan-1"
+            "vulkan-1",
+            "spdlog",
+            "spirv-cross-core",
+            "spirv-cross-glsl",
+            "shaderc_shared"
         }
 
         removefiles {
@@ -130,7 +140,13 @@ project "Guacamole"
                 "/Ot",
                 "/Oy",
                 "/arch:AVX2"
+            }      
+        
+        filter {"system:windows", "Debug"}
+            buildoptions {
+                "/MD"
             }        
+
     filter {}
 
     
@@ -146,32 +162,6 @@ project "Guacamole"
     libdirs {
         "%{LibDir.Vulkan}"
     }
-
-    links {
-        "spdlog"
-    }
-
-    filter {"Debug", "system:windows"}
-
-        links {
-            "spirv-cross-cored",
-            "spirv-cross-glsld",
-            "shaderc_sharedd"
-        }
-
-    filter {"Release", "system:windows"}
-        links {
-            "spirv-cross-core",
-            "spirv-cross-glsl",
-            "shaderc_shared"
-        }
-
-    filter {"system:linux"}
-        links {
-            "spirv-cross-core",
-            "spirv-cross-glsl",
-            "shaderc_shared"
-        }
-        
+    
 
     
