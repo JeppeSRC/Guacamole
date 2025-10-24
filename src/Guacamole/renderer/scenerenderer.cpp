@@ -102,6 +102,7 @@ SceneRenderer::~SceneRenderer() {
 
 void SceneRenderer::Begin() {
     CommandBuffer* cmd = mSwapchain->GetRenderCommandBuffer();
+    cmd->Wait();
     cmd->Begin(true);
 
     mStagingBuffer.Begin();
