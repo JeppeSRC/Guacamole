@@ -47,8 +47,8 @@ bool CameraController::OnWindowResize(WindowResizeEvent* e) {
 bool CameraController::OnMouseMoved(MouseMovedEvent* e) {
     TransformComponent& trans = GetComponent<TransformComponent>();
     
-    trans.mRotation.y -= (float)e->mDeltaX * mSensitivity;
-    trans.mRotation.x -= (float)e->mDeltaY * mSensitivity;
+    trans.mRotation.y += (float)e->mDeltaX * mSensitivity;
+    trans.mRotation.x += (float)e->mDeltaY * mSensitivity;
 
     return false;
 }
@@ -76,19 +76,29 @@ void CameraController::OnUpdate(float ts) {
 }
 
 void CameraController::UpdateCamera(float ts, bool lockY, Camera& camera, TransformComponent& transform) {
-    mat4 rot(1.0f);
+    mat4 rot = mat4::RotateXY(transform.mRotation);
 
-    rot = mat4::RotateXY(transform.mRotation);
-
-    vec4 adj = vec4(mSpeed, mSpeed, mSpeed, 0.0f) * ts;
+    vec3 adj = vec4(mSpeed, mSpeed, mSpeed) * ts;
     mat4 inverse = mat4::Inverse(rot);
-    vec3 forward = inverse.Col(2) * adj;
-    vec3 right = inverse.Col(0) * adj;
-    vec3 up = inverse.Col(1) * adj;
+
+    vec3 up;
+    vec3 forward;
+    vec3 right;
 
     if (lockY) {
-        up = vec3(0.0f, mSpeed * ts, 0.0f);
+        right = inverse.Col(0);
+        up = vec3(0, 1, 0);
+        forward = up.Cross(right);
+
+        up *= adj;
+        right *= adj;
+        forward *= adj;
+
         forward.y = 0.0f;
+    } else {
+        right = inverse.Col(0) * adj;
+        up = inverse.Col(1) * adj;
+        forward = inverse.Col(2) * adj;
     }
 
     if (Input::IsKeyPressed(mForward))
