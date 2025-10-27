@@ -46,7 +46,11 @@ Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
 
     AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, false);
 
-    mHWND = CreateWindow(L"Guacamole", L"spec.Title", WS_OVERLAPPEDWINDOW, 0, 0, r.right - r.left, r.bottom - r.top, 0, 0, 0, 0);
+
+    wchar_t title[256];
+    mbstowcs(title, spec.Title.c_str(), 256);
+
+    mHWND = CreateWindow(L"Guacamole", title, WS_OVERLAPPEDWINDOW, 0, 0, r.right - r.left, r.bottom - r.top, 0, 0, 0, 0);
 
     GM_VERIFY(mHWND);
 
