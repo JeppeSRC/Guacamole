@@ -89,9 +89,9 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     }
 
     if (msInfo.imageFormat == VK_FORMAT_UNDEFINED) {
-        GM_LOG_WARNING("[Swapchain] Selected device ({}) doesn't support any of the preferred surface formats, selecting first format", physical->GetProperties().deviceName);
-        msInfo.imageFormat = surfaceFormats[0].format;
-        msInfo.imageColorSpace = surfaceFormats[0].colorSpace;
+        GM_LOG_WARNING("[Swapchain] Selected device ({}) doesn't support any of the preferred surface formats, defaulting to B8G8R8A8_UNORM", physical->GetProperties().deviceName);
+        msInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        msInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     }
 
     std::vector<VkPresentModeKHR> presentModes = physical->GetPresentModes(mSurfaceHandle);
