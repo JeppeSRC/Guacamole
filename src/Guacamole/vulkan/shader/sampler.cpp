@@ -30,8 +30,9 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Sampler::Sampler(Device* device) 
-    : mSamplerHandle(VK_NULL_HANDLE), mDevice(device) {}
+Sampler::Sampler(Device* device) : Asset("", AssetType::Sampler), mSamplerHandle(VK_NULL_HANDLE), mDevice(device) {
+    mFlags |= AssetFlag_Loaded;
+}
 
 
 void Sampler::Create(const VkSamplerCreateInfo& info) {

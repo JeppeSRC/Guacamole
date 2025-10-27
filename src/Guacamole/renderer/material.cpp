@@ -28,7 +28,7 @@ SOFTWARE.
 
 namespace Guacamole {
 
-Material::Material(vec4 albedo, AssetHandle texture) : Asset("", AssetType::Material), mAlbedo(albedo), mTextureHandle(texture) {
+Material::Material(vec4 albedo, AssetHandle texture, AssetHandle sampler) : Asset("", AssetType::Material), mAlbedo(albedo), mTextureHandle(texture), mSamplerHandle(sampler) {
     mFlags |= AssetFlag_Loaded;
 }
     

@@ -27,10 +27,12 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
+#include <Guacamole/asset/asset.h>
+
 namespace Guacamole {
 
 class Device;
-class Sampler {
+class Sampler : public Asset {
 protected:
     Sampler(Device* device);
 

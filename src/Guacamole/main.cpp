@@ -77,8 +77,9 @@ public:
 
         AssetHandle brickTexture = AssetManager::AddAsset(new Texture2D(mMainDevice, "res/texture/brick_pavement.jpg"), false);
         AssetHandle sheetTexture = AssetManager::AddAsset(new Texture2D(mMainDevice, "res/texture/sheet.png"), false);
-        AssetHandle sheetMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), sheetTexture), true);
-        AssetHandle brickMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), brickTexture), true);
+        AssetHandle basicSampler = AssetManager::AddMemoryAsset(new BasicSampler(mMainDevice));
+        AssetHandle sheetMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), sheetTexture, basicSampler));
+        AssetHandle brickMaterial = AssetManager::AddMemoryAsset(new Material(vec4(1.0f), brickTexture, basicSampler));
 
         Entity cube = mScene->CreateEntity("Cube");
 
@@ -98,7 +99,7 @@ public:
 
         Entity floor = mScene->CreateEntity("Floor");
 
-        floor.AddComponent<TransformComponent>(vec3(0, -0.8f, -1), vec3(GM_TO_RADIANS(90.0f), 0, 0), vec3(10, 10, 1));
+        floor.AddComponent<TransformComponent>(vec3(0, -0.8f, -1), vec3(GM_TO_RADIANS(-90.0f), 0, 0), vec3(10, 10, 1));
         floor.AddComponent<MaterialComponent>(brickMaterial);
         floor.AddComponent<MeshComponent>(MeshFactory::GetPlaneAsset());
 
@@ -110,7 +111,7 @@ public:
         camera.SetViewport((float)windowSpec.Width, (float)windowSpec.Height);
 
         cam.AddComponent<CameraComponent>(camera, true);
-        cam.AddComponent<TransformComponent>(vec3(0, 0, -1));
+        cam.AddComponent<TransformComponent>(vec3(0, 0, 1));
         cam.AddScript<Script::CameraController>();
     }
 

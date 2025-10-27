@@ -33,9 +33,10 @@ namespace Guacamole {
 
 class Material : public Asset {
 public:
-    Material(vec4 albedo, AssetHandle texture = AssetHandle::Null());
+    Material(vec4 albedo, AssetHandle texture, AssetHandle sampler);
 
     AssetHandle mTextureHandle;
+    AssetHandle mSamplerHandle;
     vec4 mAlbedo;
 };
 

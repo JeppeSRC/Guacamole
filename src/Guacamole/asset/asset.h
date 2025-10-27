@@ -40,7 +40,8 @@ enum class AssetType {
     Scene,
     Texture,
     Audio,
-    Material
+    Material,
+    Sampler
 };
 
 using AssetHandle = UUID;

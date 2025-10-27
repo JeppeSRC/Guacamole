@@ -34,7 +34,7 @@ SOFTWARE.
 namespace Guacamole {
 
 Scene::Scene(Application* app) : mApplication(app) {
-    mRenderer = new SceneRenderer(this);    
+    mRenderer = new SceneRenderer(app->GetDevice(), app->GetSwapchain(), app->GetWindow()->GetWidth(), app->GetWindow()->GetHeight());
 }
 
 Scene::~Scene() {
@@ -63,28 +63,26 @@ void Scene::OnUpdate(float ts) {
 void Scene::OnRender() {
     mRenderer->Begin();
 
-    Camera cam;
-
-    auto cameraView = mRegistry.view<CameraComponent, TransformComponent>();
+    auto cameraView = mRegistry.view<CameraComponent, IdComponent>();
 
     for (auto entity : cameraView) {
         CameraComponent& c = cameraView.get<CameraComponent>(entity);
         
         if (c.mPrimary) {
-            cam = c.mCamera;
+            mRenderer->BeginScene(c, cameraView.get<IdComponent>(entity));
+            break;
         }
     }
 
     auto view = mRegistry.view<TransformComponent, MeshComponent, MaterialComponent>();
 
-    mRenderer->BeginScene(cam);
 
     for (auto entity : view) {
         const TransformComponent& transform = view.get<TransformComponent>(entity);
         const MeshComponent& mesh = view.get<MeshComponent>(entity);
         const MaterialComponent& material = view.get<MaterialComponent>(entity);
 
-        mRenderer->SubmitMesh(mesh, transform, material);        
+        mRenderer->SubmitMesh(mesh, transform, material);
     }
 
     mRenderer->EndScene();

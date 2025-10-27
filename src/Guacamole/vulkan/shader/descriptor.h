@@ -61,7 +61,8 @@ class DescriptorSet {
 private:
     friend class DescriptorSetLayout;
 public:
-    DescriptorSet(VkDescriptorSet Handle, DescriptorSetLayout* layout);
+    DescriptorSet() : mDescriptorSetHandle(VK_NULL_HANDLE), mLayout(nullptr) {}
+    DescriptorSet(VkDescriptorSet handle, DescriptorSetLayout* layout);
     ~DescriptorSet();
 
     inline const VkDescriptorSet& GetHandle() const { return mDescriptorSetHandle; }

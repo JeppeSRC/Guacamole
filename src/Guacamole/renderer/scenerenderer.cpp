@@ -35,11 +35,12 @@ SOFTWARE.
 
 namespace Guacamole {
 
-SceneRenderer::SceneRenderer(Scene* scene) : 
-        mScene(scene), mDevice(scene->GetDevice()), mSwapchain(scene->GetSwapchain()),
-        mStagingBuffer(scene->GetDevice(), 1024 * 10), mSceneUniformSet(scene->GetDevice(), 
-        scene->GetSwapchain()->GetFramesInFlight()), mSampler(scene->GetDevice()),
-        mCommandPool(scene->GetDevice())  {
+SceneRenderer::SceneRenderer(Device* device, Swapchain* swapchain, uint32_t width, uint32_t height) : 
+        mDevice(device), mSwapchain(swapchain),
+        mStagingBuffer(device, 1024 * 10), 
+        mSceneUniformSet(device, swapchain->GetFramesInFlight()), 
+        mCommandPool(device),
+        mDescriptorPool(device, 100)  {
 
     AssetHandle vertHandle = AssetManager::AddAsset(new Shader::Source("res/shader/scene.vert", false, ShaderStage::Vertex), false);
     AssetHandle fragHandle = AssetManager::AddAsset(new Shader::Source("res/shader/scene.frag", false, ShaderStage::Fragment), false);
@@ -55,10 +56,8 @@ SceneRenderer::SceneRenderer(Scene* scene) :
 
     GraphicsPipelineInfo gInfo;
 
-    Window* window = mScene->GetApplication()->GetWindow();
-
-    gInfo.mWidth = window->GetWidth();
-    gInfo.mHeight = window->GetHeight();
+    gInfo.mWidth = width;
+    gInfo.mHeight = height;
     gInfo.mPipelineLayout = mPipelineLayout;
     gInfo.mRenderpass = mRenderpass;
     gInfo.mShader = mShader;
@@ -67,32 +66,13 @@ SceneRenderer::SceneRenderer(Scene* scene) :
 
     mPipeline = new GraphicsPipeline(mDevice, gInfo);
 
-    mSceneUniformSet.Create(0, sizeof(SceneData));
-
-    constexpr uint32_t descriptorCount = 100;
-
-    for (uint32_t i = 0; i < mSwapchain->GetFramesInFlight(); i++) {
-        mDescriptorPools.push_back(new DescriptorPool(mDevice, descriptorCount));
-    }
-
-    for (uint32_t i = 0; i < descriptorCount; i++) {
-        UniformBufferSet* set = new UniformBufferSet(mDevice, mSwapchain->GetFramesInFlight());
-        mUniformBufferSetPool.push_back(set);
-
-        set->Create(1, sizeof(vec4));
-    }
-
     mStagingCommandBuffer = mCommandPool.AllocateCommandBuffer(true);
     mStagingBuffer.SetCommandBuffer(mStagingCommandBuffer);
+
+    mSceneUniformSet.Create(0, sizeof(SceneData));
 }
 
 SceneRenderer::~SceneRenderer() {
-    for (UniformBufferSet* set : mUniformBufferSetPool)
-        delete set;
-
-    for (DescriptorPool* pool : mDescriptorPools) 
-        delete pool;
-
     delete mStagingCommandBuffer;
     delete mPipeline;
     delete mPipelineLayout;
@@ -106,40 +86,39 @@ void SceneRenderer::Begin() {
     cmd->Begin(true);
 
     mStagingBuffer.Begin();
-
-    //mRenderlist.Begin(cmd, Swapchain::GetCurrentImageIndex());
-    mUniformBufferSetIndex = 0;
 }
 
-void SceneRenderer::BeginScene(const Camera& camera) {
+void SceneRenderer::BeginScene(const CameraComponent& cameraComponent, const IdComponent& idComponent) {
     uint32_t frame = mSwapchain->GetCurrentImageIndex();
+    const Camera& camera = cameraComponent.mCamera;
+    const UUID& uuid = idComponent.mUUID;
 
-    DescriptorPool* descPool = mDescriptorPools[frame];
-    descPool->Reset();
-
-    DescriptorSet set = descPool->AllocateDescriptorSet(mShader->GetDescriptorSetLayout(0));
-
+    DescriptorSet* set = GetDescriptorSet(frame, uuid);
     UniformBuffer* buffer = mSceneUniformSet.Get(frame, 0);
+
+    if (set == nullptr) {
+        set = AllocateDescriptorSet(frame, mShader->GetDescriptorSetLayout(0), uuid);
     
-    VkDescriptorBufferInfo bInfo;
-    bInfo.buffer = buffer->GetHandle();
-    bInfo.offset = 0;
-    bInfo.range = buffer->GetSize();
+        VkDescriptorBufferInfo bInfo;
+        bInfo.buffer = buffer->GetHandle();
+        bInfo.offset = 0;
+        bInfo.range = buffer->GetSize();
 
-    VkWriteDescriptorSet write;
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.pNext = nullptr;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    write.descriptorCount = 1;
-    write.dstArrayElement = 0;
-    write.dstBinding = 0;
-    write.dstSet = set.GetHandle();
-    write.pBufferInfo = &bInfo;
+        VkWriteDescriptorSet write;
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.pNext = nullptr;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.descriptorCount = 1;
+        write.dstArrayElement = 0;
+        write.dstBinding = 0;
+        write.dstSet = set->GetHandle();
+        write.pBufferInfo = &bInfo;
 
-    vkUpdateDescriptorSets(mDevice->GetHandle(), 1, &write, 0, 0);
+        vkUpdateDescriptorSets(mDevice->GetHandle(), 1, &write, 0, 0);
+    }
 
     SceneData* data = (SceneData*)mStagingBuffer.Allocate(sizeof(SceneData), buffer);
-
+    
     data->mProjection = camera.GetProjection();
     data->mView = camera.GetView();
 
@@ -158,13 +137,10 @@ void SceneRenderer::BeginScene(const Camera& camera) {
     vkCmdSetScissor(cmd->GetHandle(), 0, 1, &rect);
 
     Renderer::BeginRenderpass(cmd, mRenderpass);
-    vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &set.GetHandle(), 0, 0);
+    vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &set->GetHandle(), 0, 0);
 }
 
 void SceneRenderer::EndScene() {
-    //mRenderlist.End();
-    //mRenderlist.Execute();
-
     Renderer::EndRenderpass(mSwapchain->GetRenderCommandBuffer(), mRenderpass);
 }
 
@@ -185,53 +161,89 @@ void SceneRenderer::SubmitMesh(const MeshComponent& mesh, const TransformCompone
     mat4 trans = transform.GetTransform();
     vkCmdPushConstants(cmdHandle, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &trans);
 
+    uint32_t frame = mSwapchain->GetCurrentImageIndex();
+    DescriptorSet* matSet = GetDescriptorSet(frame, material.mMaterial);
     Material* materialAsset = AssetManager::GetAsset<Material>(material.mMaterial);
-    Texture2D* tex = AssetManager::GetAsset<Texture2D>(materialAsset->mTextureHandle);
 
-    DescriptorPool* descPool = mDescriptorPools[mSwapchain->GetCurrentImageIndex()];
-    DescriptorSet set = descPool->AllocateDescriptorSet(mShader->GetDescriptorSetLayout(1));
-    VkDescriptorSet setHandle = set.GetHandle();
-    UniformBufferSet* bufferSet = mUniformBufferSetPool[mUniformBufferSetIndex++];
-    UniformBuffer* buffer = bufferSet->Get(mSwapchain->GetCurrentImageIndex(), 1);
+    if (matSet == nullptr) {
+        matSet = AllocateDescriptorSet(frame, mShader->GetDescriptorSetLayout(1), material.mMaterial);
 
-    VkDescriptorBufferInfo bInfo;
-    bInfo.buffer = buffer->GetHandle();
-    bInfo.offset = 0;
-    bInfo.range = buffer->GetSize();
+        Texture2D* tex = AssetManager::GetAsset<Texture2D>(materialAsset->mTextureHandle);
+        Sampler* sampler = AssetManager::GetAsset<Sampler>(materialAsset->mSamplerHandle);
+        
+        auto bufferIt = mUniformBuffers.find(material.mMaterial);
+        UniformBufferSet* bufferSet = nullptr;
 
-    VkDescriptorImageInfo iInfo;
+        if (bufferIt == mUniformBuffers.end()) {
+            bufferSet = new UniformBufferSet(mDevice, mSwapchain->GetFramesInFlight());
+            bufferSet->Create(1, sizeof(vec4));
+            mUniformBuffers[material.mMaterial] = bufferSet;
+        } else {
+            bufferSet = mUniformBuffers.at(material.mMaterial);
+        }
 
-    iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    iInfo.imageView = tex->GetImageViewHandle();
-    iInfo.sampler = mSampler.GetHandle();
+        UniformBuffer* buffer = bufferSet->Get(frame, 1);
 
-    VkWriteDescriptorSet write[2];
-    write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write[0].pNext = nullptr;
-    write[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write[0].descriptorCount = 1;
-    write[0].dstArrayElement = 0;
-    write[0].dstBinding = 0;
-    write[0].dstSet = setHandle;
-    write[0].pImageInfo = &iInfo;
+        VkDescriptorBufferInfo bInfo;
+        bInfo.buffer = buffer->GetHandle();
+        bInfo.offset = 0;
+        bInfo.range = buffer->GetSize();
 
-    write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write[1].pNext = nullptr;
-    write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    write[1].descriptorCount = 1;
-    write[1].dstArrayElement = 0;
-    write[1].dstBinding = 1;
-    write[1].dstSet = setHandle;
-    write[1].pBufferInfo = &bInfo;
+        VkDescriptorImageInfo iInfo;
 
-    vkUpdateDescriptorSets(mDevice->GetHandle(), 2, write, 0, 0);
-    vkCmdBindDescriptorSets(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 1, 1, &setHandle, 0, 0);
+        iInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        iInfo.imageView = tex->GetImageViewHandle();
+        iInfo.sampler = sampler->GetHandle();
 
-    memcpy(mStagingBuffer.Allocate(sizeof(vec4), buffer), &materialAsset->mAlbedo, sizeof(mat4));
+        VkWriteDescriptorSet write[2];
+        write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write[0].pNext = nullptr;
+        write[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        write[0].descriptorCount = 1;
+        write[0].dstArrayElement = 0;
+        write[0].dstBinding = 0;
+        write[0].dstSet = matSet->GetHandle();
+        write[0].pImageInfo = &iInfo;
+
+        write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write[1].pNext = nullptr;
+        write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write[1].descriptorCount = 1;
+        write[1].dstArrayElement = 0;
+        write[1].dstBinding = 1;
+        write[1].dstSet = matSet->GetHandle();
+        write[1].pBufferInfo = &bInfo;
+
+        vkUpdateDescriptorSets(mDevice->GetHandle(), 2, write, 0, 0);
+
+    }
+
+    vkCmdBindDescriptorSets(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 1, 1, &matSet->GetHandle(), 0, 0);
+
+    UniformBuffer* buffer = mUniformBuffers[material.mMaterial]->Get(frame, 1);
+    memcpy(mStagingBuffer.Allocate(sizeof(vec4), buffer), &materialAsset->mAlbedo, sizeof(vec4));
 
     vkCmdBindPipeline(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline->GetHandle());
     vkCmdDrawIndexed(cmdHandle, meshAsset->GetIndexCount(), 1, 0, 0, 0);
+}
 
+DescriptorSet* SceneRenderer::GetDescriptorSet(uint32_t frame, UUID id) {
+    id.m0 += frame;
+    auto it = mDescriptorMap.find(id);
+
+    if (it == mDescriptorMap.end())
+        return nullptr;
+
+    return &it->second;
+}
+
+DescriptorSet* SceneRenderer::AllocateDescriptorSet(uint32_t frame, DescriptorSetLayout* layout, UUID id) {
+    id.m0 += frame;
+    GM_ASSERT_MSG(mDescriptorMap.find(id) == mDescriptorMap.end(), "DescriptorSet already allocated for this UUID and frame");
+
+    mDescriptorMap[id] = mDescriptorPool.AllocateDescriptorSet(layout);
+
+    return &mDescriptorMap[id];
 }
 
 }
