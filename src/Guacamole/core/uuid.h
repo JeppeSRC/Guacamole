@@ -46,3 +46,13 @@ public:
 
 }
 
+namespace std {
+template<>
+struct hash<Guacamole::UUID> {
+
+    std::size_t operator()(const Guacamole::UUID& handle) const {
+        return handle.m0;
+    }
+
+};
+}

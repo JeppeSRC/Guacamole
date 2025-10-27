@@ -34,18 +34,6 @@ SOFTWARE.
 #include <unordered_map>
 #include <thread>
 
-
-namespace std {
-template<>
-struct hash<Guacamole::AssetHandle> {
-
-    std::size_t operator()(const Guacamole::AssetHandle& handle) const {
-        return handle.m0;
-    }
-
-};
-}
-
 namespace Guacamole {
 
 class AssetManager {
