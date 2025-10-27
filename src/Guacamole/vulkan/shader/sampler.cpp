@@ -63,6 +63,7 @@ BasicSampler::BasicSampler(Device* device, VkFilter magFilter, VkFilter minFilte
     sInfo.compareOp = VK_COMPARE_OP_EQUAL;
     sInfo.minLod = 0;
     sInfo.maxLod = 0;
+    sInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
     sInfo.unnormalizedCoordinates = false;
 
     Create(sInfo);
