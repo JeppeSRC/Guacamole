@@ -137,6 +137,7 @@ void SceneRenderer::BeginScene(const CameraComponent& cameraComponent, const IdC
     vkCmdSetScissor(cmd->GetHandle(), 0, 1, &rect);
 
     Renderer::BeginRenderpass(cmd, mRenderpass);
+    vkCmdBindPipeline(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline->GetHandle());
     vkCmdBindDescriptorSets(cmd->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(), 0, 1, &set->GetHandle(), 0, 0);
 }
 
@@ -223,7 +224,6 @@ void SceneRenderer::SubmitMesh(const MeshComponent& mesh, const TransformCompone
     UniformBuffer* buffer = mUniformBuffers[material.mMaterial]->Get(frame, 1);
     memcpy(mStagingBuffer.Allocate(sizeof(vec4), buffer), &materialAsset->mAlbedo, sizeof(vec4));
 
-    vkCmdBindPipeline(cmdHandle, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline->GetHandle());
     vkCmdDrawIndexed(cmdHandle, meshAsset->GetIndexCount(), 1, 0, 0, 0);
 }
 
