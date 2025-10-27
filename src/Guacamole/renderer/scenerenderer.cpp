@@ -73,6 +73,10 @@ SceneRenderer::SceneRenderer(Device* device, Swapchain* swapchain, uint32_t widt
 }
 
 SceneRenderer::~SceneRenderer() {
+    for (auto& [id, bufferSet] : mUniformBuffers) {
+        delete bufferSet;
+    }
+
     delete mStagingCommandBuffer;
     delete mPipeline;
     delete mPipelineLayout;
