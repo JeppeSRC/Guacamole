@@ -157,6 +157,8 @@ public:
     vec3& operator/=(const vec3& r) {
         return *this = operator/(r);
     }
+
+    vec3 Cross(const vec3& other) const;
 };
 
 class vec4 {

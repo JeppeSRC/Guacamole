@@ -113,5 +113,12 @@ vec3 vec3::operator-() const {
     return ret;
 }
 
+vec3 vec3::Cross(const vec3& other) const {
+    float nx = y * other.z - z * other.y;
+    float ny = z * other.x - x * other.z;
+    float nz = x * other.y - y * other.x;
+
+    return vec3(nx, ny, nz);
+}
 
 }
