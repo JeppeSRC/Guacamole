@@ -78,8 +78,6 @@ private:
     CommandPool mCommandPool;
     CommandBuffer* mStagingCommandBuffer;
     StagingBuffer mStagingBuffer;
-
-    friend class Renderlist;
 };
 
 }
