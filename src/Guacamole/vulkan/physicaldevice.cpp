@@ -28,6 +28,14 @@ SOFTWARE.
 
 #include <Guacamole/util/util.h>
 
+#if defined(GM_WINDOWS)
+#include <Guacamole/platform/windows/window.h>
+#endif
+
+#if defined(GM_LINUX)
+#include <Guacamole/platform/linux/window.h>
+#endif
+
 namespace Guacamole {
 
 uint32_t PhysicalDevice::mDeviceCount = 0;
@@ -89,11 +97,22 @@ bool PhysicalDevice::GetDevicePresentationSupport(const Window* window) const {
 }
 
 bool PhysicalDevice::GetQueuePresentationSupport(const Window* window, uint32_t queueIndex) const {
-#if defined(GM_LINUX)
-    return vkGetPhysicalDeviceXcbPresentationSupportKHR(mDeviceHandle, queueIndex, window->GetXCBConnection(), window->GetVisualID());
-#elif defined(GM_WINDOWS)
-    return vkGetPhysicalDeviceWin32PresentationSupportKHR(mDeviceHandle, queueIndex);
+    switch (window->GetType()) {
+#if defined(GM_WINDOWS)
+        case Window::Type::Windows:
+            return vkGetPhysicalDeviceWin32PresentationSupportKHR(mDeviceHandle, queueIndex);
 #endif
+#if defined(GM_WINDOW_XCB)
+        case Window::Type::XCB:
+            return vkGetPhysicalDeviceXcbPresentationSupportKHR(mDeviceHandle, queueIndex, ((WindowXCB*)window)->GetXCBConnection(), ((WindowXCB*)window)->GetVisualID());    
+#endif
+#if defined(GM_WINDOW_WAYLAND)
+
+#endif
+        default:
+            GM_ASSERT(false);
+            return false;
+    }
 }
 
 bool PhysicalDevice::IsExtensionSupported(const char* extension) const {

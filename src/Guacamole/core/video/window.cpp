@@ -22,8 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <Guacamole.h>
-#include "window.h"
+#include <Guacamole/core/video/window.h>
 
 namespace Guacamole {
+
+Window* Window::sWindow = nullptr;
+
+Window::Window(WindowSpec spec, Type type) : mSpec(spec), mWindowType(type), mShouldClose(true), mInputCapture(false) {}
 
 }

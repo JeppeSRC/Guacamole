@@ -24,19 +24,18 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/video/window.h>
-
+#include <Guacamole/platform/windows/window.h>
 #include <Guacamole/core/video/event.h>
 
 namespace Guacamole {
 
-Window::Window(WindowSpec spec) : mSpec(spec), mShouldClose(true) {
+WindowWindows::WindowWindows(WindowSpec spec) : Window(spec, Type::Windows) {
     WNDCLASSEX wnd = {};
 
     wnd.cbSize = sizeof(WNDCLASSEX);
     wnd.hCursor = LoadCursor(0, IDC_ARROW);
     wnd.hIcon = LoadIcon(0, IDI_WINLOGO);
-    wnd.lpfnWndProc = EventManager::WndProc;
+    wnd.lpfnWndProc = WndProc;
     wnd.lpszClassName = L"Guacamole";
     wnd.style = CS_VREDRAW | CS_HREDRAW;
 
@@ -66,4 +65,213 @@ Window::~Window() {
     DestroyWindow(mHWND);
     UnregisterClass(L"Guacamole", 0);
 }
+
+
+void WindowWindows::CaptureMouse() {
+    if (mInputCapture) return;
+
+    mInputCapture = true;
+    ShowCursor(false);
+
+    RAWINPUTDEVICE rid[2];
+
+    rid[0].usUsagePage = 0x01;
+    rid[0].usUsage = 0x06;
+    rid[0].dwFlags = RIDEV_NOLEGACY;
+    rid[0].hwndTarget = 0;
+
+    rid[1].usUsagePage = 0x01;
+    rid[1].usUsage = 0x02;
+    rid[1].dwFlags = 0;
+    rid[1].hwndTarget = 0;
+
+    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
+        DWORD error = GetLastError();
+
+        GM_LOG_CRITICAL("Failed to register input devices: 0x{:0x08}", error);
+        return;
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse captured!");
+}
+
+void WindowWindows::ReleaseInput() {
+    if (!mInputCapture) return;
+
+    mInputCapture = false;
+    ShowCursor(true);
+
+    RAWINPUTDEVICE rid[2];
+
+    rid[0].usUsagePage = 0x01;
+    rid[0].usUsage = 0x06;
+    rid[0].dwFlags = RIDEV_REMOVE;
+    rid[0].hwndTarget = 0;
+
+    rid[1].usUsagePage = 0x01;
+    rid[1].usUsage = 0x02;
+    rid[1].dwFlags = RIDEV_REMOVE;
+    rid[1].hwndTarget = 0;
+
+    if (!RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE))) {
+        DWORD error = GetLastError();
+
+        GM_LOG_CRITICAL("Failed to remove input devices: 0x{:0x08}", error);
+        return;
+    }
+
+    GM_LOG_DEBUG("[Input] Mouse released!");
+}
+
+void WindowWindows::ProcessEvents(Window* window) {
+    MSG msg;
+
+    if (mInputCapture) {
+        POINT p;
+        p.x = window->GetWidth() / 2;
+        p.y = window->GetHeight() / 2;
+
+        ClientToScreen(window->GetHWND(), &p);
+        SetCursorPos(p.x, p.y);
+    }
+
+    while (PeekMessage(&msg, window->GetHWND(), 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
+LRESULT WindowWindows::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
+    switch (msg) {
+        case WM_CLOSE: {
+            mWindow->mShouldClose = true;
+            break;
+        }
+
+        case WM_SIZE: {
+            uint16_t width = l & 0xFFFF;
+            uint16_t height = uint16_t(l >> 16);
+
+            WindowResizeEvent evnt(width, height);
+
+            EventManager::DispatchEvent(&evnt);
+            break;
+        }
+        case WM_LBUTTONDOWN: {
+            CaptureMouse();
+            break;
+        }
+
+        case WM_KILLFOCUS: {
+            ReleaseInput();
+            break;
+        }
+
+        case WM_INPUT: {
+            UINT size;
+
+            GetRawInputData((HRAWINPUT)l, RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+            uint8_t* data = new uint8_t[size];
+
+            UINT retSize = GetRawInputData((HRAWINPUT)l, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER));
+
+            if (retSize != size) {
+                GM_LOG_DEBUG("GetRawInputData doesn't return the correct size, {} should be {}", retSize, size);
+            }
+
+            RAWINPUT* raw = (RAWINPUT*)data;
+
+            if (raw->header.dwType == RIM_TYPEKEYBOARD) {
+                RAWKEYBOARD& kb = raw->data.keyboard;
+
+                if (kb.Flags & RI_KEY_E0)
+                    kb.MakeCode |= 0xE000;
+                else if (kb.Flags & RI_KEY_E1)
+                    kb.MakeCode |= 0xE100;
+
+                if (kb.MakeCode == 0xE02A) break; 
+
+                kb.VKey = MapVirtualKey(kb.MakeCode, MAPVK_VSC_TO_VK_EX);
+                kb.VKey |= (kb.MakeCode & 0xE100);
+                
+                //GM_LOG_DEBUG(u8"ScanCode 0x{:04x} KeyCode 0x{:04x}", kb.MakeCode, kb.VKey);
+
+                if (kb.Flags & RI_KEY_BREAK) {
+                    Input::OnKey(kb.MakeCode, false);
+
+                    KeyReleasedEvent evnt((uint32_t)kb.MakeCode);
+
+                    EventManager::DispatchEvent(&evnt);
+                } else if (!Input::IsKeyPressed(kb.MakeCode)) {
+                    Input::OnKey(kb.MakeCode, true);
+                    KeyPressedEvent evnt((uint32_t)kb.MakeCode);
+
+                    EventManager::DispatchEvent(&evnt);
+                }
+
+            } else if (raw->header.dwType == RIM_TYPEMOUSE) {
+                RAWMOUSE& mouse = raw->data.mouse;
+                
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_1_DOWN, RI_MOUSE_BUTTON_1_UP, GM_BUTTON_Left);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_2_DOWN, RI_MOUSE_BUTTON_2_UP, GM_BUTTON_Right);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_3_DOWN, RI_MOUSE_BUTTON_3_UP, GM_BUTTON_Middle);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP, GM_BUTTON_Back);
+                CheckButton(mouse.usButtonFlags, RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP, GM_BUTTON_Forward);
+
+                MouseMovedEvent evnt(mouse.lLastX, mouse.lLastY);
+
+                if (mouse.usFlags & MOUSE_MOVE_ABSOLUTE) {
+                    bool isVirtualDesktop = (mouse.usFlags & MOUSE_VIRTUAL_DESKTOP);
+
+                    int width = GetSystemMetrics(isVirtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
+                    int height = GetSystemMetrics(isVirtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
+
+                    POINT point;
+
+                    point.x = long((mouse.lLastX / 65535.0f) * width);
+                    point.y = long((mouse.lLastY / 65535.0f) * height);
+
+                    ScreenToClient(mWindow->GetHWND(), &point);
+
+                    evnt.mDeltaX = mLastMouseX - point.x;
+                    evnt.mDeltaY = mLastMouseY - point.y;
+                    mLastMouseX = point.x;
+                    mLastMouseY = point.y;
+
+                    EventManager::DispatchEvent(&evnt);
+                } else if (mouse.lLastX != 0 ||  mouse.lLastY != 0) { // MOUSE_MOVE_RELATIVE
+                    EventManager::DispatchEvent(&evnt);
+                }
+            }
+
+            delete[] data;
+            break;
+        }
+
+
+        
+    }
+
+    return DefWindowProc(hwnd, msg, w, l);
+}
+
+void EventManager::CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode) {
+    if (buttonFlags & (down | up)) {
+        bool pressed = buttonFlags & down;
+        uint32_t button = keyCode;
+
+        Input::OnKey(button, pressed);
+
+        if (pressed) {
+            ButtonPressedEvent evnt(button);
+
+            EventManager::DispatchEvent(&evnt);
+        } else {
+            ButtonReleasedEvent evnt(button);
+
+            EventManager::DispatchEvent(&evnt);
+        }
+    }
+}
+
 }

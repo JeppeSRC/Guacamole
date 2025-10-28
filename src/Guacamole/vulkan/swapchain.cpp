@@ -27,6 +27,14 @@ SOFTWARE.
 #include "context.h"
 #include "device.h"
 
+#if defined(GM_WINDOWS)
+#include <Guacamole/platform/windows/window.h>
+#endif
+
+#if defined(GM_LINUX)
+#include <Guacamole/platform/linux/window.h>
+#endif
+
 #include <Guacamole/asset/assetmanager.h>
 #include <Guacamole/util/timer.h>
 #include <Guacamole/vulkan/buffer/stagingbuffer.h>
@@ -46,24 +54,38 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
     mDevice = spec.mDevice;
     PhysicalDevice* physical = mDevice->GetParent();
 
-#if defined(GM_LINUX)
-    mSurfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-    mSurfaceInfo.pNext = nullptr;
-    mSurfaceInfo.flags = 0;
-    mSurfaceInfo.connection = window->GetXCBConnection();
-    mSurfaceInfo.window = window->GetXCBWindow();
+    switch (window->GetType()) {
+#if defined(GM_WINDOW_XCB)
+        case Window::Type::XCB:
+            mXCBSurfaceInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+            mXCBSurfaceInfo.pNext = nullptr;
+            mXCBSurfaceInfo.flags = 0;
+            mXCBSurfaceInfo.connection = ((WindowXCB*)window)->GetXCBConnection();
+            mXCBSurfaceInfo.window = ((WindowXCB*)window)->GetXCBWindow();
 
-    VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
-
-#elif defined(GM_WINDOWS)
-    mSurfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    mSurfaceInfo.pNext = nullptr;
-    mSurfaceInfo.flags = 0;
-    mSurfaceInfo.hinstance = 0;
-    mSurfaceInfo.hwnd = window->GetHWND();
-
-    VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
+            VK(vkCreateXcbSurfaceKHR(Context::GetInstance(), &mXCBSurfaceInfo, nullptr, &mSurfaceHandle));
+            break;
 #endif
+#if defined(GM_WINDOW_WAYLAND)
+        case Window::Type::Wayland:
+            break;
+#endif
+#if defined(GM_WINDOWS)
+        case Window::Type::Windows:
+            mSurfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            mSurfaceInfo.pNext = nullptr;
+            mSurfaceInfo.flags = 0;
+            mSurfaceInfo.hinstance = 0;
+            mSurfaceInfo.hwnd = window->GetHWND();
+
+            VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
+            break;
+#endif
+        default:
+            GM_ASSERT(false);
+            break;
+        
+    }
 
     VkSurfaceCapabilitiesKHR surfaceCaps = physical->GetSurfaceCapabilities(mSurfaceHandle);
 

@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2022 Jesper
+Copyright (c) 2025 Jesper
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <Guacamole.h>
 
-#include "event.h"
+#include <Guacamole/core/video/window.h>
+
+#include <Windows.h>
 
 namespace Guacamole {
 
-std::vector<std::pair<EventType, std::function<bool(Event*)>>> EventManager::mCallbacks;
+class WindowWindows : public Window {
+public:
+    WindowWindows(const WindowSpec& spec);
+    ~WindowWindows();
 
-int32_t EventManager::mLastMouseX = 0;
-int32_t EventManager::mLastMouseY = 0;
+    void CaptureInput() override;
+    void ReleaseInput() override;
 
-void EventManager::AddListener(EventType type, bool(*callback)(Event*)) {
-    mCallbacks.emplace_back(type, callback);
-}
+    void ProcessEvents() override;
 
-void EventManager::DispatchEvent(Event* e) {
-    for (auto [type, callback] : mCallbacks) {
-        if (type == e->GetType()) {
-             if (callback(e)) break;
-        }
-    }
+private:
+    HWND mHWND;
+
+    static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
+    static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
+
+public:
+    HWND GetHWND() const { return mHWND; }
 }
 }

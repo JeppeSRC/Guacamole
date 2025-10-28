@@ -1,3 +1,16 @@
+newoption { 
+    trigger = "window-system",
+    value = "value",
+    description = "Selects the window system on linux",
+    allowed = {
+        {"all", "Compiles with support for both XCB and Wayland"},
+        {"wayland", "Wayland"},
+        {"xcb", "XCB"},
+    },
+
+    default = "all"
+}
+
 workspace "Guacamole"
     configurations {"Debug", "Release"}
     architecture "x86_64"
@@ -60,6 +73,7 @@ project "spdlog"
 group ""
 
 project "Guacamole"
+-- All platforms
     kind "ConsoleApp"
     language "C++"
     location "build/"
@@ -79,6 +93,20 @@ project "Guacamole"
         "src/**.h"
     }
 
+    includedirs {
+        "src/",
+        "%{IncludeDir.Vulkan}",
+        "%{IncludeDir.entt}",
+        "%{IncludeDir.spdlog}",
+        "%{IncludeDir.stb}"
+    }
+
+    libdirs {
+        "%{LibDir.Vulkan}"
+    }
+ 
+    -- Linux 
+
     filter "system:linux" 
 
         buildoptions {
@@ -89,30 +117,46 @@ project "Guacamole"
             "-mfma"
         }
         
-        linkoptions {
-        }
-
         defines {
             "GM_LINUX",
-            "VK_USE_PLATFORM_XCB_KHR",
         }
 
         links {
             "vulkan",
             "dl",
             "pthread",
-            "xcb",
-            "xcb-randr",
-            "xkbcommon",
-            "xkbcommon-x11",
-            "xcb-xfixes"
+            "spdlog",
+            "spirv-cross-core",
+            "spirv-cross-glsl",
+            "shaderc_shared"
         }
-
+        
         removefiles {
             "src/Guacamole/platform/windows/**.cpp",
             "src/Guacamole/platform/android/**.cpp"
         }
 
+    filter {"system:linux", "options:window-system=all or options:window-system=xcb"}
+        defines {
+            "VK_USE_PLATFORM_XCB_KHR",
+            "GM_WINDOW_XCB"
+        }
+
+        links {
+            "xcb",
+            "xcb-randr",
+            "xkbcommon",
+            "xkbcommon-x11",
+            "xcb-xfixes",
+        }
+
+    filter {"system:linux", "options:window-system=all or options:window-system=wayland"}
+        defines {
+            "VK_USE_PLATFORM_WAYLAND_KHR",
+            "GM_WINDOW_WAYLAND"
+        }
+
+    -- Windows
     filter "system:windows"
         
         defines {
@@ -134,34 +178,22 @@ project "Guacamole"
             "src/Guacamole/platform/android/**.cpp"
         }
 
-        filter {"system:windows", "Release"}
-            buildoptions {
-                "/Ob2",
-                "/Ot",
-                "/Oy",
-                "/arch:AVX2"
-            }      
-        
-        filter {"system:windows", "Debug"}
-            buildoptions {
-                "/MD"
-            }        
+    filter {"system:windows", "Release"}
+        buildoptions {
+            "/Ob2",
+            "/Ot",
+            "/Oy",
+            "/arch:AVX2"
+        }      
+    
+    filter {"system:windows", "Debug"}
+        buildoptions {
+            "/MD"
+        }        
 
     filter {}
 
-    
 
-    includedirs {
-        "src/",
-        "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.entt}",
-        "%{IncludeDir.spdlog}",
-        "%{IncludeDir.stb}"
-    }
-
-    libdirs {
-        "%{LibDir.Vulkan}"
-    }
-    
+   
 
     

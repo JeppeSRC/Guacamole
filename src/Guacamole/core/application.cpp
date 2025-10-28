@@ -57,7 +57,7 @@ void Application::Run() {
         StagingBuffer* commonStaging = StagingManager::GetCommonStagingBuffer();
         commonStaging->Begin();
 
-        EventManager::ProcessEvents(mWindow);
+        mWindow->ProcessEvents();
 
         bool shouldRender = mSwapchain->Begin();
 
@@ -78,6 +78,7 @@ void Application::Run() {
     OnShutdown();
 
     Input::Shutdown();
+    EventManager::Shutdown();
     StagingManager::Shutdown();
     MeshFactory::Shutdown();
     AssetManager::Shutdown();
@@ -91,7 +92,7 @@ Application::Application(ApplicationSpec& spec) : mSpec(spec), mWindow(nullptr) 
 }
 
 void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec) {
-    mWindow = new Window(windowSpec);
+    mWindow = Window::CreateWindow(windowSpec);
 
     ContextSpec cs;
     cs.applicationName = appSpec.appName;
@@ -114,7 +115,8 @@ void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec)
     StagingManager::AllocateCommonStagingBuffer(ss.mDevice, std::this_thread::get_id(), 50000000, true);
     MeshFactory::Init(ss.mDevice);
     Input::Init();
-
+    
+    EventManager::Init(mWindow);
     EventManager::AddListener(EventType::KeyPressed, this, &Application::OnEvent);
     EventManager::AddListener(EventType::KeyReleased, this, &Application::OnEvent);
     EventManager::AddListener(EventType::ButtonPressed, this, &Application::OnEvent);
@@ -129,7 +131,7 @@ bool Application::OnEvent(Event* e) {
             KeyPressedEvent* evnt = (KeyPressedEvent*)e;
 
             // Hardcoded for now
-            if (Input::GetScanCode(GM_KEY_Escape) == evnt->mKey) Input::ReleaseInput();
+            if (Input::GetScanCode(GM_KEY_Escape) == evnt->mKey) mWindow->ReleaseInput();
 
             return OnKeyPressed(evnt);
         }

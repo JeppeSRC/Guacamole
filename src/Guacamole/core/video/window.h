@@ -26,17 +26,6 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-
-#if defined(GM_LINUX)
-
-#include <xcb/randr.h>
-
-#elif defined(GM_WINDOWS)
-
-#include <Windows.h>
-
-#endif
-
 namespace Guacamole {
 
 struct WindowSpec {
@@ -50,42 +39,38 @@ struct WindowSpec {
 };
 
 class Window {
-public:
-    Window(WindowSpec spec);
-    ~Window();
+public:    
+    enum Type{
+        XCB,
+        Wayland,
+        Windows
+    };
 
     inline const WindowSpec& GetSpec() const { return mSpec; }
     inline bool ShouldClose() const { return mShouldClose; }
     inline uint32_t GetWidth() const { return mSpec.Width; }
     inline uint32_t GetHeight() const { return mSpec.Height; }
+    inline Type GetType() const { return mWindowType; }
+    
+    virtual void CaptureInput() = 0;
+    virtual void ReleaseInput() = 0;
 
-private:
+    virtual void ProcessEvents() = 0;
+    virtual ~Window() {}
+
+    static Window* CreateWindow(const WindowSpec& spec);
+    static inline Window* GetWindow() { return sWindow; }
+protected:
+    Window(WindowSpec spec, Type type);
+
     WindowSpec mSpec;
+    Type mWindowType;
     bool mShouldClose;
+    bool mInputCapture;
 
-
-// Platform specific region
-#if defined(GM_LINUX)
 private:
-    xcb_connection_t* mConnection;
-    xcb_window_t mWindow;
-    xcb_visualid_t mVisualID;
-    xcb_atom_t mWindowCloseAtom;
+    static Window* sWindow;
 
-public:
-    xcb_connection_t* GetXCBConnection() const { return mConnection; }
-    xcb_window_t GetXCBWindow() const { return mWindow; }
-    xcb_visualid_t GetVisualID() const { return mVisualID; }
-
-#elif defined(GM_WINDOWS)
-private:
-    HWND mHWND;
-
-public:
-    HWND GetHWND() const { return mHWND; }
-#endif
-
-friend class EventManager;
 };
 
 

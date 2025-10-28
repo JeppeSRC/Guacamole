@@ -29,7 +29,6 @@ SOFTWARE.
 #include "util.h"
 
 #include <Guacamole/core/video/window.h>
-#include <Guacamole/vulkan/swapchain.h>
 #include <Guacamole/vulkan/device.h>
 
 #define SWAPCHAIN_AUX_SEMAPHORES 8
@@ -76,9 +75,13 @@ private:
     VkSwapchainCreateInfoKHR msInfo;
     VkSwapchainKHR mSwapchainHandle;
 
-#if defined(GM_LINUX)
-    VkXcbSurfaceCreateInfoKHR mSurfaceInfo;
-#elif defined(GM_WINDOWS)
+#if defined(GM_WINDOW_XCB)
+    VkXcbSurfaceCreateInfoKHR mXCBSurfaceInfo;
+#endif
+#if defined(GM_WINDOW_WAYLAND)
+    VkWaylandSurfaceCreateInfoKHR mWaylandSurfaceInfo;
+#endif
+#if defined(GM_WINDOWS)
     VkWin32SurfaceCreateInfoKHR mSurfaceInfo;
 #endif
 

@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2022 Jesper
+Copyright (c) 2025 Jesper
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,50 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <Guacamole.h>
 
-#include "event.h"
+#include <Guacamole/core/video/window.h>
+
+#if defined(GM_WINDOW_XCB)
+
+#include <xcb/randr.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-x11.h>
 
 namespace Guacamole {
 
-std::vector<std::pair<EventType, std::function<bool(Event*)>>> EventManager::mCallbacks;
+class WindowXCB : public Window {
+public:
+    WindowXCB(const WindowSpec& spec);
+    ~WindowXCB();
 
-int32_t EventManager::mLastMouseX = 0;
-int32_t EventManager::mLastMouseY = 0;
+    void CaptureInput() override;
+    void ReleaseInput() override;
 
-void EventManager::AddListener(EventType type, bool(*callback)(Event*)) {
-    mCallbacks.emplace_back(type, callback);
-}
+    void ProcessEvents() override;
 
-void EventManager::DispatchEvent(Event* e) {
-    for (auto [type, callback] : mCallbacks) {
-        if (type == e->GetType()) {
-             if (callback(e)) break;
-        }
-    }
+private:
+    xcb_connection_t* mConnection;
+    xcb_window_t mWindow;
+    xcb_visualid_t mVisualID;
+    xcb_atom_t mWindowCloseAtom;
+
+    xkb_context* mXkbContext;
+    int32_t mKeyboardID;
+    xkb_keymap* mKeymap;
+    xkb_state* mState;
+
+    void InitXKB();
+
+public:
+    xcb_connection_t* GetXCBConnection() const { return mConnection; }
+    xcb_window_t GetXCBWindow() const { return mWindow; }
+    xcb_visualid_t GetVisualID() const { return mVisualID; }
+    xkb_state* GetXKBState() const { return mState; }
+
+};
+
 }
-}
+#endif

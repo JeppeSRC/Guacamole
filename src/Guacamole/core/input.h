@@ -47,9 +47,6 @@ public:
     static void Init();
     static void Shutdown();
 
-    static void CaptureInput();
-    static void ReleaseInput();
-
     static bool IsKeyPressed(uint32_t scanCode);
     static bool IsVKeyPressed(uint32_t keyCode);
     static uint32_t GetScanCode(uint32_t keyCode);
@@ -64,9 +61,8 @@ private:
     static std::unordered_map<uint32_t, uint32_t> mScanCodes;
     static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
 
-    static bool mInputCapture;
-
-    friend class EventManager;
+    friend class WindowXCB;
+    friend class WindowWindows;
 };
 
 }

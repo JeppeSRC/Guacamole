@@ -26,12 +26,16 @@ SOFTWARE.
 
 #include <vulkan/vulkan.h>
 
-#if defined(GM_LINUX) 
-
+#if defined(GM_WINDOW_XCB) 
 #include <vulkan/vulkan_xcb.h>
-
-#elif defined(GM_WINDOWS)
-
-#include <vulkan/vulkan_win32.h>
-
 #endif
+
+#if defined(GM_WINDOW_WAYLAND) 
+#include <vulkan/vulkan_wayland.h>
+#endif
+
+
+#if defined(GM_WINDOWS)
+#include <vulkan/vulkan_win32.h>
+#endif
+

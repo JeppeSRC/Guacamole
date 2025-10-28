@@ -28,9 +28,7 @@ SOFTWARE.
 
 #if defined(GM_LINUX)
 
-struct xkb_context;
-struct xkb_keymap;
-struct xkb_state;
+
 
 #endif
 
@@ -118,6 +116,8 @@ public:
     EventType mType;
 };
 
+class WindowXCB;
+class WindowWayland;
 class Window;
 class EventManager {
 public:
@@ -141,24 +141,8 @@ private:
     static int32_t mLastMouseX;
     static int32_t mLastMouseY;
     
-    static Window* mWindow;
-#if defined(GM_LINUX)
-public:
-    static xkb_state* GetState() { return mState; }
-
-private:
-    static xkb_context* mXkbContext;
-    static int32_t mKeyboardID;
-    static xkb_keymap* mKeymap;
-    static xkb_state* mState;
-
-#elif defined(GM_WINDOWS)
-public:
-    static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
-    static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
-#endif
-
-    friend class Input;
+    friend class WindowXCB;
+    friend class WindowWindows;
 };
 
 

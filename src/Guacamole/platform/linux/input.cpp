@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#include <Guacamole/core/video/window.h>
+#include <Guacamole/platform/linux/window.h>
 #include <Guacamole/core/input.h>
 #include <Guacamole/core/video/event.h>
 #include <xkbcommon/xkbcommon-x11.h>
@@ -32,45 +32,27 @@ SOFTWARE.
 
 namespace Guacamole {
 
-void Input::CaptureInput() {
-    if (mInputCapture) return;
-
-    mInputCapture = true;
-    xcb_connection_t* conn = EventManager::mWindow->GetXCBConnection();
-
-    xcb_void_cookie_t cookie = xcb_xfixes_hide_cursor_checked(conn, EventManager::mWindow->GetXCBWindow());
-    xcb_generic_error_t* err = xcb_request_check(conn, cookie);
-
-    if (err) {
-        GM_LOG_CRITICAL("[Input] Error (0x{:04x}) calling xcb_xfixes_hide_cursor_checked()", err->error_code);
-        free(err);
-    }
-
-    GM_LOG_DEBUG("[Input] Mouse captured!");
-}
-
-void Input::ReleaseInput() {
-    if (!mInputCapture) return;
-
-    mInputCapture = false;
-
-    xcb_connection_t* conn = EventManager::mWindow->GetXCBConnection();
-
-    xcb_void_cookie_t cookie = xcb_xfixes_show_cursor_checked(conn, EventManager::mWindow->GetXCBWindow());
-    xcb_generic_error_t* err = xcb_request_check(conn, cookie);
-
-    if (err) {
-        GM_LOG_CRITICAL("[Input] Error (0x{:04x}) calling xcb_xfixes_show_cursor_checked()", err->error_code);
-        free(err);
-    }
-
-    GM_LOG_DEBUG("[Input] Mouse released!");
-}
-
 void Input::AddKey(uint32_t scanCode) {
     Key key;
 
-    key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode : xkb_state_key_get_one_sym(EventManager::GetState(), scanCode);
+    Window* window = Window::GetWindow();
+
+    switch (window->GetType())
+    {
+#if defined(GM_WINDOW_XCB)
+    case Window::Type::XCB:
+        key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode : xkb_state_key_get_one_sym(((WindowXCB*)window)->GetXKBState(), scanCode);    
+        break;
+#endif
+#if defined(GM_WINDOW_WAYLAND)
+        case Window::Type::Wayland:
+            GM_ASSERT(false);
+            break;
+#endif
+    default:
+        GM_ASSERT(false);
+    }
+
     key.mScanCode = scanCode;
     key.mPressed = false;
     GetKeyString(key);
