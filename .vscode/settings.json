@@ -1,6 +1,6 @@
 {
     "cmake.configureOnOpen": false,
-    "C_Cpp.default.defines": ["GM_LINUX"],
+    "C_Cpp.default.defines": ["GM_LINUX", "GM_WINDOW_XCB", "GM_WINDOW_WAYLAND"],
     "C_Cpp.default.includePath": [
         "${default}",
         "${VULKAN_SDK}/include",
@@ -8,5 +8,11 @@
         "${workspaceFolder}/libs/spdlog/include",
         "${workspaceFolder}/src"
     ],
-    "C_Cpp.autocompleteAddParentheses": true
+    "C_Cpp.autocompleteAddParentheses": true,
+    "files.associations": {
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "span": "cpp"
+    }
 }
