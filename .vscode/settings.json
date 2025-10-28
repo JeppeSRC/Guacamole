@@ -1,3 +1,12 @@
 {
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "C_Cpp.default.defines": ["GM_LINUX"],
+    "C_Cpp.default.includePath": [
+        "${default}",
+        "${VULKAN_SDK}/include",
+        "${workspaceFolder}/libs/entt/single_include",
+        "${workspaceFolder}/libs/spdlog/include",
+        "${workspaceFolder}/src"
+    ],
+    "C_Cpp.autocompleteAddParentheses": true
 }
