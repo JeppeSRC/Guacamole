@@ -116,8 +116,8 @@ void Texture::Transition(VkImageLayout oldLayout, VkImageLayout newLayout, Comma
     bar.subresourceRange.baseArrayLayer = 0;
     bar.subresourceRange.layerCount = 1;
 
-    VkPipelineStageFlags src;
-    VkPipelineStageFlags dst;
+    VkPipelineStageFlags src = VK_PIPELINE_STAGE_NONE;
+    VkPipelineStageFlags dst = VK_PIPELINE_STAGE_NONE;
 
     switch (oldLayout) {
         case VK_IMAGE_LAYOUT_UNDEFINED:
