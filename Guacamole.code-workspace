@@ -5,19 +5,19 @@
         }
     ],
     "settings": {
-        "makefile.extensionOutputFolder": "./.vscode",
         "C_Cpp.default.includePath": [
             "${default}",
             "${VULKAN_SDK}/include",
-            "libs/glm/",
             "libs/entt/single_include",
-            "libs/glfw/include",
             "libs/spdlog/include",
             "libs/stb",
+            "libs/wayland-protocols",
             "src"
         ],
         "C_Cpp.default.defines": [
             "GM_LINUX",
+            "GM_WINDOW_WAYLAND",
+            "GM_WINDOW_XCB"
         ],
         "C_Cpp.default.cppStandard": "c++17",
         "C_Cpp.default.intelliSenseMode": "linux-gcc-x64"
