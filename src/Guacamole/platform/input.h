@@ -32,7 +32,6 @@ namespace Guacamole {
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
-
 enum KeyCode {
     GM_BUTTON_Left = 0x01 | GM_BUTTON_PREFIX,
     GM_BUTTON_Middle = 0x02 | GM_BUTTON_PREFIX,
@@ -44,23 +43,34 @@ enum KeyCode {
 
     GM_KEY_KP_Enter = XKB_KEY_KP_Enter,
 
-    GM_KEY_KP_Delete = XKB_KEY_KP_Separator,
+    GM_KEY_KP_Delete = XKB_KEY_KP_Delete,
 
     GM_KEY_KP_Multiply = XKB_KEY_KP_Multiply,
     GM_KEY_KP_Add = XKB_KEY_KP_Add,
     GM_KEY_KP_Subtract = XKB_KEY_KP_Subtract,
     GM_KEY_KP_Divide = XKB_KEY_KP_Divide,
 
-    GM_KEY_KP_0 = XKB_KEY_KP_0,
-    GM_KEY_KP_1 = XKB_KEY_KP_1,
-    GM_KEY_KP_2 = XKB_KEY_KP_2,
-    GM_KEY_KP_3 = XKB_KEY_KP_3,
-    GM_KEY_KP_4 = XKB_KEY_KP_4,
-    GM_KEY_KP_5 = XKB_KEY_KP_5,
-    GM_KEY_KP_6 = XKB_KEY_KP_6,
-    GM_KEY_KP_7 = XKB_KEY_KP_7,
-    GM_KEY_KP_8 = XKB_KEY_KP_8,
-    GM_KEY_KP_9 = XKB_KEY_KP_9,
+    GM_KEY_KP_Insert = XKB_KEY_KP_Insert,
+    GM_KEY_KP_End = XKB_KEY_KP_End,
+    GM_KEY_KP_Down = XKB_KEY_KP_Down,
+    GM_KEY_KP_Page_Down = XKB_KEY_KP_Page_Down,
+    GM_KEY_KP_Left = XKB_KEY_KP_Left,
+    GM_KEY_KP_Begin = XKB_KEY_KP_Begin,
+    GM_KEY_KP_Right = XKB_KEY_KP_Right,
+    GM_KEY_KP_Home = XKB_KEY_KP_Home,
+    GM_KEY_KP_Up = XKB_KEY_KP_Up,
+    GM_KEY_KP_Page_Up = XKB_KEY_KP_Page_Up,
+
+    GM_KEY_KP_0 = GM_KEY_KP_Insert,
+    GM_KEY_KP_1 = GM_KEY_KP_End,
+    GM_KEY_KP_2 = GM_KEY_KP_Down,
+    GM_KEY_KP_3 = GM_KEY_KP_Page_Down,
+    GM_KEY_KP_4 = GM_KEY_KP_Left,
+    GM_KEY_KP_5 = GM_KEY_KP_Begin,
+    GM_KEY_KP_6 = GM_KEY_KP_Right,
+    GM_KEY_KP_7 = GM_KEY_KP_Home,
+    GM_KEY_KP_8 = GM_KEY_KP_Up,
+    GM_KEY_KP_9 = GM_KEY_KP_Page_Up,
 
     GM_KEY_F1 = XKB_KEY_F1,
     GM_KEY_F2 = XKB_KEY_F2,
@@ -264,12 +274,12 @@ enum KeyCode {
     GM_KEY_Delete = VK_DELETE | GM_VK_EXTENDED,
 
     GM_KEY_Space = VK_SPACE,
-k,
+
     GM_KEY_Plus = VK_OEM_PLUS,
     GM_KEY_Comma = VK_OEM_COMMA,
     GM_KEY_Minus = VK_OEM_MINUS,
     GM_KEY_Period = VK_OEM_PERIOD,
-h,
+
     GM_KEY_0 = 0x30,
     GM_KEY_1 = 0x31,
     GM_KEY_2 = 0x32,

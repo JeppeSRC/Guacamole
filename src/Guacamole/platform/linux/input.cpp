@@ -37,49 +37,47 @@ void Input::AddKey(uint32_t scanCode) {
 
     Window* window = Window::GetWindow();
 
+    xkb_state* state = nullptr;
+
     switch (window->GetType())
     {
 #if defined(GM_WINDOW_XCB)
-    case Window::Type::XCB:
-        key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode : xkb_state_key_get_one_sym(((WindowXCB*)window)->GetXKBState(), scanCode);    
-        break;
+        case Window::Type::XCB:
+            state = ((WindowXCB*)window)->GetXKBState();
+            break;
 #endif
 #if defined(GM_WINDOW_WAYLAND)
         case Window::Type::Wayland:
-            GM_ASSERT(false);
+            state = ((WindowWayland*)window)->GetXKBState();
             break;
 #endif
     default:
         GM_ASSERT(false);
-    }
-
+        }
+        
+    key.mKeyCode = (scanCode & GM_BUTTON_PREFIX) == GM_BUTTON_PREFIX ? scanCode : xkb_state_key_get_one_sym(state, scanCode+8);
     key.mScanCode = scanCode;
     key.mPressed = false;
-    GetKeyString(key);
+
+    if (key.mKeyCode == 0) return;
+
+    memset(key.mString, 0, Input::MAX_KEY_STRING_LENGTH);
+
+    auto it = mKeyCodeStrings.find(key.mKeyCode);
+
+    if (it == mKeyCodeStrings.end()) {
+        if (xkb_keysym_to_utf8(xkb_keysym_to_upper(key.mKeyCode), key.mString, Input::MAX_KEY_STRING_LENGTH) <= 0) {
+            GM_LOG_WARNING("Key: SC=0x{:04x} KC=0x{:04x} has no string mapping!", key.mScanCode, key.mKeyCode);
+            memcpy(key.mString, "Unknown", 7);
+        }
+    } else {
+        memcpy(key.mString, it->second, strlen(it->second));
+    }
 
     mKeys[scanCode] = key;
     mScanCodes[key.mKeyCode] = scanCode;
 
     GM_LOG_DEBUG("Added Key: SC=0x{0:04x} KC=0x{1:04x} Desc='{2}'", scanCode, key.mKeyCode, key.mString);
-}
-
-void Input::GetKeyString(Key& key) {
-    memset(key.mString, 0, MAX_KEY_STRING_LENGTH);
-
-    #define STRING(str) memcpy(key.mString, str, strlen(str))
-    auto it = mKeyCodeStrings.find(key.mKeyCode);
-
-    if (it == mKeyCodeStrings.end()) {
-        if (xkb_keysym_to_utf8(xkb_keysym_to_upper(key.mKeyCode), key.mString, MAX_KEY_STRING_LENGTH) <= 0) {
-            GM_LOG_WARNING("Key: SC=0x{:04x} KC=0x{:04x} has no string mapping!", key.mScanCode, key.mKeyCode);
-            STRING("Unknown");
-            return;
-        }
-
-        return;
-    }
-
-    STRING(it->second);
 }
 
 }

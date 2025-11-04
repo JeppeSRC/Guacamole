@@ -30,9 +30,6 @@ namespace Guacamole {
 
 std::vector<std::pair<EventType, std::function<bool(Event*)>>> EventManager::mCallbacks;
 
-int32_t EventManager::mLastMouseX = 0;
-int32_t EventManager::mLastMouseY = 0;
-
 void EventManager::AddListener(EventType type, bool(*callback)(Event*)) {
     mCallbacks.emplace_back(type, callback);
 }

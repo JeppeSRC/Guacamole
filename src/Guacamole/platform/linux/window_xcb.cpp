@@ -153,11 +153,11 @@ void WindowXCB::ProcessEvents() {
                 if (!mInputCapture) break;
                 xcb_key_press_event_t* pressed = (xcb_key_press_event_t*)e;
                 
-                KeyPressedEvent evnt(pressed->detail);
+                KeyPressedEvent evnt(pressed->detail-8);
                 
-                Input::OnKey(pressed->detail, true);
+                Input::OnKey(evnt.mKey, true);
                 EventManager::DispatchEvent(&evnt);
-
+                
                 break;
             }
 
@@ -165,9 +165,9 @@ void WindowXCB::ProcessEvents() {
                 if (!mInputCapture) break;
                 xcb_key_release_event_t* released = (xcb_key_release_event_t*)e;
                 
-                KeyReleasedEvent evnt(released->detail);
+                KeyReleasedEvent evnt(released->detail-8);
                 
-                Input::OnKey(released->detail, false);
+                Input::OnKey(evnt.mKey, false);
                 EventManager::DispatchEvent(&evnt);
 
                 break;
@@ -216,7 +216,7 @@ void WindowXCB::ProcessEvents() {
 
                 int32_t dx = x - xMiddle;
                 int32_t dy = y - yMiddle;
-
+                
                 MouseMovedEvent evnt(dx, dy);
 
                 EventManager::DispatchEvent(&evnt);

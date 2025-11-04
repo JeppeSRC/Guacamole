@@ -55,13 +55,13 @@ public:
 private:
     static void OnKey(uint32_t scanCode, bool pressed);
     static void AddKey(uint32_t scanCode);
-    static void GetKeyString(Key& key);
 
     static std::unordered_map<uint32_t, Key> mKeys;
     static std::unordered_map<uint32_t, uint32_t> mScanCodes;
     static std::unordered_map<uint32_t, const char*> mKeyCodeStrings;
 
     friend class WindowXCB;
+    friend class WindowWayland;
     friend class WindowWindows;
 };
 

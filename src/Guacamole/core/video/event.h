@@ -26,12 +26,6 @@ SOFTWARE.
 
 #include <Guacamole.h>
 
-#if defined(GM_LINUX)
-
-
-
-#endif
-
 namespace Guacamole {
 
 enum class EventType {
@@ -138,10 +132,8 @@ private:
 private:
     static std::vector<std::pair<EventType, std::function<bool(Event*)>>> mCallbacks;
 
-    static int32_t mLastMouseX;
-    static int32_t mLastMouseY;
-    
     friend class WindowXCB;
+    friend class WindowWayland;
     friend class WindowWindows;
 };
 

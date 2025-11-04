@@ -45,7 +45,7 @@ void Input::AddKey(uint32_t scanCode) {
     GM_LOG_DEBUG("Added Key: SC=0x{0:04x} VK=0x{1:04x} Char='{2}'", scanCode, key.mKeyCode, key.mString);
 }
 
-void Input::GetKeyString(Key& key) {
+void GetKeyString(Key* key) {
     memset(key.mString, 0, MAX_KEY_STRING_LENGTH);
 
     #define STRING(str) memcpy(key.mString, str, strlen(str))

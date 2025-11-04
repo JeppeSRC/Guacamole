@@ -97,9 +97,13 @@ void Context::Init(const ContextSpec& spec) {
 
     std::vector<const char*> extensions {"VK_KHR_surface"};
 
-#if defined(GM_LINUX)
+#if defined(GM_WINDOW_XCB)
     extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#elif defined(GM_WINDOWS)
+#endif
+#if defined(GM_WINDOW_WAYLAND)
+    extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+#endif
+#if defined(GM_WINDOWS)
     extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
 

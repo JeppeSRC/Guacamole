@@ -6,6 +6,7 @@
         "${VULKAN_SDK}/include",
         "${workspaceFolder}/libs/entt/single_include",
         "${workspaceFolder}/libs/spdlog/include",
+        "${workspaceFolder}/libs/wayland-protocols",
         "${workspaceFolder}/src"
     ],
     "C_Cpp.autocompleteAddParentheses": true,

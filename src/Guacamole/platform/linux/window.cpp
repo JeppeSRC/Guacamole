@@ -29,7 +29,11 @@ SOFTWARE.
 namespace Guacamole {
 
 Window* Window::CreateWindow(const WindowSpec& spec) {
+    #if 1
+    sWindow = new WindowWayland(spec);
+    #else
     sWindow = new WindowXCB(spec);
+    #endif
     return sWindow;
 }
 

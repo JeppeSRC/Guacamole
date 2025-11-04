@@ -68,6 +68,13 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
 #endif
 #if defined(GM_WINDOW_WAYLAND)
         case Window::Type::Wayland:
+            mWaylandSurfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            mWaylandSurfaceInfo.pNext = nullptr;
+            mWaylandSurfaceInfo.flags = 0;
+            mWaylandSurfaceInfo.display = ((WindowWayland*)window)->GetDisplay();
+            mWaylandSurfaceInfo.surface = ((WindowWayland*)window)->GetSurface();
+
+            VK(vkCreateWaylandSurfaceKHR(Context::GetInstance(), &mWaylandSurfaceInfo, nullptr, &mSurfaceHandle));
             break;
 #endif
 #if defined(GM_WINDOWS)

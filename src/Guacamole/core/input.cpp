@@ -99,6 +99,7 @@ void Input::Init() {
     ADD(GM_KEY_F24, "F24");
     ADD(GM_KEY_Num_Lock, "NUM LOCK");
     ADD(GM_KEY_Scroll_Lock, "SCROLL LOCK");
+    ADD(GM_KEY_Pause, "PAUSE");
     ADD(GM_KEY_Shift_L, "L SHIFT");
     ADD(GM_KEY_Shift_R, "R SHIFT");
     ADD(GM_KEY_Control_L, "L CTRL");
@@ -136,14 +137,12 @@ void Input::Init() {
 
 #elif defined(GM_LINUX)
 
-     // Scancodes 0x01 to 0x58 are offset +8 for some reason
-    ADD_RANGE(0x09, 0x5c);
-    ADD_RANGE(0x5e, 0x60);
+    ADD_RANGE(0x01, 0x58);
 
-    // Escaped scancodes starting with 0xE000 are mapped from 0x68
-    ADD_RANGE(0x68, 0x6A);
-    ADD_RANGE(0x6E, 0x77);
-    ADD_RANGE(0x85, 0x87);
+    // Escaped scancodes starting with 0xE000 are mapped from 0x60
+    ADD_RANGE(0x60, 0x6F);
+    AddKey(0x77);
+    ADD_RANGE(0x7D, 0x7F);
 
     ADD_RANGE(GM_BUTTON_PREFIX | 0x01, GM_BUTTON_PREFIX | 0x05);
     ADD_RANGE(GM_BUTTON_PREFIX | 0x08, GM_BUTTON_PREFIX | 0x09);

@@ -107,7 +107,8 @@ bool PhysicalDevice::GetQueuePresentationSupport(const Window* window, uint32_t 
             return vkGetPhysicalDeviceXcbPresentationSupportKHR(mDeviceHandle, queueIndex, ((WindowXCB*)window)->GetXCBConnection(), ((WindowXCB*)window)->GetVisualID());    
 #endif
 #if defined(GM_WINDOW_WAYLAND)
-
+        case Window::Type::Wayland:
+            return vkGetPhysicalDeviceWaylandPresentationSupportKHR(mDeviceHandle, queueIndex, ((WindowWayland*)window)->GetDisplay());
 #endif
         default:
             GM_ASSERT(false);

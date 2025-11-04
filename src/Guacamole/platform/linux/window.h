@@ -28,11 +28,12 @@ SOFTWARE.
 
 #include <Guacamole/core/video/window.h>
 
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-x11.h>
+
 #if defined(GM_WINDOW_XCB)
 
 #include <xcb/randr.h>
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-x11.h>
 
 namespace Guacamole {
 
@@ -68,4 +69,115 @@ public:
 };
 
 }
+#endif
+
+#if defined(GM_WINDOW_WAYLAND)
+
+struct wl_display;
+struct wl_registry;
+struct wl_surface;
+struct wl_compositor;
+struct xdg_wm_base;
+struct xdg_surface;
+struct xdg_toplevel;
+struct wl_seat;
+struct wl_keyboard;
+struct wl_pointer;
+struct wl_array;
+struct zwp_locked_pointer_v1;
+struct zwp_pointer_constraints_v1;
+struct zwp_relative_pointer_manager_v1;
+struct zwp_relative_pointer_v1;
+struct zxdg_decoration_manager_v1;
+struct zxdg_toplevel_decoration_v1;
+
+namespace Guacamole {
+
+class WindowWayland : public Window {
+public:
+    WindowWayland(const WindowSpec& spec);
+    ~WindowWayland();
+
+    void CaptureInput() override;
+    void ReleaseInput() override;
+
+    void ProcessEvents() override;
+
+    inline wl_display* GetDisplay() const { return mDisplay; }
+    inline wl_surface* GetSurface() const { return mSurface; }
+
+    inline xkb_state* GetXKBState() { return mState; }
+
+private:
+    wl_display* mDisplay;
+    wl_registry* mRegistry;
+    wl_compositor* mCompositor;
+    wl_surface* mSurface;
+    xdg_wm_base* mXDGBase;
+    xdg_surface* mXDGSurface;
+    xdg_toplevel* mTopLevel;
+    wl_seat* mSeat;
+    wl_keyboard* mKeyboard;
+    wl_pointer* mPointer;
+    uint32_t mPointerLastSerial;
+
+    zwp_locked_pointer_v1* mLockedPointer;
+    zwp_pointer_constraints_v1* mPointerConstrains;
+    zwp_relative_pointer_manager_v1* mRelativePointerManager;
+    zwp_relative_pointer_v1* mRelativePointer;
+
+    zxdg_decoration_manager_v1* mDecorationManager;
+    zxdg_toplevel_decoration_v1* mDecorationTopLevel;
+
+    xkb_context* mContext;
+    xkb_state* mState;
+    xkb_keymap* mKeymap;
+
+    void InitXKB(const char* keymap);
+
+public: // Wayland callbacks
+    static void DisplayErrorEvent(void* data, wl_display* display, void* objectID, uint32_t code, const char* message);
+    static void DispalyDeleteIDEvent(void* data, wl_display* display, uint32_t id);
+
+    static void RegistryGlobalEvent(void* data, wl_registry* wl_registry, uint32_t name, const char* interface, uint32_t version);
+    static void RegistryGlobalRemoveEvent(void* data, wl_registry* wl_registry, uint32_t name);
+
+    static void XDGSurfaceConfigureEvent(void* data, struct xdg_surface* xdg_surface, uint32_t serial);
+
+    static void ToplevelConfigure(void *data, struct xdg_toplevel *xdg_toplevel, int32_t width, int32_t height, struct wl_array *states);
+	static void ToplevelClose(void *data, struct xdg_toplevel *xdg_toplevel);
+	static void ToplevelConfigureBounds(void *data, struct xdg_toplevel *xdg_toplevel, int32_t width, int32_t height);
+	static void ToplevelWMCapabilities(void *data, struct xdg_toplevel *xdg_toplevel, struct wl_array *capabilities);
+
+    static void SeatCapabilitiesEvent(void* data, wl_seat* seat, uint32_t capabilities);
+    static void SeatNameEvent(void* data, wl_seat* seat, const char* name);
+    
+    static void KeyboardEnterEvent(void* data, struct wl_keyboard* wl_keyboard, uint32_t serial, struct wl_surface* surface, wl_array* keys);
+    static void KeyboardLeaveEvent(void* data, struct wl_keyboard* wl_keyboard, uint32_t serial, struct wl_surface* surface);
+    static void KeyboardKeyEvent(void* data, struct wl_keyboard* wl_keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state);
+    static void KeyboardModifiersEvent(void* data, struct wl_keyboard* wl_keyboard, uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
+    static void KeyboardRepeatInfoEvent(void* data, struct wl_keyboard* wl_keyboard, int32_t rate, int32_t delay);
+    static void KeyboardKeymapEvent(void* data, struct wl_keyboard* wl_keyboard, uint32_t format, int32_t fd, uint32_t size);
+    
+    static void PointerEnterEvent(void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface, int32_t surface_x, int32_t surface_y);
+    static void PointerLeaveEvent(void* data, wl_pointer* pointer, uint32_t serial, wl_surface* surface);
+    static void PointerMotionEvent(void* data, wl_pointer* pointer, uint32_t time, int32_t surface_x, int32_t surface_y);
+    static void PointerButtonEvent(void* data, wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state);
+    static void PointerAxisEvent(void* data, wl_pointer* pointer, uint32_t time, uint32_t axis, int32_t value);
+    static void PointerFrameEvent(void* data, wl_pointer* pointer);
+    static void PointerAxisSourceEvent(void* data, wl_pointer* pointer, uint32_t axis_source);
+    static void PointerAxisStopEvent(void* data, wl_pointer* pointer, uint32_t time, uint32_t axis);
+    static void PointerAxisDiscreteEvent(void* data, wl_pointer* pointer, uint32_t axis, int32_t discrete);
+    static void PointerAxisValue120Event(void* data, wl_pointer* pointer, uint32_t axis, int32_t value120);
+    static void PointerAxisRelativeDirectionEvent(void* data, wl_pointer* pointer, uint32_t axis, uint32_t direction);
+
+    static void PointerLockedEvent(void* data, zwp_locked_pointer_v1* pointer);
+    static void PointerUnlockedEvent(void* data, zwp_locked_pointer_v1* pointer);
+    static void PointerRelativeMotionEvent(void* data, zwp_relative_pointer_v1* pointer, uint32_t utime_hi, uint32_t utime_lo, int32_t dx, int32_t dy, int32_t dx_unaccel, int32_t dy_unaccel);
+
+    static void DecorationTopLevelConfigure(void* data, zxdg_toplevel_decoration_v1* toplevel, uint32_t mode);
+};
+
+}
+
 #endif

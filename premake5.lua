@@ -47,28 +47,41 @@ include "deps.lua"
 group "deps"
 
 project "spdlog"
-        kind "StaticLib"
-        language "C++"
-        location "build/"
-        cppdialect "c++17"
+    kind "StaticLib"
+    language "C++"
+    location "build/"
+    cppdialect "c++17"
 
-        defines {
-            "SPDLOG_COMPILED_LIB"
+    defines {
+        "SPDLOG_COMPILED_LIB"
+    }
+
+    includedirs {
+        "libs/spdlog/include"
+    }
+
+    files {
+        "libs/spdlog/src/**.cpp"
+    }
+
+    filter {"system:windows", "Debug"}
+
+        buildoptions {
+            "/MD"
         }
 
-        includedirs {
-            "libs/spdlog/include"
-        }
+filter {"system:linux", "options:window-system=all or options:window-system=wayland"}
 
-        files {
-            "libs/spdlog/src/**.cpp"
-        }
+project "wayland-protocols"
+    kind "StaticLib"
+    language "C++"
+    location "build/"
+    cppdialect "c++17"
 
-        filter {"system:windows", "Debug"}
-
-            buildoptions {
-                "/MD"
-            }
+    files {
+        "libs/wayland-protocols/**.c"
+    }
+filter ""
 
 group ""
 
@@ -98,14 +111,16 @@ project "Guacamole"
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.spdlog}",
-        "%{IncludeDir.stb}"
+        "%{IncludeDir.stb}",
+        "libs/wayland-protocols/"
     }
 
     libdirs {
         "%{LibDir.Vulkan}"
     }
  
-    -- Linux 
+    -- Linux
+
 
     filter "system:linux" 
 
@@ -151,9 +166,16 @@ project "Guacamole"
         }
 
     filter {"system:linux", "options:window-system=all or options:window-system=wayland"}
+        dependson "wayland-protocols"
+
         defines {
             "VK_USE_PLATFORM_WAYLAND_KHR",
             "GM_WINDOW_WAYLAND"
+        }
+
+        links {
+            "wayland-client",
+            "wayland-protocols"
         }
 
     -- Windows
