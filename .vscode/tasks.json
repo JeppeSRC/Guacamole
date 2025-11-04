@@ -22,9 +22,18 @@
             }
         },
         {
-            "label": "clean",
+            "label": "clean (Debug)",
             "type": "shell",
             "command": "make clean",
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/build/"
+            }
+        },
+        {
+            "label": "clean (Release)",
+            "type": "shell",
+            "command": "make config=release clean",
             "group": "build",
             "options": {
                 "cwd": "${workspaceFolder}/build/"
