@@ -186,6 +186,10 @@ void WindowWayland::ReleaseInput() {
     mInputCapture = false;
 }
 
+void WindowWayland::SetTitle(const char* title) {
+    xdg_toplevel_set_title(mTopLevel, title);
+}
+
 void WindowWayland::ProcessEvents() {
     wl_display_roundtrip(mDisplay);
     wl_surface_commit(mSurface);

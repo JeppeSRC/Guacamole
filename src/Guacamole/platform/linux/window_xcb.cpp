@@ -29,6 +29,7 @@ SOFTWARE.
 #include <Guacamole/core/input.h>
 
 #include <xcb/xfixes.h>
+#include "window.h"
 
 namespace Guacamole {
 
@@ -76,10 +77,16 @@ WindowXCB::WindowXCB(const WindowSpec& spec) : Window(spec, Type::XCB) {
     xcb_intern_atom_reply_t* atomReply = xcb_intern_atom_reply(mConnection, atomCookie, nullptr);
     xcb_intern_atom_cookie_t propCookie = xcb_intern_atom(mConnection, 0, 12, "WM_PROTOCOLS");
     xcb_intern_atom_reply_t* propReply = xcb_intern_atom_reply(mConnection, propCookie, nullptr);
+   
 
     mWindowCloseAtom = atomReply->atom;
 
-    xcb_change_property(mConnection, XCB_PROP_MODE_REPLACE, mWindow, propReply->atom, 4, 32, 1, &mWindowCloseAtom);
+    xcb_change_property(mConnection, XCB_PROP_MODE_REPLACE, mWindow, propReply->atom, XCB_ATOM_ATOM, 32, 1, &mWindowCloseAtom);
+    
+    free(atomReply);
+    free(propReply);
+
+    SetTitle(spec.Title.c_str());
 
     xcb_randr_get_monitors_cookie_t monCookie = xcb_randr_get_monitors(mConnection, mWindow, 0);
     xcb_randr_get_monitors_reply_t* monReply = xcb_randr_get_monitors_reply(mConnection, monCookie, nullptr);
@@ -142,7 +149,14 @@ if (!mInputCapture) return;
     GM_LOG_DEBUG("[Input] Mouse released!");
 }
 
-//https://www.x.org/releases/current/doc/xproto/x11protocol.html#keysym_encoding
+void WindowXCB::SetTitle(const char *title) {
+    xcb_intern_atom_cookie_t titleCookie = xcb_intern_atom(mConnection, 0, 7, "WM_NAME");
+    xcb_intern_atom_reply_t* titleReply = xcb_intern_atom_reply(mConnection, titleCookie, nullptr);
+
+    xcb_change_property(mConnection, XCB_PROP_MODE_REPLACE, mWindow, titleReply->atom, XCB_ATOM_STRING, 8, strlen(title), title);
+    free(titleReply);
+}
+ // https://www.x.org/releases/current/doc/xproto/x11protocol.html#keysym_encoding
 
 void WindowXCB::ProcessEvents() {
     xcb_generic_event_t* e = nullptr;

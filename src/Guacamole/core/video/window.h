@@ -54,6 +54,7 @@ public:
     
     virtual void CaptureInput() = 0;
     virtual void ReleaseInput() = 0;
+    virtual void SetTitle(const char* title) = 0;
 
     virtual void ProcessEvents() = 0;
     virtual ~Window() {}

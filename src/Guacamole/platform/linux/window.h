@@ -44,6 +44,7 @@ public:
 
     void CaptureInput() override;
     void ReleaseInput() override;
+    void SetTitle(const char* title) override;
 
     void ProcessEvents() override;
 
@@ -100,6 +101,7 @@ public:
 
     void CaptureInput() override;
     void ReleaseInput() override;
+    void SetTitle(const char* title) override;
 
     void ProcessEvents() override;
 
