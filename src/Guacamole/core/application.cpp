@@ -92,7 +92,7 @@ Application::Application(ApplicationSpec& spec) : mSpec(spec), mWindow(nullptr) 
 }
 
 void Application::Init(const WindowSpec& windowSpec, const AppInitSpec& appSpec) {
-    mWindow = Window::CreateWindow(windowSpec);
+    mWindow = Window::Create(windowSpec);
 
     ContextSpec cs;
     cs.applicationName = appSpec.appName;

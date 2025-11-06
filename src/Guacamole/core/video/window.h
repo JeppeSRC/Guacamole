@@ -59,7 +59,7 @@ public:
     virtual void ProcessEvents() = 0;
     virtual ~Window() {}
 
-    static Window* CreateWindow(const WindowSpec& spec);
+    static Window* Create(const WindowSpec& spec);
     static inline Window* GetWindow() { return sWindow; }
 protected:
     Window(WindowSpec spec, Type type);
