@@ -37,18 +37,9 @@ void Input::AddKey(uint32_t scanCode) {
     key.mKeyCode |= (scanCode & 0xE100);
     key.mScanCode = scanCode;
     key.mPressed = false;
-    GetKeyString(key);
 
-    mKeys[scanCode] = key;
-    mScanCodes[key.mKeyCode] = scanCode;
-
-    GM_LOG_DEBUG("Added Key: SC=0x{0:04x} VK=0x{1:04x} Char='{2}'", scanCode, key.mKeyCode, key.mString);
-}
-
-void GetKeyString(Key* key) {
     memset(key.mString, 0, MAX_KEY_STRING_LENGTH);
 
-    #define STRING(str) memcpy(key.mString, str, strlen(str))
     auto it = mKeyCodeStrings.find(key.mKeyCode);
 
     if (it == mKeyCodeStrings.end()) {
@@ -56,15 +47,20 @@ void GetKeyString(Key* key) {
 
         if (val == 0) {
             GM_LOG_WARNING("Key: SC=0x{:04x} KC=0x{:04x} has no string mapping!", key.mScanCode, key.mKeyCode);
-            STRING("Unknown");
-            return;
+            memcpy(key.mString, "Unknown", 7);
+        } else {
+            memcpy(key.mString, &val, sizeof(val));
         }
-
-        key.mString[0] = (char)val;
-        return;
+    } else {
+        memcpy(key.mString, it->second, strlen(it->second));
     }
 
-    STRING(it->second);
+
+    mKeys[scanCode] = key;
+    mScanCodes[key.mKeyCode] = scanCode;
+
+    GM_LOG_DEBUG("Added Key: SC=0x{0:04x} VK=0x{1:04x} Char='{2}'", scanCode, key.mKeyCode, key.mString);
 }
+
 
 }

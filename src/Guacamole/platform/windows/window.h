@@ -39,6 +39,7 @@ public:
 
     void CaptureInput() override;
     void ReleaseInput() override;
+    void SetTitle(const char* title) override;
 
     void ProcessEvents() override;
 
@@ -47,8 +48,11 @@ private:
 
     static LRESULT WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l);
     static void CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode);
+    static WindowWindows* sWindow;
+    static uint32_t sLastMouseX;
+    static uint32_t sLastMouseY;
 
 public:
     HWND GetHWND() const { return mHWND; }
-}
+};
 }

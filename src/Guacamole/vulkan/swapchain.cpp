@@ -83,7 +83,7 @@ Swapchain::Swapchain(const SwapchainSpec& spec) : mSemaphores(spec.mDevice) {
             mSurfaceInfo.pNext = nullptr;
             mSurfaceInfo.flags = 0;
             mSurfaceInfo.hinstance = 0;
-            mSurfaceInfo.hwnd = window->GetHWND();
+            mSurfaceInfo.hwnd = ((WindowWindows*)window)->GetHWND();
 
             VK(vkCreateWin32SurfaceKHR(Context::GetInstance(), &mSurfaceInfo, nullptr, &mSurfaceHandle));
             break;

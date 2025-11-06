@@ -26,10 +26,15 @@ SOFTWARE.
 
 #include <Guacamole/platform/windows/window.h>
 #include <Guacamole/core/video/event.h>
+#include <Guacamole/core/input.h>
 
 namespace Guacamole {
 
-WindowWindows::WindowWindows(WindowSpec spec) : Window(spec, Type::Windows) {
+WindowWindows* WindowWindows::sWindow = nullptr;
+uint32_t WindowWindows::sLastMouseX = 0;
+uint32_t WindowWindows::sLastMouseY = 0;
+
+WindowWindows::WindowWindows(const WindowSpec& spec) : Window(spec, Type::Windows) {
     WNDCLASSEX wnd = {};
 
     wnd.cbSize = sizeof(WNDCLASSEX);
@@ -58,16 +63,18 @@ WindowWindows::WindowWindows(WindowSpec spec) : Window(spec, Type::Windows) {
     mShouldClose = false;
 
     EventManager::Init(this);
+
+    sWindow = this;
 }
 
-Window::~Window() {
+WindowWindows::~WindowWindows() {
     ShowWindow(mHWND, SW_HIDE);
     DestroyWindow(mHWND);
     UnregisterClass(L"Guacamole", 0);
 }
 
 
-void WindowWindows::CaptureMouse() {
+void WindowWindows::CaptureInput() {
     if (mInputCapture) return;
 
     mInputCapture = true;
@@ -123,19 +130,25 @@ void WindowWindows::ReleaseInput() {
     GM_LOG_DEBUG("[Input] Mouse released!");
 }
 
-void WindowWindows::ProcessEvents(Window* window) {
+void WindowWindows::SetTitle(const char* title) {
+    wchar_t tit[256];
+    mbstowcs(tit, title, 256);
+    SetWindowText(mHWND, tit);
+}
+
+void WindowWindows::ProcessEvents() {
     MSG msg;
 
     if (mInputCapture) {
         POINT p;
-        p.x = window->GetWidth() / 2;
-        p.y = window->GetHeight() / 2;
+        p.x = GetWidth() / 2;
+        p.y = GetHeight() / 2;
 
-        ClientToScreen(window->GetHWND(), &p);
+        ClientToScreen(mHWND, &p);
         SetCursorPos(p.x, p.y);
     }
 
-    while (PeekMessage(&msg, window->GetHWND(), 0, 0, PM_REMOVE)) {
+    while (PeekMessage(&msg, mHWND, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
@@ -144,7 +157,7 @@ void WindowWindows::ProcessEvents(Window* window) {
 LRESULT WindowWindows::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
     switch (msg) {
         case WM_CLOSE: {
-            mWindow->mShouldClose = true;
+            sWindow->mShouldClose = true;
             break;
         }
 
@@ -158,12 +171,12 @@ LRESULT WindowWindows::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
             break;
         }
         case WM_LBUTTONDOWN: {
-            CaptureMouse();
+            sWindow->CaptureInput();
             break;
         }
 
         case WM_KILLFOCUS: {
-            ReleaseInput();
+            sWindow->ReleaseInput();
             break;
         }
 
@@ -231,12 +244,12 @@ LRESULT WindowWindows::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
                     point.x = long((mouse.lLastX / 65535.0f) * width);
                     point.y = long((mouse.lLastY / 65535.0f) * height);
 
-                    ScreenToClient(mWindow->GetHWND(), &point);
+                    ScreenToClient(sWindow->GetHWND(), &point);
 
-                    evnt.mDeltaX = mLastMouseX - point.x;
-                    evnt.mDeltaY = mLastMouseY - point.y;
-                    mLastMouseX = point.x;
-                    mLastMouseY = point.y;
+                    evnt.mDeltaX = sLastMouseX - point.x;
+                    evnt.mDeltaY = sLastMouseY - point.y;
+                    sLastMouseX = point.x;
+                    sLastMouseY = point.y;
 
                     EventManager::DispatchEvent(&evnt);
                 } else if (mouse.lLastX != 0 ||  mouse.lLastY != 0) { // MOUSE_MOVE_RELATIVE
@@ -255,7 +268,7 @@ LRESULT WindowWindows::WndProc(HWND hwnd, UINT msg, WPARAM w, LPARAM l) {
     return DefWindowProc(hwnd, msg, w, l);
 }
 
-void EventManager::CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode) {
+void WindowWindows::CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up, uint32_t keyCode) {
     if (buttonFlags & (down | up)) {
         bool pressed = buttonFlags & down;
         uint32_t button = keyCode;
@@ -272,6 +285,10 @@ void EventManager::CheckButton(uint16_t buttonFlags, uint16_t down, uint16_t up,
             EventManager::DispatchEvent(&evnt);
         }
     }
+}
+
+Window* Window::Create(const WindowSpec& spec) {
+    return new WindowWindows(spec);
 }
 
 }
