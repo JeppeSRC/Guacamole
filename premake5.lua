@@ -70,10 +70,12 @@ project "spdlog"
             "/MD"
         }
 
-filter {"system:linux", "options:window-system=all or options:window-system=wayland"}
-
-project "wayland-protocols"
+        
+    project "wayland-protocols"
     kind "StaticLib"
+    
+    filter {"system:linux", "options:window-system=all or options:window-system=wayland"}
+
     language "C++"
     location "build/"
     cppdialect "c++17"
@@ -81,7 +83,8 @@ project "wayland-protocols"
     files {
         "libs/wayland-protocols/**.c"
     }
-filter ""
+
+    filter ""
 
 group ""
 
