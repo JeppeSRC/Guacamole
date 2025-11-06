@@ -120,7 +120,10 @@ public:
         mTime += ts;
 
         if (mTime >= 1.0f) {
-            GM_LOG_INFO("[TestApp] FPS: {}", mFps);
+            //GM_LOG_INFO("[TestApp] FPS: {}", mFps);
+            char buf[256];
+            sprintf(buf, "FPS: %u\0", mFps);
+            mWindow->SetTitle(buf);
             mFps = 0;
             mTime = 0.0f;
         }
@@ -136,8 +139,8 @@ public:
     }
 
     bool OnKeyPressed(KeyPressedEvent* e) override {
-        const char* desc = Input::GetKeyInfo(e->mKey)->mString;
-        GM_LOG_DEBUG("Key: {:02x} {}", e->mKey, desc);
+        //const char* desc = Input::GetKeyInfo(e->mKey)->mString;
+        //GM_LOG_DEBUG("Key: 0x{:02X} {}", e->mKey, desc);
         return false;
     }
 
@@ -146,8 +149,8 @@ public:
     }
 
     bool OnButtonPressed(ButtonPressedEvent* e) override {
-        const char* desc = Input::GetKeyInfo(e->mButton)->mString;
-        GM_LOG_DEBUG("Button: {:02x} {}", e->mButton, desc);
+        //const char* desc = Input::GetKeyInfo(e->mButton)->mString;
+        //GM_LOG_DEBUG("Button: 0x{:02X} {}", e->mButton, desc);
         return false;
     }
 
@@ -156,6 +159,7 @@ public:
     }
 
     bool OnMouseMoved(MouseMovedEvent* e) override {
+        //GM_LOG_DEBUG("Mouse X={} Y={}", e->mDeltaX, e->mDeltaY);
         return false;
     }
 
