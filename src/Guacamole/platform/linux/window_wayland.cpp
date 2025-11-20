@@ -240,13 +240,13 @@ void WindowWayland::RegistryGlobalRemoveEvent(void* data, wl_registry* registry,
 }
 
 void WindowWayland::XDGSurfaceConfigureEvent(void* data, xdg_surface* xdg_surface, uint32_t serial) {
-    GM_LOG_DEBUG("[Wayland] xdg_surface.configure");
+    //GM_LOG_DEBUG("[Wayland] xdg_surface.configure");
 
     xdg_surface_ack_configure(xdg_surface, serial);
 }
 
 void WindowWayland::ToplevelConfigure(void *data, xdg_toplevel *xdg_toplevel, int32_t width, int32_t height, wl_array* states) {
-    GM_LOG_DEBUG("[Wayland] xdg_toplevel.configure: Width={} Height={}", width, height);
+    //GM_LOG_DEBUG("[Wayland] xdg_toplevel.configure: Width={} Height={}", width, height);
 
     if (width == 0 || height == 0) return;
 
@@ -264,11 +264,11 @@ void WindowWayland::ToplevelClose(void *data, xdg_toplevel *xdg_toplevel) {
 }
 
 void WindowWayland::ToplevelConfigureBounds(void *data, xdg_toplevel *xdg_toplevel, int32_t width, int32_t height) {
-    GM_LOG_DEBUG("[Wayland] xdg_toplevel.configure_bounds: Width={} Height={}", width, height);
+    //GM_LOG_DEBUG("[Wayland] xdg_toplevel.configure_bounds: Width={} Height={}", width, height);
 }
 
 void WindowWayland::ToplevelWMCapabilities(void *data, xdg_toplevel *xdg_toplevel, wl_array *capabilities) {
-    GM_LOG_DEBUG("[Wayland] xdg_toplevel.wm_capabilities");
+    //GM_LOG_DEBUG("[Wayland] xdg_toplevel.wm_capabilities");
 }
 
 void WindowWayland::SeatCapabilitiesEvent(void* data, wl_seat* seat, uint32_t capabilities) {
